@@ -1,0 +1,123 @@
+# ============================================================
+# Node / JS / TS (Next.js + Express)
+# ============================================================
+
+# Dependencies — matches at any depth (client/, server/, shared/, root)
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Build output
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# Testing
+coverage/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Vercel
+.vercel
+
+# ============================================================
+# Python (FastAPI inference service)
+# ============================================================
+
+# Bytecode / caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+.python-version
+
+# Packaging / build artifacts
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+MANIFEST
+
+# Python tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+
+# Jupyter (if you ever use it)
+.ipynb_checkpoints/
+
+# ============================================================
+# Databases (SQLite)
+# ============================================================
+
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+data/
+
+# ============================================================
+# Environment / secrets
+# ============================================================
+
+.env
+.env.*
+!.env.example
+
+# ============================================================
+# ML model weights (keep them out of the repo)
+# ============================================================
+
+*.onnx
+*.safetensors
+*.bin
+*.pt
+*.pth
+.cache/
+models/
+
+# ============================================================
+# OS / Editor
+# ============================================================
+
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+*.pem
+
+# ============================================================
+# Misc
+# ============================================================
+
+*.log
+tmp/
+temp/
