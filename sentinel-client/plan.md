@@ -100,21 +100,27 @@ This is the heart of the document. The console is a **data-dense, trust-critical
 
 ### 2.2 Theme strategy
 
-**Decision (D1): ship one built-in daisyUI theme, tweak later.**
+**Decision (D1, revised): a single custom, light, monochrome theme — "minimalist white".**
+Originally planned as a dark daisyUI `night` theme; the direction changed to a strictly monochrome, outline-driven white theme (an Antigravity-style marketing aesthetic). **Implemented** in `app/globals.css`.
 
-- **Default theme: `night`** — a dark, cool-toned theme (`base-100` ≈ dark slate-blue, cyan/teal `primary`). It fits a security/observability tool and gives strong contrast for status colors.
-- Wire it by making `night` the default instead of the current light+dark auto pair:
+- **Theme:** a custom daisyUI theme named `sentinel` — light only, no dark mode. All tokens are neutral (grayscale); hierarchy comes from weight, size and 1px hairlines rather than fills or shadows.
 
   ```css
   /* app/globals.css */
   @import "tailwindcss";
-  @plugin "daisyui" {
-    themes: night --default;
+  @plugin "daisyui" { themes: false; }   /* drop the built-in themes */
+  @plugin "daisyui/theme" {               /* then define our own */
+    name: "sentinel";
+    default: true;
+    color-scheme: light;
+    /* grayscale base/primary/… tokens, --radius-*: 0.125rem, --border: 1px */
   }
   ```
 
-  (`themes: night --default;` is the daisyUI 5 syntax; the plugin's implicit default is `light --default, dark --prefersdark`, which is why we must set it explicitly.)
-- **Later / optional:** add `light` (`themes: night --default, light;`) and a `theme-controller` toggle, or define a custom `sentinel` theme via `@plugin "daisyui/theme" { ... }`. Do **not** block v1 on a custom theme.
+- **Palette (`@theme`):** `--color-paper` `#fff`, `--color-paper-soft` `#fafafa`, `--color-ink` `#0a0a0a`, `--color-ink-soft` `#3f3f46`, `--color-muted` `#767676`, `--color-line` `#e6e6e6`, `--color-line-strong` `#cfcfcf`. These generate utilities (`bg-paper`, `text-ink`, `border-line`, …).
+- **Outlines for division:** sections and cells are separated with `border-line` hairlines; the page content sits in a `max-w-6xl` container with `border-x`, so vertical rails run down the page.
+- **No dark mode, no theme switcher, no accent hue.** Status semantics (accept/reject) use grayscale `success`/`error` tokens plus an icon **and** a label — never a colored badge.
+- **Later / optional:** a single restrained accent, if the app surfaces ever need one.
 
 ### 2.3 Design tokens
 
@@ -122,16 +128,17 @@ Token decisions, expressed as the daisyUI variables + Tailwind utilities we stan
 
 | Token | Choice | Notes |
 | --- | --- | --- |
-| **Type — UI** | Geist Sans | Already loaded in `app/layout.tsx` as `--font-geist-sans`. |
-| **Type — data** | Geist Mono | `--font-geist-mono`. **All IDs, API keys, scores, thresholds, timestamps** use mono. |
-| **Radii** | daisyUI theme defaults (`--radius-box/field/selector`) | Don't hand-roll radius; use `rounded-box`, `rounded-field`, `rounded-selector`. |
-| **Borders** | `1px`, daisyUI `--border` | Prefer `border-base-300` / `divide-base-300`. |
-| **Elevation** | daisyUI `shadow-sm`/`shadow-md` on cards only | Tables/rows stay flat. |
-| **Spacing scale** | Tailwind default; page gutter `px-4 md:px-6 lg:px-8`; section gap `gap-6` | Consistent rhythm. |
-| **Max content width** | `max-w-7xl mx-auto` for app pages | Login is a narrower `max-w-sm` centered card. |
-| **Focus** | daisyUI's built-in focus rings; never remove outlines | Accessibility (§2.7). |
+| **Type — titles** | **Instrument Serif** | `--font-serif`; loaded in `app/layout.tsx` as `--font-instrument-serif`. High-contrast serif for h1/h2 and the wordmark. |
+| **Type — body / UI** | **Space Grotesk** | `--font-sans` (`--font-space-grotesk`). Clean, geometric sans for body, nav and buttons. |
+| **Type — labels / data** | **Geist Mono** | `--font-mono` (`--font-geist-mono`). Eyebrows, metadata, **IDs, API keys, scores, thresholds, timestamps**. |
+| **Radii** | `0.125rem` (daisyUI `--radius-*`) | Near-square corners; the outline look, not soft cards. |
+| **Borders** | `1px` hairlines, `--color-line` / `--color-line-strong` | The primary means of division — prefer borders over fills/shadows. |
+| **Elevation** | none | Nothing is shadowed; separation is by outline only. |
+| **Spacing scale** | Tailwind default; page gutter `px-6`; section padding `py-16 md:py-20` | Generous whitespace. |
+| **Max content width** | `max-w-6xl mx-auto` with `border-x` | Login is a narrower centered card. |
+| **Focus** | `focus-visible:ring-2 ring-ink/15` | Never remove focus outlines (accessibility, §2.7). |
 
-> **Fix needed:** current `globals.css` sets `body { font-family: Arial, Helvetica, sans-serif; }`, which overrides Geist. Replace with `font-sans`/`var(--font-sans)` and drop the hard-coded `background`/`color` on `body` (let the daisyUI theme own `base-100`/`base-content`).
+> **Done:** `globals.css` no longer sets `Arial` or the forced light/dark variables — the `sentinel` theme and the three font variables own the surface.
 
 ### 2.4 Semantic color contract
 
@@ -478,9 +485,9 @@ Dependencies to add: `clsx`, `tailwind-merge`; likely `zod` (Q4). Nothing else i
 
 Sequenced so each milestone is independently demoable.
 
-**M1 — Foundation**
-1. Edit `globals.css`: set `night` as default theme; fix `body` font to Geist; drop forced light/dark.
-2. Root `layout.tsx`: real `metadata` ("Sentinel — NLI Security Gateway"), keep fonts.
+**M1 — Foundation** *(landing page + navbar shipped)*
+1. `globals.css`: custom light monochrome `sentinel` theme + `@theme` palette/tokens + `label-mono` utility. ✅
+2. Root `layout.tsx`: Instrument Serif + Space Grotesk + Geist Mono via `next/font`; real `metadata`. ✅
 3. Add `clsx` + `tailwind-merge`; create `lib/utils/cn.ts`.
 4. Build the base wrappers: `Button`, `Card`, `PageHeader`, `StatusBadge`, `EmptyState`.
 
@@ -511,7 +518,7 @@ Sequenced so each milestone is independently demoable.
 
 | # | Decision | Choice |
 | --- | --- | --- |
-| D1 | Theme identity | Built-in daisyUI theme (`night`), tweak later. |
+| D1 | Theme identity | **Minimalist white**: custom light monochrome daisyUI theme `sentinel`, hairline outlines, no dark mode. |
 | D2 | Data layer | Next.js App Router native — RSC + `fetch` + Server Actions. |
 | D3 | Component strategy | Thin local wrappers over daisyUI. |
 | D4 | Plan scope | Full frontend plan (this document). |
@@ -522,7 +529,7 @@ Sequenced so each milestone is independently demoable.
 - **Q2 — Backend contract.** The Express/FastAPI services are empty. We need concrete endpoints/DTOs for `requests`, `keys`, `models`, `stats` before M4. *Proposed default: define the contract in `lib/api/types.ts` and mock against it.*
 - **Q3 — Data-fetch/client library.** *Resolved:* none (D2). Revisit only if we need heavy client polling.
 - **Q4 — Validation lib.** Add `zod` for Server Action inputs + `searchParams`? *Proposed default: yes.*
-- **Q5 — Multi-theme.** Single `night` for v1, or ship `light` + toggle now? *Proposed default: single theme now, add later.*
+- **Q5 — Multi-theme.** Single light theme for v1; no dark mode planned. *Resolved: monochrome white only.*
 - **Q6 — Product name/brand.** "Sentinel" vs the spec's "NLI Security Gateway" — pick the displayed name for metadata/nav.
 
 ---
@@ -532,19 +539,36 @@ Sequenced so each milestone is independently demoable.
 ### 12.1 Theme wiring snippet
 
 ```css
-/* app/globals.css */
+/* app/globals.css — as implemented */
 @import "tailwindcss";
+
 @plugin "daisyui" {
-  themes: night --default;
+  themes: false;            /* drop the built-in light/dark themes */
 }
 
-/* Let the daisyUI theme own surface colors; only set the font stack. */
-body {
-  font-family: var(--font-sans);
+@plugin "daisyui/theme" {
+  name: "sentinel";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+  --color-base-100: oklch(100% 0 0);
+  --color-base-content: oklch(18% 0 0);
+  /* …grayscale tokens; --radius-*: 0.125rem; --border: 1px; --depth: 0 */
+}
+
+@theme {
+  --font-serif: var(--font-instrument-serif), Georgia, serif;
+  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --color-paper: #ffffff;
+  --color-ink: #0a0a0a;
+  --color-muted: #767676;
+  --color-line: #e6e6e6;
+  /* … */
 }
 ```
 
-(Removes the current `Arial` override and the forced `--background`/`--foreground` + `prefers-color-scheme: dark` block, which fight the theme.)
+(Replaces the old `Arial` override and the forced `--background`/`--foreground` + `prefers-color-scheme: dark` block, which fought the theme.)
 
 ### 12.2 Verified daisyUI 5.7.38 class surface
 

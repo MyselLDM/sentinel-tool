@@ -65,6 +65,17 @@ npm start                 # node src/server.js
 npm run dev               # node --watch src/server.js
 ```
 
+Or use the bundled run script (installs deps if missing, then starts):
+
+```bash
+./run.sh                  # bash: start
+./run.sh dev              # bash: auto-reload
+```
+```powershell
+.\run.ps1                 # PowerShell: start
+.\run.ps1 dev             # PowerShell: auto-reload
+```
+
 On startup in development the server logs a **demo user and API key**
 (`SEED_DEMO=true`). If `JWT_SECRET` is unset a random one is generated — tokens
 are then invalidated on restart.

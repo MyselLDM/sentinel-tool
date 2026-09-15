@@ -36,6 +36,17 @@ uvicorn app.main:app --reload --port 8000
 > for your machine, install the matching build first:
 > `pip install torch --index-url https://download.pytorch.org/whl/cpu` (or `/cu124`).
 
+Or use the bundled run script, which does the venv + install steps for you:
+
+```bash
+./run.sh                  # bash  -> http://127.0.0.1:8000
+PORT=9000 ./run.sh        # custom port (extra args pass to uvicorn)
+```
+```powershell
+.\run.ps1                 # PowerShell
+$env:PORT = 9000; .\run.ps1
+```
+
 The service loads the fine-tuned checkpoints from `fastapi/.models/` and warms
 them up at startup. Confirm readiness:
 
