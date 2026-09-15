@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import { ArrowRight, Check, Loader2, RotateCcw, X } from "lucide-react";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { Section } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
 
 type ModelResult = { score: number; rejected: boolean; threshold: number | null };
@@ -153,8 +154,8 @@ export function Playground() {
   const disabled = status === "loading" || !goal.trim() || !subtask.trim();
 
   return (
-    <section id="playground" className="scroll-mt-20 border-t border-line">
-      <div className="px-6 pb-12 pt-16 md:pt-20">
+    <Section id="playground">
+      <div className="px-6 pb-10 pt-12 md:px-10 md:pt-16">
         <Eyebrow>Playground</Eyebrow>
         <h2 className="mt-6 max-w-2xl font-serif text-4xl leading-tight tracking-[-0.01em] md:text-5xl">
           Try it out.
@@ -312,6 +313,6 @@ export function Playground() {
           )}
         </div>
       </div>
-    </section>
+    </Section>
   );
 }

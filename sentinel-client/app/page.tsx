@@ -4,6 +4,7 @@ import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ButtonLink } from "@/components/ui/button";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { Section } from "@/components/ui/section";
 
 const FEATURES = [
   {
@@ -58,9 +59,10 @@ export default function Home() {
       <SiteHeader />
 
       <main className="bg-hatch flex-1">
-        <div className="mx-auto w-full max-w-6xl border-x border-line bg-paper">
+        {/* Each section is its own panel on the hatched base, separated by a gap. */}
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-10 md:gap-8 md:py-14">
           {/* ── Hero ─────────────────────────────────────────────── */}
-          <section className="px-6 pb-16 pt-20 md:pb-20 md:pt-28">
+          <Section className="px-6 py-14 md:px-10 md:py-20">
             <Eyebrow>NLI Security Gateway</Eyebrow>
 
             <h1 className="mt-8 max-w-4xl font-serif text-5xl leading-[1.03] tracking-[-0.02em] md:text-6xl lg:text-7xl">
@@ -83,27 +85,27 @@ export default function Home() {
                 Get started
               </ButtonLink>
             </div>
-          </section>
+          </Section>
 
-          {/* ── Hero panel: request / response ───────────────────── */}
-          <div className="grid border-t border-line md:grid-cols-2">
-            <div className="border-b border-line p-6 md:border-b-0 md:border-r">
+          {/* ── Request / response ───────────────────────────────── */}
+          <Section className="grid md:grid-cols-2">
+            <div className="border-b border-line p-6 md:border-b-0 md:border-r md:p-8">
               <p className="label-mono">Request</p>
               <pre className="mt-4 overflow-x-auto font-mono text-[12.5px] leading-relaxed text-ink-soft">
                 {REQUEST_SAMPLE}
               </pre>
             </div>
-            <div className="p-6">
+            <div className="p-6 md:p-8">
               <p className="label-mono">Response</p>
               <pre className="mt-4 overflow-x-auto font-mono text-[12.5px] leading-relaxed text-ink-soft">
                 {RESPONSE_SAMPLE}
               </pre>
             </div>
-          </div>
+          </Section>
 
           {/* ── Capabilities ─────────────────────────────────────── */}
-          <section id="product" className="scroll-mt-20 border-t border-line">
-            <div className="px-6 pb-12 pt-16 md:pt-20">
+          <Section id="product">
+            <div className="px-6 pb-10 pt-12 md:px-10 md:pt-16">
               <Eyebrow>Capabilities</Eyebrow>
               <h2 className="mt-6 max-w-2xl font-serif text-4xl leading-tight tracking-[-0.01em] md:text-5xl">
                 Two models, one decision.
@@ -114,7 +116,7 @@ export default function Home() {
               {FEATURES.map((feature, index) => (
                 <article
                   key={feature.title}
-                  className="grid gap-4 border-b border-line px-6 py-8 md:grid-cols-[3rem_1fr_1.15fr] md:items-baseline md:gap-10 last:border-b-0"
+                  className="grid gap-4 border-b border-line px-6 py-8 last:border-b-0 md:grid-cols-[3rem_1fr_1.15fr] md:items-baseline md:gap-10 md:px-10"
                 >
                   <span className="font-mono text-[11px] tracking-widest text-muted">
                     0{index + 1}
@@ -128,45 +130,50 @@ export default function Home() {
                 </article>
               ))}
             </div>
-          </section>
+          </Section>
 
-          {/* ── How it works ─────────────────────────────────────── */}
-          <section id="how" className="scroll-mt-20 border-t border-line">
-            <div className="px-6 pb-12 pt-16 md:pt-20">
+          {/* ── How it works (daisyUI timeline) ──────────────────── */}
+          <Section id="how">
+            <div className="px-6 pb-10 pt-12 md:px-10 md:pt-16">
               <Eyebrow>How it works</Eyebrow>
               <h2 className="mt-6 max-w-2xl font-serif text-4xl leading-tight tracking-[-0.01em] md:text-5xl">
                 Three steps to a safer agent.
               </h2>
             </div>
 
-            <div className="grid border-t border-line md:grid-cols-3 md:divide-x md:divide-line">
-              {STEPS.map((step, index) => (
-                <div
-                  key={step.title}
-                  className="border-b border-line p-6 md:border-b-0 last:border-b-0"
-                >
-                  <span className="font-mono text-[11px] tracking-widest text-muted">
-                    STEP {index + 1}
-                  </span>
-                  <h3 className="mt-5 font-serif text-2xl tracking-tight">
-                    {step.title}
-                  </h3>
-                  <p className="mt-3 text-sm leading-relaxed text-muted">
-                    {step.body}
-                  </p>
-                </div>
-              ))}
+            <div className="border-t border-line px-6 py-12 md:px-10 md:py-14">
+              <ul className="timeline timeline-vertical md:timeline-horizontal">
+                {STEPS.map((step, index) => (
+                  <li key={step.title}>
+                    {index > 0 && <hr className="bg-line" />}
+
+                    <div className="timeline-middle">
+                      <span className="flex h-9 w-9 items-center justify-center border border-ink bg-paper font-mono text-[11px] tracking-widest">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                    </div>
+
+                    <div className="timeline-end px-0 pb-8 pt-3 md:pb-0 md:pt-6">
+                      <h3 className="font-serif text-2xl tracking-tight">
+                        {step.title}
+                      </h3>
+                      <p className="mt-2 max-w-xs text-sm leading-relaxed text-muted">
+                        {step.body}
+                      </p>
+                    </div>
+
+                    {index < STEPS.length - 1 && <hr className="bg-line" />}
+                  </li>
+                ))}
+              </ul>
             </div>
-          </section>
+          </Section>
 
           {/* ── Playground ───────────────────────────────────────── */}
           <Playground />
 
           {/* ── API / docs ───────────────────────────────────────── */}
-          <section
-            id="docs"
-            className="scroll-mt-20 grid border-t border-line md:grid-cols-[1fr_1.2fr]"
-          >
+          <Section id="docs" className="grid md:grid-cols-[1fr_1.2fr]">
             <div className="border-b border-line p-6 md:border-b-0 md:border-r md:p-8">
               <Eyebrow>API</Eyebrow>
               <h2 className="mt-6 font-serif text-3xl leading-tight tracking-[-0.01em] md:text-4xl">
@@ -201,10 +208,10 @@ export default function Home() {
                 REJECT IF EITHER MODEL REJECTS
               </p>
             </div>
-          </section>
+          </Section>
 
           {/* ── CTA ──────────────────────────────────────────────── */}
-          <section className="border-t border-line px-6 py-20 text-center md:py-24">
+          <Section className="px-6 py-16 text-center md:px-10 md:py-20">
             <h2 className="mx-auto max-w-3xl font-serif text-4xl leading-tight tracking-[-0.01em] md:text-5xl">
               Gate your agents in an afternoon.
             </h2>
@@ -221,7 +228,7 @@ export default function Home() {
                 Read the API
               </ButtonLink>
             </div>
-          </section>
+          </Section>
         </div>
       </main>
 
