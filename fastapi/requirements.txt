@@ -20,9 +20,13 @@ pydantic==2.13.5
 pydantic-settings==2.15.0
 
 # ── Models / ML stack ───────────────────────────────────────────────────────
-# sentence-transformers provides CrossEncoder (NLI) and SentenceTransformer
-# (contrastive). `transformers` and `huggingface-hub` arrive transitively.
-sentence-transformers==6.0.1
+# Pinned to the environment that produced the checkpoints in .models/ (both
+# saved with sentence-transformers 5.5.0; transformers 5.8.1 matches the NLI
+# checkpoint). sentence-transformers provides CrossEncoder (NLI) and
+# SentenceTransformer (contrastive); huggingface-hub / accelerate arrive
+# transitively.
+sentence-transformers==5.5.0
+transformers==5.8.1
 torch>=2.4
 numpy>=1.26,<3
 

@@ -48,21 +48,22 @@ From `format_for_nli` and `evaluate_model` (lines 501–549):
 ```python
 premise    = f"An AI agent is authorized to {goal.lower()}. The agent performs only tasks that support this goal."
 hypothesis = f"The agent is now performing: {subtask.lower()}"
-scores     = model.predict([(premise, hypothesis)])[0]   # softmax probabilities
+scores     = model.predict([(premise, hypothesis)])[0]   # RAW LOGITS (see below)
 pred_label = int(np.argmax(scores))
 malicious  = (pred_label == 0)
 ```
 
-- **Label order (critical):** `0 = contradiction`, `1 = entailment`, `2 = neutral`. Confirmed against the upstream config `id2label` — so **`scores[0]` is contradiction**, not `scores[2]`.
-- The training script uses **argmax** (no numeric threshold). Per decision D2 (§16) we instead use an **F1-tuned probability threshold on `p(contradiction)`**, which the training must emit (see §3.2).
-- Final fine-tuned model saved to `sentinelagent_nli_finetuned/`.
+- **Label order (critical):** `0 = contradiction`, `1 = entailment`, `2 = neutral`. Confirmed against the shipped `config.json` `id2label` — so **`scores[0]` is contradiction**, not `scores[2]`.
+- **`predict` returns raw logits.** The shipped `config_sentence_transformers.json` sets `activation_fn = torch.nn.modules.linear.Identity`, so **no softmax is applied** — you must softmax yourself before using `p(contradiction)` (§1.4, §5).
+- The training script uses **argmax** (no numeric threshold). Per decision D2 (§16) we instead use an **F1-tuned probability threshold on `p(contradiction)`**, which the training emits (see §3.2).
+- Final fine-tuned model: `.models/sentinelagent_nli_finetuned/`.
 
 ### 1.2 Contrastive model (`all-MiniLM-L12-v2`, fine-tuned)
 
 From `format_document`, `evaluate_contrastive` (lines 105–140, 324–400):
 
 ```python
-text  = f"Goal: {goal}. Subtask: {subtask}."        # + optional decomposed components
+text  = f"Goal: {goal}. Subtask: {subtask}."        # raw template (this run used -raw-)
 goal_emb = model.encode(goal_text,  normalize_embeddings=True)
 sub_emb  = model.encode(sub_text,   normalize_embeddings=True)
 cos_sim  = float(np.dot(goal_emb, sub_emb))          # == cosine (normalized)
@@ -72,16 +73,31 @@ malicious = cos_sim < threshold                       # LOW similarity = malicio
 - **Input is a framed template, not raw goal/subtask.** Both sides are built with `format_document`:
   - "goal side" = `format_document(goal, goal, …)` → `"Goal: {goal}. Subtask: {goal}."`
   - "subtask side" = `format_document(goal, subtask, …)` → `"Goal: {goal}. Subtask: {subtask}."`
-- Optional `decomposed` dict with keys `{action, object, scope, constraints}` appends natural-language lines; in this training run it was empty (`{}`), so v1 sends it empty.
-- **Threshold is learned from training:** `evaluate_contrastive` sweeps `np.linspace(0.0, 1.0, 201)` and picks the threshold maximizing F1; per-fold thresholds live in `logs/contrastive_cv_results.json`. Contrastive model dir is dynamic: `.models/contrastive-miniLM-e{epochs}-b{batch}-lr{lr}-mn{maxneg}-{dec|raw}-vs{valsplit}`.
+- Optional `decomposed` dict with keys `{action, object, scope, constraints}` appends natural-language lines. The **shipped** model is the `-raw-` variant (`USE_DECOMPOSED=False`) and its training data had empty decomposed dicts, so **inference must not pass decomposed components** — use `include_decomposed=False` (or pass `{}`).
+- **Threshold is learned from training:** `evaluate_contrastive` sweeps `np.linspace(0.0, 1.0, 201)` and picks the threshold maximizing F1; per-fold thresholds live in `logs/contrastive_cv_results.json`. The shipped dir name encodes the hyperparameters: `.models/contrastive-miniLM-e4-b16-lr1e-05-mn6-**raw**-vs0.2`.
 
 ### 1.3 Corrections this implies for the other plans
 
 1. **NLI raw scores key order** — `{contradiction, entailment, neutral}` (contradiction ∈ index 0), not `[entailment, neutral, contradiction]`.
-2. **NLI scores are normalized to probabilities** (softmax) before thresholding — `predict` may return logits. The training script's `to_probabilities()` is the reference.
+2. **NLI scores are normalized to probabilities** (softmax) before thresholding — the shipped model returns **logits** (`activation_fn = Identity`). The training script's `to_probabilities()` is the reference (§1.4).
 3. **Contrastive input** — must use the framed `"Goal: … Subtask: …"` template on *both* sides, not `encode(goal)`/`encode(subtask)` separately.
 4. **Thresholds are training artifacts** → not user-editable → the `thresholds` write endpoint and `threshold_configs` table are dropped (see express plan §7/§9).
 5. **Model `lower()`ing** — NLI lowercases goal/subtask; contrastive does **not** (it preserves original casing).
+
+### 1.4 Deployed artifacts (verified in `.models/`)
+
+Both checkpoints are present in `fastapi/.models/` (1.1 GB total). FastAPI loads **these** dirs:
+
+| Model | Directory | Verified config |
+| --- | --- | --- |
+| NLI (final) | `.models/sentinelagent_nli_finetuned/` | `RobertaForSequenceClassification`; `id2label {0:contradiction,1:entailment,2:neutral}`; `num_hidden_layers 6`, `hidden_size 768`; 512 tokens; **`activation_fn = Identity` → logits** |
+| Contrastive (final) | `.models/contrastive-miniLM-e4-b16-lr1e-05-mn6-raw-vs0.2/` | `BertModel`, 384-dim; `Pooling(mean)` + `Normalize`; `similarity_fn_name: cosine`; trained **`raw`** (`USE_DECOMPOSED=False`) |
+| Contrastive (folds) | `…/fold_0..4/` | CV checkpoints — **not** used at inference; keep for evaluation only |
+
+- Both were saved with **sentence-transformers 5.5.0** (transformers 5.8.1 for NLI, 5.3.0 for contrastive). `requirements.txt` pins `sentence-transformers==5.5.0` + `transformers==5.8.1` to match.
+- **No threshold is stored anywhere in `.models/`** (nor any `logs/*_cv_results.json`) — thresholds must be produced by training (§3.2).
+- The contrastive model-card widget confirms the template: `'Goal: X. Subtask: X.'` ↔ `'Goal: X. Subtask: Y.'`.
+- The `*.safetensors` weights are git-ignored (`.gitignore`), so only the small configs/tokenizers are committed.
 
 ---
 
@@ -111,7 +127,7 @@ express-server ──HTTP JSON──▶ fastapi (this service)
   "generated_at": "2026-04-20T00:00:00Z",
   "nli": {
     "base": "cross-encoder/nli-MiniLM2-L6-H768",
-    "model_dir": "sentinelagent_nli_finetuned",     // relative to MODELS_DIR, or HF id
+    "model_dir": ".models/sentinelagent_nli_finetuned",   // relative to MODELS_DIR (fastapi/), or an HF id
     "version": "sentinelagent-nli-3class-v1",
     "labels": ["contradiction", "entailment", "neutral"],
     "decision": "p_contradiction > threshold",
@@ -120,8 +136,8 @@ express-server ──HTTP JSON──▶ fastapi (this service)
   },
   "contrastive": {
     "base": "all-MiniLM-L12-v2",
-    "model_dir": ".models/contrastive-miniLM-e4-b16-lr1e-05-mn6-dec-vs0.2",
-    "version": "contrastive-minilm-e4-b16-lr1e-05-mn6-dec-vs0.2",
+    "model_dir": ".models/contrastive-miniLM-e4-b16-lr1e-05-mn6-raw-vs0.2",
+    "version": "contrastive-minilm-e4-b16-lr1e-05-mn6-raw-vs0.2",
     "decision": "cosine < threshold",
     "threshold": 0.58,
     "metrics": { "tpr": 0.88, "fpr": 0.07, "precision": 0.90, "f1": 0.89 }
@@ -134,7 +150,7 @@ express-server ──HTTP JSON──▶ fastapi (this service)
 - The contrastive threshold comes from `evaluate_contrastive` (F1-optimal). Aggregate the per-fold thresholds (mean) → `contrastive.threshold`.
 - The NLI threshold is emitted by `sentinelagent_nli_finetune.py` — **implemented**: `to_probabilities()` + `find_best_threshold()` sweep `p(contradiction)` over `np.linspace(0,1,201)` per CV fold (the same method as contrastive), and the run writes `logs/nli_cv_results.json` with `recommended_nli_threshold` = **mean of the per-fold F1-optimal cut-offs** (an unbiased, held-out estimate) plus per-fold metrics. Use that value for `nli.threshold`.
 - The two `logs/*_cv_results.json` artifacts are the inputs to a small merge that produces `model_config.json`.
-- **Normalization matters:** `CrossEncoder.predict` may return **logits** rather than softmaxed probabilities depending on the sentence-transformers version / `activation_fn`. Apply softmax before thresholding; `to_probabilities()` in the training script is the reference implementation. `argmax` is unaffected (softmax is monotonic), so the existing 3-class metrics are unchanged.
+- **Normalization matters (confirmed from the artifact):** the shipped NLI `config_sentence_transformers.json` sets `activation_fn = Identity`, so `CrossEncoder.predict` returns **raw logits**. Apply softmax before thresholding/scoring; `to_probabilities()` in the training script is the reference implementation. `argmax` is unaffected (softmax is monotonic), so the existing 3-class metrics are unchanged.
 
 ### 3.3 Loading & fallback
 
@@ -173,7 +189,7 @@ def format_document(goal: str, subtask: str, decomposed: dict | None = None,
     return text
 ```
 
-Rules: NLI **lowercases**; contrastive **preserves case**; the contrastive goal-side uses `format_document(goal, goal, …)`; `include_decomposed` defaults to `True` (matching `USE_DECOMPOSED`), with an empty dict this reduces to the raw template.
+Rules: NLI **lowercases**; contrastive **preserves case**; the contrastive goal-side uses `format_document(goal, goal, …)`. The deployed model is the **`-raw-`** variant, so the service calls `format_document(..., include_decomposed=False)` and never passes decomposed components. (With an empty dict, `True`/`False` yield the identical raw template either way.)
 
 ---
 
@@ -392,6 +408,7 @@ Express exposes this (read-only) to the console; it replaces the old editable `/
 | D2 | NLI decision | **F1-tuned probability threshold** on `p(contradiction)` (symmetric with contrastive). |
 | D3 | Threshold/model source | **Committed `model_config.json`** artifact. |
 | D4 | Missing artifacts | **Fall back to base pretrained models**. |
+| D5 | Runtime versions | **`sentence-transformers==5.5.0`** + `transformers==5.8.1` — matches the env that produced the `.models/` checkpoints. |
 
 ### Open questions
 

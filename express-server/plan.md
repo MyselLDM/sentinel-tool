@@ -451,7 +451,7 @@ Validation: `keyName` 1–100 chars; `rateLimitPerMinute` 1–10000; `expiresAt`
 
 ### 9.5 Model info endpoint (read-only)
 
-Thresholds and model versions are **training artifacts** (see [`../fastapi/plan.md`](../fastapi/plan.md)), not user settings — so there is **no write path**. Express proxies the inference service's `GET /models` and returns it read-only.
+Thresholds and model versions are **training artifacts** (see [`../fastapi/plan.md`](../fastapi/plan.md) §1.4), not user settings — so there is **no write path**. Express proxies the inference service's `GET /models` and returns it read-only. `version` strings mirror the shipped dirs under `fastapi/.models/`.
 
 **`GET /api/models`** →
 ```jsonc
@@ -467,7 +467,7 @@ Thresholds and model versions are **training artifacts** (see [`../fastapi/plan.
   },
   "contrastive": {
     "base": "all-MiniLM-L12-v2",
-    "version": "contrastive-minilm-…",
+    "version": "contrastive-minilm-e4-b16-lr1e-05-mn6-raw-vs0.2",
     "decision": "cosine < threshold",
     "threshold": 0.58,
     "metrics": { "tpr": 0.88, "fpr": 0.07, "f1": 0.89 }
@@ -574,7 +574,7 @@ The inference service is planned in [`../fastapi/plan.md`](../fastapi/plan.md). 
   },
   "is_rejected": false,
   "rejection_reason": "accepted",
-  "model_version": "nli=…-v1;con=…"
+  "model_version": "nli=sentinelagent-nli-3class-v1;con=contrastive-minilm-e4-b16-lr1e-05-mn6-raw-vs0.2"
 }
 ```
 **`GET {INFERENCE_URL}/models`** → the model info in §9.5 (versions, thresholds, metrics).
