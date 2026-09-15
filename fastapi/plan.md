@@ -127,7 +127,7 @@ express-server ──HTTP JSON──▶ fastapi (this service)
   "generated_at": "2026-04-20T00:00:00Z",
   "nli": {
     "base": "cross-encoder/nli-MiniLM2-L6-H768",
-    "model_dir": ".models/sentinelagent_nli_finetuned",   // relative to MODELS_DIR (fastapi/), or an HF id
+    "model_dir": "sentinelagent_nli_finetuned",   // relative to MODELS_DIR (default: fastapi/.models), or an HF id
     "version": "sentinelagent-nli-3class-v1",
     "labels": ["contradiction", "entailment", "neutral"],
     "decision": "p_contradiction > threshold",
@@ -136,7 +136,7 @@ express-server ──HTTP JSON──▶ fastapi (this service)
   },
   "contrastive": {
     "base": "all-MiniLM-L12-v2",
-    "model_dir": ".models/contrastive-miniLM-e4-b16-lr1e-05-mn6-raw-vs0.2",
+    "model_dir": "contrastive-miniLM-e4-b16-lr1e-05-mn6-raw-vs0.2",
     "version": "contrastive-minilm-e4-b16-lr1e-05-mn6-raw-vs0.2",
     "decision": "cosine < threshold",
     "threshold": 0.58,

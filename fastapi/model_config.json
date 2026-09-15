@@ -1,0 +1,31 @@
+{
+  "generated_at": "2026-04-20T00:00:00Z",
+  "notes": [
+    "Model directories are names relative to MODELS_DIR (default: fastapi/.models).",
+    "Thresholds are PLACEHOLDERS. Replace them with the values produced by training:",
+    "  - NLI:        logs/nli_cv_results.json -> recommended_nli_threshold (mean across folds)",
+    "  - Contrastive: logs/contrastive_cv_results.json -> aggregate threshold",
+    "The shipped models were trained with sentence-transformers 5.5.0."
+  ],
+  "nli": {
+    "base": "cross-encoder/nli-MiniLM2-L6-H768",
+    "model_dir": "sentinelagent_nli_finetuned",
+    "version": "sentinelagent-nli-3class-v1",
+    "labels": ["contradiction", "entailment", "neutral"],
+    "activation": "softmax",
+    "decision": "p_contradiction > threshold",
+    "threshold": 0.5,
+    "threshold_source": "placeholder",
+    "metrics": {}
+  },
+  "contrastive": {
+    "base": "all-MiniLM-L12-v2",
+    "model_dir": "contrastive-miniLM-e4-b16-lr1e-05-mn6-raw-vs0.2",
+    "version": "contrastive-minilm-e4-b16-lr1e-05-mn6-raw-vs0.2",
+    "decision": "cosine < threshold",
+    "include_decomposed": false,
+    "threshold": 0.5,
+    "threshold_source": "placeholder",
+    "metrics": {}
+  }
+}

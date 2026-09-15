@@ -8,6 +8,7 @@
 #   pip install -r requirements.txt
 #
 # PyTorch wheels are platform/CUDA-specific, so torch is NOT pinned exactly.
+# torch **>= 2.11** is required (transformers 5.8.1 fails on 2.4.x).
 # If the default wheel is wrong for your machine, install the right build first:
 #   CPU : pip install torch --index-url https://download.pytorch.org/whl/cpu
 #   CUDA: pip install torch --index-url https://download.pytorch.org/whl/cu124
@@ -25,9 +26,12 @@ pydantic-settings==2.15.0
 # checkpoint). sentence-transformers provides CrossEncoder (NLI) and
 # SentenceTransformer (contrastive); huggingface-hub / accelerate arrive
 # transitively.
+#
+# torch must be modern: transformers 5.8.1 calls torch.library.custom_op APIs
+# that torch 2.4.x cannot resolve (verified failing on 2.4.1, working on 2.14.0).
 sentence-transformers==5.5.0
 transformers==5.8.1
-torch>=2.4
+torch>=2.11
 numpy>=1.26,<3
 
 # ── Training only (fastapi/old-training) ────────────────────────────────────
