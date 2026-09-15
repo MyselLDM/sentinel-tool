@@ -2,7 +2,7 @@
 
 > **Status:** Draft for review (nothing here is implemented yet — `server.js` is empty).
 > **Owner:** `express-server`
-> **Scope:** Full backend plan for the Express gateway — architecture, auth, endpoints (API-key issuance, evaluation proxy to FastAPI, logs, stats, thresholds), Supabase persistence, inference integration with a mock mode, security, testing, and build order.
+> **Scope:** Full backend plan for the Express gateway — architecture, auth, endpoints (API-key issuance, evaluation proxy to FastAPI, logs, stats, model info), Supabase persistence, inference integration with a mock mode, security, testing, and build order.
 > **Companion docs:** [`../sentinel-client/plan.md`](../sentinel-client/plan.md) (frontend), [`../Thesis Tool Plan.md`](../Thesis%20Tool%20Plan.md) (product spec).
 
 The Express server is the **single backend gateway** for the NLI Security Gateway. It owns persistence, auth, API-key lifecycle, rate limiting, request logging, and — critically — it **proxies evaluation requests to the FastAPI inference service** (not yet implemented).
@@ -51,7 +51,7 @@ The Express server is the **single backend gateway** for the NLI Security Gatewa
         │           express-server             │   ← THE GATEWAY (this plan)
         │  · console API  (/api/auth,/api/keys │
         │    /api/requests,/api/stats,         │
-        │    /api/thresholds)                  │
+        │    /api/models)                      │
         │  · public API   (/api/evaluate)      │
         │  · auth, rate limit, logging         │
         └───────┬───────────────────────┬──────┘
@@ -65,7 +65,8 @@ The Express server is the **single backend gateway** for the NLI Security Gatewa
      │  · api_keys    │      │  · contrastive model   │
      │  · evaluation_ │      │  (NOT IMPLEMENTED yet) │
      │    requests    │      └────────────────────────┘
-     │  · thresholds  │
+     │  · model_      │
+     │    metrics     │
      └────────────────┘
 ```
 
@@ -73,7 +74,7 @@ The Express server is the **single backend gateway** for the NLI Security Gatewa
 
 | Plane | Who calls it | Auth | Endpoints |
 | --- | --- | --- | --- |
-| **Console plane** | `sentinel-client` (the operator console), acting on behalf of a logged-in user | **JWT bearer** (`Authorization: Bearer <jwt>`) | `/api/auth/*`, `/api/keys/*`, `/api/requests*`, `/api/stats/*`, `/api/thresholds` |
+| **Console plane** | `sentinel-client` (the operator console), acting on behalf of a logged-in user | **JWT bearer** (`Authorization: Bearer <jwt>`) | `/api/auth/*`, `/api/keys/*`, `/api/requests*`, `/api/stats/*`, `/api/models`, `/api/evaluate/preview` |
 | **Data plane** | Third-party agents/SDKs sending subtasks to be verified | **API key** (`Authorization: Bearer sk_...` or `x-api-key`) | `/api/evaluate` |
 
 Keeping these separate is a core design choice: the JWT identifies an **operator**; the API key identifies a **machine client**. Do not let one scheme authenticate the other's routes.
@@ -191,14 +192,14 @@ express-server/
 │  │  ├─ evaluate.routes.js
 │  │  ├─ requests.routes.js
 │  │  ├─ stats.routes.js
-│  │  └─ thresholds.routes.js
+│  │  └─ models.routes.js
 │  ├─ controllers/              # thin: parse → call service → shape response
 │  │  ├─ auth.controller.js
 │  │  ├─ keys.controller.js
 │  │  ├─ evaluate.controller.js
 │  │  ├─ requests.controller.js
 │  │  ├─ stats.controller.js
-│  │  └─ thresholds.controller.js
+│  │  └─ models.controller.js
 │  ├─ services/                 # business logic
 │  │  ├─ auth.service.js
 │  │  ├─ keys.service.js
@@ -206,12 +207,11 @@ express-server/
 │  │  ├─ inference.client.js    # the FastAPI (or mock) client
 │  │  ├─ requests.service.js
 │  │  ├─ stats.service.js
-│  │  └─ thresholds.service.js
+│  │  └─ models.service.js      # model info, proxied from the inference service
 │  ├─ repositories/             # Supabase data access (one per table)
 │  │  ├─ users.repo.js
 │  │  ├─ apiKeys.repo.js
-│  │  ├─ requests.repo.js
-│  │  └─ thresholds.repo.js
+│  │  └─ requests.repo.js
 │  ├─ middleware/
 │  │  ├─ requestId.js
 │  │  ├─ logger.js
@@ -265,7 +265,7 @@ Health endpoints (`/healthz`, `/readyz`) are mounted **before** auth.
 
 ## 7. Data Model (Supabase)
 
-Uses the schema from the spec (see [`../Thesis Tool Plan.md`](../Thesis%20Tool%20Plan.md)): `users`, `api_keys`, `evaluation_requests`, `model_metrics`, `threshold_configs`.
+Uses the schema from the spec (see [`../Thesis Tool Plan.md`](../Thesis%20Tool%20Plan.md)): `users`, `api_keys`, `evaluation_requests`, `model_metrics`. **`threshold_configs` is dropped** — thresholds are training-derived model artifacts, not user settings (see §7.4).
 
 ### 7.1 Required schema change — hash API keys
 
@@ -280,7 +280,7 @@ ALTER TABLE api_keys
 CREATE UNIQUE INDEX idx_api_keys_hash ON api_keys(api_key_hash);
 ```
 
-Everything else in the spec's schema is usable as-is.
+Everything else in the spec's schema is usable as-is except the threshold table (see §7.4).
 
 ### 7.2 Access model
 
@@ -291,6 +291,20 @@ Everything else in the spec's schema is usable as-is.
 
 - **Dashboard stats** (`total`, `rejection_rate`, `avg_response_time_ms`) are computed with aggregate queries over `evaluation_requests` scoped to the user's keys, filtered by an optional time window.
 - **`model_metrics`** is updated either on-write or by a periodic job (**Q8**). v1: update on-write (cheap increments) to avoid a scheduler.
+
+### 7.4 Drop `threshold_configs`; record thresholds per request
+
+Thresholds are **determined by training** (NLI: F1-tuned `p(contradiction)`; contrastive: F1-optimal cosine), so they are not operator-editable and do not belong in a settings table. Consequences:
+
+- **Drop `threshold_configs`.** The source of truth is the committed `model_config.json` (see [`../fastapi/plan.md`](../fastapi/plan.md)).
+- **Keep** `evaluation_requests.nli_threshold` / `contrastive_threshold` — these record **which threshold was used for that request**, which is valuable for auditing (especially if a preview override was applied).
+- **Correct** the `evaluation_requests.nli_raw_scores` comment: the NLI model's label order is `[contradiction, entailment, neutral]`, so store it keyed by label, e.g. `{"contradiction":..,"entailment":..,"neutral":..}` — **not** the spec's positional `[entailment, neutral, contradiction]`.
+
+```sql
+DROP TABLE IF EXISTS threshold_configs;
+-- nli_raw_scores: store as a label-keyed object (contradiction is index 0 in the model)
+COMMENT ON COLUMN evaluation_requests.nli_raw_scores IS '{"contradiction","entailment","neutral"}'; 
+```
 
 ---
 
@@ -346,8 +360,8 @@ All console endpoints require `Authorization: Bearer <console JWT>` unless noted
 | 15 | GET | `/api/requests/export.csv` | JWT | CSV export (same filters). |
 | 16 | GET | `/api/stats/summary` | JWT | Dashboard headline metrics. |
 | 17 | GET | `/api/stats/recent` | JWT | Recent activity feed. |
-| 18 | GET | `/api/thresholds` | JWT | Active thresholds. |
-| 19 | PUT | `/api/thresholds` | JWT | Update thresholds. |
+| 18 | GET | `/api/models` | JWT | Read-only **model info** (versions, trained thresholds, metrics). |
+| 19 | POST | `/api/evaluate/preview` | JWT | Console-plane evaluation **preview** with optional threshold override (not logged). |
 | 20 | GET | `/api/metrics` | JWT | `model_metrics` (optional). |
 | 21 | POST | `/api/evaluate` | **API key** | Verify a subtask (public; §10). |
 
@@ -435,16 +449,36 @@ Validation: `keyName` 1–100 chars; `rateLimitPerMinute` 1–10000; `expiresAt`
 ```
 **`GET /api/stats/recent?limit=10`** → `200 { data: { requests: [ /* same projection as logs list */ ] } }`.
 
-### 9.5 Threshold endpoints
+### 9.5 Model info endpoint (read-only)
 
-**`GET /api/thresholds`** →
+Thresholds and model versions are **training artifacts** (see [`../fastapi/plan.md`](../fastapi/plan.md)), not user settings — so there is **no write path**. Express proxies the inference service's `GET /models` and returns it read-only.
+
+**`GET /api/models`** →
 ```jsonc
 { "data": {
-    "nli":         { "value": 0.65, "default": 0.65, "isActive": true },
-    "contrastive": { "value": 0.70, "default": 0.70, "isActive": true }
+  "source": "model_config.json",
+  "nli": {
+    "base": "cross-encoder/nli-MiniLM2-L6-H768",
+    "version": "sentinelagent-nli-3class-v1",
+    "labels": ["contradiction", "entailment", "neutral"],
+    "decision": "p_contradiction > threshold",
+    "threshold": 0.62,
+    "metrics": { "accuracy": 0.94, "tpr": 0.91, "fpr": 0.06, "f1": 0.92 }
+  },
+  "contrastive": {
+    "base": "all-MiniLM-L12-v2",
+    "version": "contrastive-minilm-…",
+    "decision": "cosine < threshold",
+    "threshold": 0.58,
+    "metrics": { "tpr": 0.88, "fpr": 0.07, "f1": 0.89 }
+  }
 } }
 ```
-**`PUT /api/thresholds`** — `{ "nli": 0.72, "contrastive": 0.66 }` → deactivates prior active rows, inserts new active rows in `threshold_configs` (audit trail via `created_by`, `notes`). Validation: each in `(0,1)`. → `200 { data: { nli, contrastive } }`.
+The console shows this on its **Model info** page (previously "Settings"). If the inference service is unreachable, Express returns the last-known `model_config.json` with `"stale": true` rather than erroring.
+
+### 9.6 Evaluation preview (experimental override)
+
+**`POST /api/evaluate/preview`** (console JWT) — runs the models on an ad-hoc `{ goal, subtask, mode?, nliThreshold?, contrastiveThreshold? }` **without** consuming an API key and **without** writing to `evaluation_requests`. This is the **only** place a threshold override is accepted; the public `/api/evaluate` never accepts one (a tenant must not be able to weaken its own security threshold). Validation: overrides in `(0,1)`.
 
 ---
 
@@ -458,7 +492,7 @@ Validation: `keyName` 1–100 chars; `rateLimitPerMinute` 1–10000; `expiresAt`
 ```jsonc
 { "goal": "summarize a document", "subtask": "read the public API docs", "mode": "standard" }
 ```
-`mode` ∈ `standard` | `detailed` (default `standard`). `goal`/`subtask` required, non-empty, bounded length (e.g. ≤ 2000 chars).
+`mode` ∈ `standard` | `detailed` (default `standard`). `goal`/`subtask` required, non-empty, bounded length (e.g. ≤ 2000 chars). **Threshold overrides are not accepted here** — they exist only on the console-only `/api/evaluate/preview` (§9.6).
 
 - **Response shape:** matches the **spec exactly** (no envelope) so external SDKs are stable.
 
@@ -472,11 +506,11 @@ Validation: `keyName` 1–100 chars; `rateLimitPerMinute` 1–10000; `expiresAt`
   "result": true,
   "date": "2026-01-01T12:00:00.000Z",
   "id": "<requestId>",
-  "nli":         { "score": 0.12, "result": true, "threshold": 0.65 },
-  "contrastive": { "score": 0.81, "result": true, "threshold": 0.70 }
+  "nli":         { "score": 0.12, "result": true, "threshold": 0.62 },
+  "contrastive": { "score": 0.81, "result": true, "threshold": 0.58 }
 }
 ```
-(`result: true` = **accepted**; `nli.result`/`contrastive.result` use the spec's "true = accepted" convention, i.e. inverted from the model's raw reject booleans.)
+(`result: true` = **accepted**; `nli.result`/`contrastive.result` use the spec's "true = accepted" convention, i.e. inverted from the model's raw reject booleans. `nli.score` = probability of **contradiction** (higher = more malicious); `contrastive.score` = cosine similarity (lower = more malicious). `threshold` is the trained value used.)
 
 - **Errors:** `400 VALIDATION_ERROR`, `401 UNAUTHORIZED` (bad/missing key), `403 FORBIDDEN` (inactive/expired), `429 RATE_LIMITED`, `503 INFERENCE_UNAVAILABLE`.
 
@@ -489,20 +523,24 @@ Validation: `keyName` 1–100 chars; `rateLimitPerMinute` 1–10000; `expiresAt`
 1. **Authenticate** — `requireApiKey` resolves `req.apiKey` (id + user_id + rate limit).
 2. **Rate limit** — enforce `rateLimitPerMinute` for that key (§14).
 3. **Validate** — zod: `goal`, `subtask`, `mode`.
-4. **Resolve thresholds** — read active NLI/contrastive thresholds (per-request override allowed later; v1 uses active configs).
-5. **Call inference** — `inference.client.evaluate({ goal, subtask, nliThreshold, contrastiveThreshold })` → FastAPI `/evaluate` (or mock, §12).
-6. **Decide** — `is_rejected = nli_result || contrastive_result`; `rejection_reason` ∈ `nli_reject` | `contrastive_reject` | `both_reject` | `accepted`.
+4. **No threshold resolution in Express** — the inference service applies its configured (trained) thresholds. Express never reads thresholds from the DB.
+5. **Call inference** — `inference.client.evaluate({ goal, subtask })` → FastAPI `/evaluate` (or mock, §12). Overrides are passed **only** by the console-only preview route (§9.6).
+6. **Decide** — `is_rejected = nli.result || contrastive.result`; `rejection_reason` ∈ `nli_reject` | `contrastive_reject` | `both_reject` | `accepted`.
 7. **Log** — insert into `evaluation_requests`: goal, subtask, results, scores, thresholds, raw NLI scores, `request_id`, `api_key_id`, `response_time_ms`, `user_agent`, `model_version`, `evaluation_mode`.
 8. **Respond** — shape per requested `mode` (§10).
 9. **Update metrics** — best-effort increment of `model_metrics` (non-blocking).
 
 > **Timing:** measure `response_time_ms` around step 5 only (inference latency), not the whole request — matches the field's intent.
 
-### 11.1 Decision semantics (from the spec)
+### 11.1 Decision semantics (inferred from the training code)
 
-- NLI: reject when `contradiction_score > nli_threshold` (default 0.65).
-- Contrastive: reject when `cosine_similarity < contrastive_threshold` (default 0.70).
+Inferred from `fastapi/old-training/` (see [`../fastapi/plan.md`](../fastapi/plan.md)):
+
+- **NLI** (`cross-encoder/nli-MiniLM2-L6-H768`, label order `[contradiction, entailment, neutral]`): reject when `p(contradiction) > nli_threshold`; the threshold is **F1-tuned during training** (default from `model_config.json`, e.g. `0.62`).
+- **Contrastive** (`all-MiniLM-L12-v2`, framed `Goal: … Subtask: …` input): reject when `cosine_similarity < contrastive_threshold`; threshold is the **F1-optimal value from training** (e.g. `0.58`).
 - Overall: **reject if EITHER rejects.**
+
+> Thresholds are **training artifacts**, not operator settings — hence the read-only model-info surface (§9.5) replacing the earlier editable thresholds endpoint.
 
 ---
 
@@ -510,7 +548,7 @@ Validation: `keyName` 1–100 chars; `rateLimitPerMinute` 1–10000; `expiresAt`
 
 ### 12.1 Contract (what `fastapi/` must expose)
 
-The inference service is **not implemented**. This plan defines the contract Express depends on; `fastapi/` will implement it.
+The inference service is planned in [`../fastapi/plan.md`](../fastapi/plan.md). Express depends on two routes:
 
 **`POST {INFERENCE_URL}/evaluate`**
 ```jsonc
@@ -518,23 +556,31 @@ The inference service is **not implemented**. This plan defines the contract Exp
 {
   "goal": "summarize a document",
   "subtask": "read the public API docs",
-  "nli_threshold": 0.65,          // optional override
-  "contrastive_threshold": 0.70   // optional override
+  "nli_threshold": 0.62,          // optional; sent only by the console preview route (§9.6)
+  "contrastive_threshold": 0.58   // optional; sent only by the console preview route (§9.6)
 }
 // 200 response
 {
-  "nli_score": 0.12,
-  "nli_result": false,            // true = NLI says REJECT
-  "nli_threshold": 0.65,
-  "nli_raw_scores": { "entailment": 0.85, "neutral": 0.03, "contradiction": 0.12 },
-  "contrastive_score": 0.81,
-  "contrastive_result": false,    // true = contrastive says REJECT
-  "contrastive_threshold": 0.70,
+  "nli": {
+    "score": 0.12,                                     // = p(contradiction)
+    "result": false,                                   // true = NLI says REJECT
+    "threshold": 0.62,
+    "raw_scores": { "contradiction": 0.12, "entailment": 0.85, "neutral": 0.03 }
+  },
+  "contrastive": {
+    "score": 0.81,                                     // = cosine similarity
+    "result": false,                                   // true = contrastive says REJECT
+    "threshold": 0.58
+  },
   "is_rejected": false,
-  "rejection_reason": "accepted"
+  "rejection_reason": "accepted",
+  "model_version": "nli=…-v1;con=…"
 }
 ```
-Also expected: `GET {INFERENCE_URL}/health` → `200 { "status": "ok", "models": ["nli", "contrastive"] }` for `/readyz`.
+**`GET {INFERENCE_URL}/models`** → the model info in §9.5 (versions, thresholds, metrics).
+**`GET {INFERENCE_URL}/health`** → `200 { "status": "ok", "nli_loaded": true, "contrastive_loaded": true }` for `/readyz`.
+
+> **Note (label order):** the NLI output is keyed by label (`contradiction` is index 0), not a positional array — this corrects the spec's `[entailment, neutral, contradiction]` assumption.
 
 ### 12.2 Client (`services/inference.client.js`)
 
@@ -552,9 +598,9 @@ Because `fastapi/` is empty, the client supports a **mock** path so the console 
 
 **Mock algorithm (deterministic, explainable):**
 - Derive a stable pseudo-random value `h = sha256(goal + "|" + subtask)` → `u ∈ [0,1)`.
-- `nli_raw_scores` = split a normalized triple so that `contradiction = u`.
-- `contrastive_score` = a second derived value `v ∈ [0,1)` (e.g. from `sha256(subtask + "|" + goal)`).
-- Apply the same reject thresholds so the decision logic is exercised.
+- `nli.raw_scores` = a normalized triple with `contradiction = u` (the reject-maximizing label at index 0).
+- `contrastive.score` = a second derived value `v ∈ [0,1)` (e.g. from `sha256(subtask + "|" + goal)`).
+- Apply the configured thresholds (from `model_config.json`, or mock defaults) so the decision logic is exercised.
 - `model_version = "mock"` so mock rows are identifiable in logs.
 - Same input ⇒ same output (test-friendly).
 
@@ -618,7 +664,7 @@ Error codes: `VALIDATION_ERROR`(400), `UNAUTHORIZED`(401), `INVALID_CREDENTIALS`
 ## 16. Validation
 
 - Zod schema per resource (`src/schemas/*`). `validate({ body, query, params })` middleware parses and replaces `req.body`/`req.query` with the parsed value, returning `400` with field-level `details` on failure.
-- Constraints: `goal`/`subtask` non-empty ≤ 2000 chars; `mode` enum; `keyName` ≤ 100; `rateLimitPerMinute` 1–10000; thresholds in (0,1); pagination bounds; `from <= to`.
+- Constraints: `goal`/`subtask` non-empty ≤ 2000 chars; `mode` enum; `keyName` ≤ 100; `rateLimitPerMinute` 1–10000; preview threshold overrides in (0,1); pagination bounds; `from <= to`.
 
 ---
 
@@ -668,8 +714,8 @@ Error codes: `VALIDATION_ERROR`(400), `UNAUTHORIZED`(401), `INVALID_CREDENTIALS`
 8. `GET /api/requests` (filters + pagination), `/api/requests/:requestId`, `/api/requests/export.csv`.
 9. `GET /api/stats/summary`, `/api/stats/recent`.
 
-**M6 — Thresholds & metrics**
-10. `GET/PUT /api/thresholds` (+ `threshold_configs` audit rows); `GET /api/metrics`; on-write `model_metrics`.
+**M6 — Model info & metrics**
+10. `GET /api/models` (proxy FastAPI `/models`); `POST /api/evaluate/preview`; `GET /api/metrics`; on-write `model_metrics`.
 
 **M7 — Hardening**
 11. Rate-limit tuning, CORS allowlist, log redaction, `/readyz` dependency checks.
@@ -686,6 +732,7 @@ Error codes: `VALIDATION_ERROR`(400), `UNAUTHORIZED`(401), `INVALID_CREDENTIALS`
 | D1 | Persistence | **Supabase** (Postgres; service-role from the server). Supabase is the DB only — **not** Supabase Auth. |
 | D2 | Console auth | **JWT bearer tokens** (access + refresh), issued by Express, held httpOnly by the Next layer. |
 | D3 | FastAPI integration | Real proxy **+ mock/fallback mode** so the console/SDK can be built before `fastapi/` exists. |
+| D4 | Thresholds | **Training-derived**, exposed **read-only** via `/api/models`; `threshold_configs` dropped; overrides only on the console-only `/api/evaluate/preview`. |
 
 ### Open questions
 
@@ -698,7 +745,8 @@ Error codes: `VALIDATION_ERROR`(400), `UNAUTHORIZED`(401), `INVALID_CREDENTIALS`
 - **Q7 — CSV export scope.** Max rows / streaming vs materialized. *Proposed default: stream with a 50k row cap.*
 - **Q8 — `model_metrics` refresh.** On-write increments vs scheduled job. *Proposed default: on-write.*
 - **Q9 — Admin scope.** Is `is_admin` used (cross-user views) in v1, or single-user only? *Proposed default: single-user only in v1.*
-- **Q10 — Thresholds granularity.** Global only (spec) vs per-API-key overrides. *Proposed default: global, with the schema left open for per-key later.*
+- **Q10 — Thresholds.** *Resolved (D4):* training-derived, read-only; no per-key overrides. Console override is experimental only (preview route).
+- **Q12 — Inference contract sync.** Express must track the FastAPI contract in [`../fastapi/plan.md`](../fastapi/plan.md) (label-keyed raw scores). *Owned by the inference client's zod schema.*
 - **Q11 — CORS origin.** Exact console origin(s) in dev/prod. Needs a value before M1 hardens.
 
 ---
@@ -727,8 +775,8 @@ Error codes: `VALIDATION_ERROR`(400), `UNAUTHORIZED`(401), `INVALID_CREDENTIALS`
 | GET | `/api/requests/export.csv` | JWT | M5 |
 | GET | `/api/stats/summary` | JWT | M5 |
 | GET | `/api/stats/recent` | JWT | M5 |
-| GET | `/api/thresholds` | JWT | M6 |
-| PUT | `/api/thresholds` | JWT | M6 |
+| GET | `/api/models` | JWT | M6 |
+| POST | `/api/evaluate/preview` | JWT | M6 |
 | GET | `/api/metrics` | JWT | M6 |
 
 ### 21.2 Evaluation request/response (end-to-end example)
@@ -745,8 +793,8 @@ curl -X POST http://localhost:3000/api/evaluate \
   "result": false,
   "date": "2026-01-01T12:00:00.000Z",
   "id": "b1f2...e9",
-  "nli":         { "score": 0.91, "result": false, "threshold": 0.65 },
-  "contrastive": { "score": 0.22, "result": false, "threshold": 0.70 }
+  "nli":         { "score": 0.91, "result": false, "threshold": 0.62 },
+  "contrastive": { "score": 0.22, "result": false, "threshold": 0.58 }
 }
 ```
 
@@ -771,6 +819,10 @@ CREATE TABLE refresh_tokens (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX idx_refresh_tokens_user ON refresh_tokens(user_id);
+
+-- §7.4 thresholds are training-derived, not settings
+DROP TABLE IF EXISTS threshold_configs;
+-- nli_raw_scores is stored label-keyed {"contradiction","entailment","neutral"} (contradiction = index 0)
 ```
 
 All other tables come from the spec's schema unchanged.

@@ -32,11 +32,11 @@ This document is the plan for the **`sentinel-client`** React surface of the NLI
 
 A security evaluation service: an agent submits a `goal` + `subtask`, and a **dual-model** verifier decides whether the subtask is aligned with the authorized goal.
 
-- **NLI model** (`cross-encoder/nli-MiniLM2-L6-H768`) → returns `[entailment, neutral, contradiction]`; reject when `contradiction > NLI_THRESHOLD` (default `0.65`).
-- **Contrastive model** (`all-MiniLM-L12-v2`) → cosine similarity `goal ↔ subtask`; reject when `similarity < CONTRASTIVE_THRESHOLD` (default `0.70`).
+- **NLI model** (`cross-encoder/nli-MiniLM2-L6-H768`) → returns **label-keyed** scores `{contradiction, entailment, neutral}` (contradiction = index **0**); reject when `p(contradiction) > nli_threshold` (F1-tuned in training).
+- **Contrastive model** (`all-MiniLM-L12-v2`) → cosine similarity of a framed `"Goal: …. Subtask: …."` pair; reject when `similarity < contrastive_threshold` (F1-optimal from training).
 - **Decision:** REJECT if **either** model rejects (`nli_reject` / `contrastive_reject` / `both_reject`).
 
-The frontend is the **operator console** for that service: authenticate, issue/manage API keys, watch traffic, inspect individual evaluations, and tune thresholds.
+The frontend is the **operator console** for that service: authenticate, issue/manage API keys, watch traffic, inspect individual evaluations, and review the live models.
 
 ### 1.2 What the console must do (from the spec)
 
@@ -46,7 +46,7 @@ After login, five surfaces:
 2. **Dashboard** — summary stats (total requests, rejection rate, avg response time) + recent activity feed (last 10).
 3. **API Key Management** — create (generate + name + rate limit), list with status, deactivate/delete, copy to clipboard.
 4. **Logs Viewer** — table with filters (date range, accepted/rejected, search by request ID), row → detail, export CSV.
-5. **Settings** — NLI threshold slider, contrastive threshold slider, save to DB.
+5. **Model Info** — show live model versions, training-derived thresholds, and metrics (read-only).
 
 ### 1.3 Stack reality vs. the original spec
 
@@ -238,7 +238,7 @@ Full list of the 61 available component classes lives in `node_modules/daisyui/c
 | `/api-keys` | `(app)` | `app/(app)/api-keys/page.tsx` | required | Key CRUD. |
 | `/logs` | `(app)` | `app/(app)/logs/page.tsx` | required | Filterable request table. |
 | `/logs/[requestId]` | `(app)` | `app/(app)/logs/[requestId]/page.tsx` | required | Evaluation detail. |
-| `/settings` | `(app)` | `app/(app)/settings/page.tsx` | required | Threshold tuning. |
+| `/settings` | `(app)` | `app/(app)/settings/page.tsx` | required | Model info (read-only). |
 
 ### 3.2 Route groups
 
@@ -309,18 +309,20 @@ For each page: purpose, layout, daisyUI pieces, data, mutations, and the **loadi
   3. **Table** (`table-zebra table-pin-rows`): time, request ID, result badge, NLI score, contrastive score, response time, mode. Row click → `/logs/[requestId]`.
   4. **Pagination** via `join` + `btn` (`Prev / page x of y / Next`).
 - **Data:** `listRequests(filters, page)` — server-read; filtering/pagination driven by `searchParams` (a Promise in Next 16).
-- **Detail page `/logs/[requestId]`:** `card` with goal/subtask, both models' **ScoreMeter**s (score vs threshold), raw NLI `[entailment, neutral, contradiction]`, rejection reason, metadata (user agent, model version, mode, response time). Raw NLI scores in a mono/`collapse`.
+- **Detail page `/logs/[requestId]`:** `card` with goal/subtask, both models' **ScoreMeter**s (score vs threshold), raw NLI scores keyed by label (`contradiction`/`entailment`/`neutral`), rejection reason, metadata (user agent, model version, mode, response time). Raw NLI scores in a mono/`collapse`.
 - **Export CSV:** route handler (`app/(app)/logs/export/route.ts`) that streams CSV from the same query, honoring current filters.
 - **States:** loading (row skeletons), empty (no matches — suggest widening filters), error; not-found for unknown request ID.
 
-### 4.5 Settings — `/settings`
+### 4.5 Model Info — `/settings`
 
-- **Purpose:** tune the two thresholds that drive decisions.
-- **Layout:** two `card`s (or a `fieldset` each) — **NLI threshold** and **Contrastive threshold**. Each: `range` slider (0–1, step 0.01) + numeric `input` kept in sync, current value shown in mono, a short explainer ("Reject when contradiction > X"), and a **Reset to default** (0.65 / 0.70). A single **Save** button; a history/`timeline` of changes is optional.
-- **Data:** `getThresholds()` (active values from `threshold_configs`).
-- **Mutations:** `saveThresholds` Server Action (writes to `threshold_configs`, revalidates `/settings`).
-- **States:** loading (card skeleton), unchanged (Save disabled), saving (`loading`), success (`toast`/`alert alert-success`), error, validation (0–1 range).
-- **Notes:** clearly mark which values are *default* vs *active*.
+> **Adjusted after reading the training code:** thresholds are **determined by training** (F1-tuned) and are **not user settings**, so this page is **read-only**. See [`../fastapi/plan.md`](../fastapi/plan.md) and [`../express-server/plan.md`](../express-server/plan.md) §9.5.
+
+- **Purpose:** show which models are live and how they decide — not to tune them.
+- **Layout:** two `card`s — **NLI** and **Contrastive** — each showing: base model, version, decision rule (e.g. `p(contradiction) > 0.62`), the trained **threshold** (mono), and training **metrics** (TPR/FPR/F1) as read-only `StatCard`s or a small `table`. An `alert alert-info` explains that thresholds come from training.
+- **Data:** `getModelInfo()` (`GET /api/models`, read-only, proxied from the inference service).
+- **Mutations:** **none.** (The `threshold_configs` write path is dropped; see §5.)
+- **Optional:** an "Evaluate preview" panel (`POST /api/evaluate/preview`) to run an ad-hoc goal/subtask with an experimental **threshold override** without persisting — clearly marked *experimental*.
+- **States:** loading (card skeleton), stale (`alert alert-warning` when the inference service is unreachable and Express returns last-known config), error.
 
 ---
 
@@ -331,7 +333,7 @@ For each page: purpose, layout, daisyUI pieces, data, mutations, and the **loadi
 ### 5.1 Read path (Server Components)
 
 - Pages are async Server Components that call a **typed API client** and render data directly — no client fetch, no waterfall on the client.
-- Data access is centralized in `lib/api/` (one module per resource: `requests.ts`, `keys.ts`, `thresholds.ts`, `stats.ts`), each returning **DTOs** shaped for the UI (not raw backend rows).
+- Data access is centralized in `lib/api/` (one module per resource: `requests.ts`, `keys.ts`, `models.ts`, `stats.ts`), each returning **DTOs** shaped for the UI (not raw backend rows).
 - Wrap slow/independent reads in `<Suspense>` with daisyUI `skeleton` fallbacks; use `loading.tsx` for the route-level default.
 
 ### 5.2 Write path (Server Actions)
@@ -344,12 +346,12 @@ For each page: purpose, layout, daisyUI pieces, data, mutations, and the **loadi
 ### 5.3 Caching & revalidation
 
 - Default reads to no-store-ish freshness for operator data (this is live traffic); use `revalidatePath` after each mutation to refresh affected routes (`/dashboard`, `/logs`, `/api-keys`, `/settings`).
-- If we later want per-segment caching, adopt `revalidateTag` with resource tags (`requests`, `keys`, `thresholds`).
+- If we later want per-segment caching, adopt `revalidateTag` with resource tags (`requests`, `keys`, `models`).
 
 ### 5.4 Validation & types
 
 - **Input validation:** add `zod` (small, ergonomic) for Server Action inputs and URL `searchParams`. *Open question Q4.*
-- **Types:** hand-write `lib/api/types.ts` mirroring the backend contract (goal/subtask, scores, thresholds, statuses). Generate from the backend later if an OpenAPI spec appears.
+- **Types:** hand-write `lib/api/types.ts` mirroring the backend contract (goal/subtask, scores, model info, statuses). Generate from the backend later if an OpenAPI spec appears.
 
 ### 5.5 Config
 
@@ -403,7 +405,7 @@ Thin, typed wrappers over daisyUI (decision D3). Proposed inventory under `compo
 | `Pagination` | `join` + `btn` | URL-driven pager. |
 | `FilterBar` | `join`, `input`, `select` | URL-query filter row. |
 | `ScoreMeter` | `progress`/`radialprogress` | Score vs threshold visualization. |
-| `ThresholdSlider` | `range` + `input` | Paired slider + numeric field. |
+| `ModelInfoCard` | `card` + `stat`/`table` | Read-only model version, decision rule, trained threshold, and metrics. |
 | `CopyField` | `join` + `tooltip` | Masked value + copy button. |
 | `EmptyState` | `hero`/`alert` | Consistent "nothing here" + CTA. |
 | `ConfirmDialog` | `modal` | Destructive-action gate. |
@@ -440,7 +442,7 @@ sentinel-client/
 ├─ components/                       # ＋ shared wrappers (§7)
 │  └─ ui/…
 ├─ lib/
-│  ├─ api/{client,requests,keys,thresholds,stats,types}.ts  # ＋
+│  ├─ api/{client,requests,keys,models,stats,types}.ts  # ＋
 │  ├─ auth/{session,dal}.ts          # ＋
 │  └─ utils/{cn,format,csv}.ts       # ＋
 ├─ proxy.ts                          # ＋ optimistic auth only
@@ -493,7 +495,7 @@ Sequenced so each milestone is independently demoable.
 
 **M4 — Wire the data layer**
 10. `lib/api/*` typed client; convert mocks → real reads.
-11. Server Actions for keys/thresholds; `revalidatePath`; toasts.
+11. Server Actions for keys; `revalidatePath`; toasts. (Model info is read-only.)
 12. Logs CSV export route handler; URL-driven filters/pagination.
 
 **M5 — Polish**
@@ -517,7 +519,7 @@ Sequenced so each milestone is independently demoable.
 ### Open questions
 
 - **Q1 — Auth provider.** Supabase Auth vs custom sessions + our `users` table. Blocks `lib/auth/*` and `proxy.ts` finalization. *Proposed default: custom stateless session cookie (provider-agnostic seam).*
-- **Q2 — Backend contract.** The Express/FastAPI services are empty. We need concrete endpoints/DTOs for `requests`, `keys`, `thresholds`, `stats` before M4. *Proposed default: define the contract in `lib/api/types.ts` and mock against it.*
+- **Q2 — Backend contract.** The Express/FastAPI services are empty. We need concrete endpoints/DTOs for `requests`, `keys`, `models`, `stats` before M4. *Proposed default: define the contract in `lib/api/types.ts` and mock against it.*
 - **Q3 — Data-fetch/client library.** *Resolved:* none (D2). Revisit only if we need heavy client polling.
 - **Q4 — Validation lib.** Add `zod` for Server Action inputs + `searchParams`? *Proposed default: yes.*
 - **Q5 — Multi-theme.** Single `night` for v1, or ship `light` + toggle now? *Proposed default: single theme now, add later.*
@@ -562,10 +564,14 @@ Removed/absent, do **not** use: any `*-bordered` modifier; there is no `paginati
 | NLI model | `primary` | — | "NLI" |
 | Contrastive model | `secondary` | — | "Contrastive" |
 
-### 12.4 Default thresholds (domain constants)
+### 12.4 Thresholds & decision rule (from training, read-only)
 
-- `NLI_THRESHOLD = 0.65` (reject when contradiction > threshold)
-- `CONTRASTIVE_THRESHOLD = 0.70` (reject when similarity < threshold)
-- `DECISION = reject if EITHER rejects`
+Thresholds are **not** constants the console owns — they are produced by training and served read-only via `GET /api/models`:
+
+- NLI: reject when `p(contradiction) > nli_threshold` (label order `[contradiction, entailment, neutral]`; contradiction = index **0**).
+- Contrastive: reject when `cosine_similarity < contrastive_threshold`.
+- `DECISION = reject if EITHER rejects`.
+
+Example trained values (from `model_config.json`): `nli ≈ 0.62`, `contrastive ≈ 0.58`. The console displays the live values; it never hard-codes them.
 
 These are the initial values shown/reset in Settings.
