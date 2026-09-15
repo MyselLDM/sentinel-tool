@@ -563,13 +563,13 @@ The inference service is planned in [`../fastapi/plan.md`](../fastapi/plan.md). 
 {
   "nli": {
     "score": 0.12,                                     // = p(contradiction)
-    "result": false,                                   // true = NLI says REJECT
+    "rejected": false,                                 // true = NLI says REJECT
     "threshold": 0.62,
     "raw_scores": { "contradiction": 0.12, "entailment": 0.85, "neutral": 0.03 }
   },
   "contrastive": {
     "score": 0.81,                                     // = cosine similarity
-    "result": false,                                   // true = contrastive says REJECT
+    "rejected": false,                                 // true = contrastive says REJECT
     "threshold": 0.58
   },
   "is_rejected": false,
@@ -729,14 +729,15 @@ Error codes: `VALIDATION_ERROR`(400), `UNAUTHORIZED`(401), `INVALID_CREDENTIALS`
 
 | # | Decision | Choice |
 | --- | --- | --- |
-| D1 | Persistence | **Supabase** (Postgres; service-role from the server). Supabase is the DB only — **not** Supabase Auth. |
+| D1 | Persistence | **Supabase** (Postgres; service-role from the server) — the target. **Implemented as in-memory for now** behind the `src/store` seam (`createStore()`), so the server runs with no external DB; swap in `createSupabaseStore()` later. |
 | D2 | Console auth | **JWT bearer tokens** (access + refresh), issued by Express, held httpOnly by the Next layer. |
 | D3 | FastAPI integration | Real proxy **+ mock/fallback mode** so the console/SDK can be built before `fastapi/` exists. |
 | D4 | Thresholds | **Training-derived**, exposed **read-only** via `/api/models`; `threshold_configs` dropped; overrides only on the console-only `/api/evaluate/preview`. |
+| D5 | Implementation | **CommonJS JavaScript** (matches the scaffold); default port **4000** (Next.js console owns 3000); passwords via `scrypt`, JWTs via `jsonwebtoken`. |
 
 ### Open questions
 
-- **Q1 — Language.** Keep CommonJS JavaScript (matches scaffold) vs migrate to TypeScript + ESM. *Proposed default: keep CJS JS for now.*
+- **Q1 — Language.** **Resolved:** CommonJS JavaScript (see D5).
 - **Q2 — Refresh-token storage.** DB table vs a `users.token_version` column for revocation. *Proposed default: `refresh_tokens` table.*
 - **Q3 — Rate-limit store.** In-memory (single instance) vs Redis (multi-instance). *Proposed default: in-memory for v1.*
 - **Q4 — Test database.** Shared Supabase test project vs repository doubles. *Proposed default: doubles for unit, a test project for integration.*
