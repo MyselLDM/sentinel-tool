@@ -63,6 +63,15 @@
   --color-line-strong: #cfcfcf;
 }
 
+/*
+ * Diagonal hairline used by the `.bg-hatch` base texture. Deliberately a plain
+ * custom property rather than a `@theme` colour — a `--color-hatch` token would
+ * make Tailwind generate its own `.bg-hatch` utility and collide with ours.
+ */
+:root {
+  --hatch-line: #ededed;
+}
+
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
@@ -99,5 +108,20 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--color-muted);
+  }
+
+  /*
+   * Tiling diagonal hairline — the page base texture. Content that should
+   * stand out (e.g. the main column) paints `bg-paper` on top of it.
+   */
+  .bg-hatch {
+    background-color: var(--color-paper);
+    background-image: repeating-linear-gradient(
+      45deg,
+      var(--hatch-line) 0px,
+      var(--hatch-line) 1px,
+      transparent 1px,
+      transparent 12px
+    );
   }
 }

@@ -57,8 +57,8 @@ export default function Home() {
     <>
       <SiteHeader />
 
-      <main className="flex-1">
-        <div className="mx-auto w-full max-w-6xl border-x border-line">
+      <main className="bg-hatch flex-1">
+        <div className="mx-auto w-full max-w-6xl border-x border-line bg-paper">
           {/* ── Hero ─────────────────────────────────────────────── */}
           <section className="px-6 pb-16 pt-20 md:pb-20 md:pt-28">
             <Eyebrow>NLI Security Gateway</Eyebrow>
