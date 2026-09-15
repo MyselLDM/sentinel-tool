@@ -4,7 +4,7 @@ Operator console + marketing site for the Sentinel NLI Security Gateway.
 Next.js (App Router) · Tailwind CSS v4 · daisyUI.
 
 Design system (see [`plan.md`](./plan.md)): a strictly monochrome, outline-driven
-white theme. Titles are **Instrument Serif**, body **Space Grotesk**, labels and
+white theme. Titles are **DM Serif Display**, body **Space Grotesk**, labels and
 data **Geist Mono**.
 
 ## Configuration

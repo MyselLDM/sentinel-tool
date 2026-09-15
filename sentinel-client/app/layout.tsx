@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Instrument_Serif, Space_Grotesk } from "next/font/google";
+import { DM_Serif_Display, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 
-// Titles — elegant high-contrast serif.
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
+// Titles — display serif with strong contrast.
+const dmSerifDisplay = DM_Serif_Display({
+  variable: "--font-dm-serif-display",
   subsets: ["latin"],
   weight: "400",
   style: ["normal", "italic"],
@@ -35,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${instrumentSerif.variable} ${spaceGrotesk.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${dmSerifDisplay.variable} ${spaceGrotesk.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-paper text-ink">
         {children}

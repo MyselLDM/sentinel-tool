@@ -128,7 +128,7 @@ Token decisions, expressed as the daisyUI variables + Tailwind utilities we stan
 
 | Token | Choice | Notes |
 | --- | --- | --- |
-| **Type — titles** | **Instrument Serif** | `--font-serif`; loaded in `app/layout.tsx` as `--font-instrument-serif`. High-contrast serif for h1/h2 and the wordmark. |
+| **Type — titles** | **DM Serif Display** | `--font-serif`; loaded in `app/layout.tsx` as `--font-dm-serif-display`. Display serif for h1/h2 and the wordmark. |
 | **Type — body / UI** | **Space Grotesk** | `--font-sans` (`--font-space-grotesk`). Clean, geometric sans for body, nav and buttons. |
 | **Type — labels / data** | **Geist Mono** | `--font-mono` (`--font-geist-mono`). Eyebrows, metadata, **IDs, API keys, scores, thresholds, timestamps**. |
 | **Radii** | `0.125rem` (daisyUI `--radius-*`) | Near-square corners; the outline look, not soft cards. |
@@ -487,7 +487,7 @@ Sequenced so each milestone is independently demoable.
 
 **M1 — Foundation** *(landing page + navbar shipped)*
 1. `globals.css`: custom light monochrome `sentinel` theme + `@theme` palette/tokens + `label-mono` utility. ✅
-2. Root `layout.tsx`: Instrument Serif + Space Grotesk + Geist Mono via `next/font`; real `metadata`. ✅
+2. Root `layout.tsx`: DM Serif Display + Space Grotesk + Geist Mono via `next/font`; real `metadata`. ✅
 3. Add `clsx` + `tailwind-merge`; create `lib/utils/cn.ts`.
 4. Build the base wrappers: `Button`, `Card`, `PageHeader`, `StatusBadge`, `EmptyState`.
 
@@ -557,7 +557,7 @@ Sequenced so each milestone is independently demoable.
 }
 
 @theme {
-  --font-serif: var(--font-instrument-serif), Georgia, serif;
+  --font-serif: var(--font-dm-serif-display), Georgia, serif;
   --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --color-paper: #ffffff;
