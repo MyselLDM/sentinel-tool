@@ -1,4 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sentinel Client
+
+Operator console + marketing site for the Sentinel NLI Security Gateway.
+Next.js (App Router) · Tailwind CSS v4 · daisyUI.
+
+Design system (see [`plan.md`](./plan.md)): a strictly monochrome, outline-driven
+white theme. Titles are **Instrument Serif**, body **Space Grotesk**, labels and
+data **Geist Mono**.
+
+## Configuration
+
+The landing-page **playground** posts a goal + subtask to `POST /api/playground`,
+which proxies to the Express gateway **server-side** (no credential reaches the
+browser). Copy `.env.example` to `.env.local` and set:
+
+| Variable | Purpose |
+| --- | --- |
+| `SENTINEL_API_URL` | Base URL of the Express gateway (default `http://localhost:4000`). |
+| `SENTINEL_API_KEY` | API key issued by the gateway — server-side only. |
+
+> Tip: run Express with `SEED_DEMO_API_KEY` set so its seeded key stays stable
+> across restarts.
 
 ## Getting Started
 

@@ -1,5 +1,6 @@
 'use strict';
 
+const env = require('./config/env');
 const { hashPassword } = require('./lib/password');
 const keysService = require('./services/keys.service');
 const logger = require('./lib/logger');
@@ -21,10 +22,13 @@ function seedDemo(store) {
     });
   }
 
-  const { key } = keysService.create(store, user.id, {
-    keyName: 'dev-seed-key',
-    rateLimitPerMinute: 120,
-  });
+  const { key } = keysService.create(
+    store,
+    user.id,
+    { keyName: 'dev-seed-key', rateLimitPerMinute: 120 },
+    // SEED_DEMO_API_KEY pins the value so the console/playground config is stable.
+    env.seedDemoApiKey ? { plaintext: env.seedDemoApiKey } : undefined,
+  );
 
   logger.warn('demo_seed_created', {
     note: 'DEVELOPMENT seed — do not use in production (set SEED_DEMO=false to disable)',

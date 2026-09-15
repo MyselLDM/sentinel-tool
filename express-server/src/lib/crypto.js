@@ -20,12 +20,8 @@ function hashApiKey(plaintext) {
   return crypto.createHash('sha256').update(plaintext).digest('hex');
 }
 
-/**
- * Generate a new API key.
- * Returns { plaintext, prefix, last4, hash } — `plaintext` is shown once only.
- */
-function generateApiKey() {
-  const plaintext = env.apiKeyPrefix + randomBase62(32);
+/** Derive the stored fields (prefix/last4/hash) from a known plaintext. */
+function deriveApiKey(plaintext) {
   return {
     plaintext,
     prefix: plaintext.slice(0, env.apiKeyPrefix.length + 4),
@@ -34,8 +30,16 @@ function generateApiKey() {
   };
 }
 
+/**
+ * Generate a new API key.
+ * Returns { plaintext, prefix, last4, hash } — `plaintext` is shown once only.
+ */
+function generateApiKey() {
+  return deriveApiKey(env.apiKeyPrefix + randomBase62(32));
+}
+
 function uuid() {
   return crypto.randomUUID();
 }
 
-module.exports = { randomBase62, hashApiKey, generateApiKey, uuid };
+module.exports = { randomBase62, hashApiKey, generateApiKey, deriveApiKey, uuid };

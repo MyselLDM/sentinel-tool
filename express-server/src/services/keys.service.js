@@ -1,7 +1,7 @@
 'use strict';
 
 const env = require('../config/env');
-const { generateApiKey } = require('../lib/crypto');
+const { generateApiKey, deriveApiKey } = require('../lib/crypto');
 const { errors } = require('../lib/errors');
 
 /** Public (masked) shape of an API key record — never contains the secret. */
@@ -19,9 +19,13 @@ function publicKey(row) {
   };
 }
 
-/** Create a key. The plaintext secret is returned here exactly once. */
-function create(store, userId, { keyName, rateLimitPerMinute, expiresAt }) {
-  const generated = generateApiKey();
+/**
+ * Create a key. The plaintext secret is returned here exactly once.
+ * Pass `{ plaintext }` to register a caller-supplied key (used by the dev seed
+ * so the value stays stable across restarts).
+ */
+function create(store, userId, { keyName, rateLimitPerMinute, expiresAt }, { plaintext } = {}) {
+  const generated = plaintext ? deriveApiKey(plaintext) : generateApiKey();
   const row = store.apiKeys.create({
     userId,
     keyName,

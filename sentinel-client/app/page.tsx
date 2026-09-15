@@ -1,8 +1,9 @@
-import type { ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
+import { Playground } from "@/components/playground";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ButtonLink } from "@/components/ui/button";
+import { Eyebrow } from "@/components/ui/eyebrow";
 
 const FEATURES = [
   {
@@ -51,15 +52,6 @@ const RESPONSE_SAMPLE = `{
   "contrastive": { "score": -0.478, "threshold": 0.58 }
 }`;
 
-function Eyebrow({ children }: { children: ReactNode }) {
-  return (
-    <p className="label-mono flex items-center gap-2">
-      <span aria-hidden className="block h-1.5 w-1.5 bg-ink" />
-      {children}
-    </p>
-  );
-}
-
 export default function Home() {
   return (
     <>
@@ -83,12 +75,12 @@ export default function Home() {
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
-              <ButtonLink href="/login" size="lg">
-                Get started
+              <ButtonLink href="#playground" size="lg">
+                Try it out
                 <ArrowRight className="h-4 w-4" />
               </ButtonLink>
-              <ButtonLink href="#docs" variant="outline" size="lg">
-                Read the API
+              <ButtonLink href="/login" variant="outline" size="lg">
+                Get started
               </ButtonLink>
             </div>
           </section>
@@ -166,6 +158,9 @@ export default function Home() {
               ))}
             </div>
           </section>
+
+          {/* ── Playground ───────────────────────────────────────── */}
+          <Playground />
 
           {/* ── API / docs ───────────────────────────────────────── */}
           <section

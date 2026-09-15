@@ -63,6 +63,8 @@ const env = {
   rateLimitDefaultPerMinute: toInt(process.env.RATE_LIMIT_DEFAULT_PER_MIN, 60),
 
   seedDemo: toBool(process.env.SEED_DEMO, !isProd),
+  /** When set, the dev seed issues this exact key so it stays stable across restarts. */
+  seedDemoApiKey: process.env.SEED_DEMO_API_KEY || null,
 };
 
 module.exports = env;

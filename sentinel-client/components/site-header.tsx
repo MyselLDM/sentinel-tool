@@ -10,6 +10,7 @@ export type SessionUser = { name: string; email: string };
 const NAV = [
   { href: "#product", label: "Product" },
   { href: "#how", label: "How it works" },
+  { href: "#playground", label: "Playground" },
   { href: "#docs", label: "Docs" },
 ] as const;
 
