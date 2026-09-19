@@ -73,6 +73,14 @@
 }
 
 @layer base {
+  html,
+  body {
+    /* Guard against stray horizontal overflow (long <pre> lines, dynamic mobile
+       viewports). `clip` — not `hidden` — because it does NOT create a scroll
+       container, so the sticky header keeps working. */
+    overflow-x: clip;
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;

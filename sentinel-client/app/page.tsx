@@ -89,13 +89,13 @@ export default function Home() {
 
           {/* ── Request / response ───────────────────────────────── */}
           <Section className="grid md:grid-cols-2">
-            <div className="border-b border-line p-6 md:border-b-0 md:border-r md:p-8">
+            <div className="min-w-0 border-b border-line p-6 md:border-b-0 md:border-r md:p-8">
               <p className="label-mono">Request</p>
               <pre className="mt-4 overflow-x-auto font-mono text-[12.5px] leading-relaxed text-ink-soft">
                 {REQUEST_SAMPLE}
               </pre>
             </div>
-            <div className="p-6 md:p-8">
+            <div className="min-w-0 p-6 md:p-8">
               <p className="label-mono">Response</p>
               <pre className="mt-4 overflow-x-auto font-mono text-[12.5px] leading-relaxed text-ink-soft">
                 {RESPONSE_SAMPLE}
@@ -142,7 +142,9 @@ export default function Home() {
             </div>
 
             <div className="border-t border-line px-6 py-12 md:px-10 md:py-14">
-              <ul className="timeline timeline-vertical md:timeline-horizontal">
+              {/* Horizontal only once the three items genuinely fit — at `md`
+                  the row overflowed the page by ~280px (verified). */}
+              <ul className="timeline timeline-vertical xl:timeline-horizontal">
                 {STEPS.map((step, index) => (
                   <li key={step.title}>
                     {index > 0 && <hr className="bg-line" />}
@@ -174,7 +176,7 @@ export default function Home() {
 
           {/* ── API / docs ───────────────────────────────────────── */}
           <Section id="docs" className="grid md:grid-cols-[1fr_1.2fr]">
-            <div className="border-b border-line p-6 md:border-b-0 md:border-r md:p-8">
+            <div className="min-w-0 border-b border-line p-6 md:border-b-0 md:border-r md:p-8">
               <Eyebrow>API</Eyebrow>
               <h2 className="mt-6 font-serif text-3xl leading-tight tracking-[-0.01em] md:text-4xl">
                 One endpoint, plain JSON.
@@ -191,7 +193,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="p-6 md:p-8">
+            <div className="min-w-0 p-6 md:p-8">
               <div className="border border-line">
                 <div className="flex items-center gap-2 border-b border-line px-4 py-2.5">
                   <span aria-hidden className="block h-2 w-2 border border-line-strong" />

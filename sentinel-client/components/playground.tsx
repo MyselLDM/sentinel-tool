@@ -168,7 +168,7 @@ export function Playground() {
 
       <div className="grid border-t border-line lg:grid-cols-2">
         {/* ── Form ────────────────────────────────────────────── */}
-        <div className="border-b border-line p-6 md:p-8 lg:border-b-0 lg:border-r">
+        <div className="min-w-0 border-b border-line p-6 md:p-8 lg:border-b-0 lg:border-r">
           <div className="space-y-6">
             <label className="block">
               <span className="label-mono">Goal</span>
@@ -251,7 +251,7 @@ export function Playground() {
         </div>
 
         {/* ── Result ──────────────────────────────────────────── */}
-        <div className="p-6 md:p-8">
+        <div className="min-w-0 p-6 md:p-8">
           <span className="label-mono">Result</span>
 
           {status === "idle" && (

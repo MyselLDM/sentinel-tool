@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { DM_Serif_Display, Geist_Mono, Space_Grotesk } from "next/font/google";
-import { MotionProvider } from "@/components/ui/motion-provider";
 import "./globals.css";
 
 // Titles — display serif with strong contrast.
@@ -39,16 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${dmSerifDisplay.variable} ${spaceGrotesk.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-paper text-ink">
-        <MotionProvider>
-          {/* Reveal animations start at opacity 0; without JS, show everything. */}
-          <noscript
-            dangerouslySetInnerHTML={{
-              __html:
-                "<style>[data-reveal]{opacity:1!important;transform:none!important}</style>",
-            }}
-          />
-          {children}
-        </MotionProvider>
+        {children}
       </body>
     </html>
   );
