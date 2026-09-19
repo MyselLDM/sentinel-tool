@@ -391,7 +391,7 @@ Goal: authenticated operators, each scoped to their own keys/logs, with the leas
 
 ### 6.4 Relationship to Supabase
 
-The spec assumes Supabase (Postgres + Auth). Whether the console uses **Supabase Auth** or a **custom session + our own `users` table** depends on the still-empty backend. This plan is written to work with either: the session/DAL seam above is provider-agnostic. **Flagged as Q1.**
+The spec assumed Supabase (Postgres + Auth). Neither is used: the backend is the Express gateway with its own `users` table and JWT auth (now on local SQLite), so the console uses a **custom session + the gateway's JWT pair** as described above. **Q1 resolved.**
 
 ---
 
@@ -525,7 +525,7 @@ Sequenced so each milestone is independently demoable.
 
 ### Open questions
 
-- **Q1 — Auth provider.** Supabase Auth vs custom sessions + our `users` table. Blocks `lib/auth/*` and `proxy.ts` finalization. *Proposed default: custom stateless session cookie (provider-agnostic seam).*
+- **Q1 — Auth provider.** **Resolved:** a custom stateless session cookie — the Express-issued access/refresh JWT pair in an httpOnly cookie (no Supabase Auth). Implemented in `lib/auth/*` + `proxy.ts` + `app/api/auth/refresh/route.ts`.
 - **Q2 — Backend contract.** The Express/FastAPI services are empty. We need concrete endpoints/DTOs for `requests`, `keys`, `models`, `stats` before M4. *Proposed default: define the contract in `lib/api/types.ts` and mock against it.*
 - **Q3 — Data-fetch/client library.** *Resolved:* none (D2). Revisit only if we need heavy client polling.
 - **Q4 — Validation lib.** Add `zod` for Server Action inputs + `searchParams`? *Proposed default: yes.*

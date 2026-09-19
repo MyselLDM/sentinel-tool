@@ -619,10 +619,12 @@ erDiagram
 - [ ] **Thresholds are placeholders (`0.5`).** Merge training output
       (`logs/nli_cv_results.json`, `logs/contrastive_cv_results.json`) into
       `fastapi/model_config.json` → then `nli.metrics` / `contrastive.metrics` populate `/api/models`.
-- [ ] **`/login` does not exist.** The navbar's `Sign in` / `Get started` CTAs point at `/login` and
-      currently 404.
-- [ ] **Console pages are not built.** Only `/` (landing) exists. The Express REST surface for
-      dashboard / API keys / logs / model info is fully implemented and unused by the UI.
+- [x] **`/login` exists** (`app/(auth)/login/page.tsx`) — one surface with **Sign in** / **Create
+      account** tabs, wired end-to-end to `POST /api/auth/{login,register}`; the navbar/footer CTAs
+      (`Sign in` → `/login`, `Get started` → `/login?tab=create`) now resolve.
+- [ ] **Console pages are mostly unbuilt.** Only `/` (landing), `/login` and a placeholder
+      `/dashboard` exist. API keys / logs / model info are not built yet — the Express REST surface
+      for them is fully implemented and unused by the UI.
 
 **Persistence & ops**
 

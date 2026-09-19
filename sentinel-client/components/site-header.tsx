@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronDown, Menu, X } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
+import { signOut } from "@/lib/auth/actions";
 
 export type SessionUser = { name: string; email: string };
 
@@ -122,13 +123,15 @@ export function SiteHeader({ user = null }: { user?: SessionUser | null }) {
                     ))}
                   </div>
                   <div className="border-t border-line py-1">
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="block w-full px-3 py-1.5 text-left text-sm text-muted transition-colors hover:bg-paper-soft hover:text-ink"
-                    >
-                      Sign out
-                    </button>
+                    <form action={signOut}>
+                      <button
+                        type="submit"
+                        role="menuitem"
+                        className="block w-full px-3 py-1.5 text-left text-sm text-muted transition-colors hover:bg-paper-soft hover:text-ink"
+                      >
+                        Sign out
+                      </button>
+                    </form>
                   </div>
                 </div>
               )}
@@ -141,7 +144,7 @@ export function SiteHeader({ user = null }: { user?: SessionUser | null }) {
               >
                 Sign in
               </Link>
-              <ButtonLink href="/login" size="sm">
+              <ButtonLink href="/login?tab=create" size="sm">
                 Get started
               </ButtonLink>
             </>

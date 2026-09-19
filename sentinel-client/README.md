@@ -21,6 +21,45 @@ browser). Copy `.env.example` to `.env.local` and set:
 > Tip: run Express with `SEED_DEMO_API_KEY` set so its seeded key stays stable
 > across restarts.
 
+Authentication also talks to the same gateway (`POST /api/auth/*`), so the
+Express server must be running to sign in or create an account.
+
+## Routes
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Marketing landing page + playground. |
+| `/login` | **Auth surface** — `Sign in` / `Create account` tabs (daisyUI). `?tab=create` opens on create. |
+| `/dashboard` | Protected console placeholder (proves the session end-to-end). |
+
+`/dashboard` (and future `/api-keys`, `/logs`, `/settings`) live under the `(app)`
+route group; `/login` lives under `(auth)`.
+
+## Auth
+
+The console does **not** run its own auth. The gateway issues a short-lived
+access JWT plus a rotating refresh JWT; we keep that pair in one httpOnly,
+`sameSite=lax` cookie — a stateless session the browser never sees:
+
+```
+lib/api/auth.ts     server-side client for POST /api/auth/{login,register,refresh,me,logout}
+lib/auth/config.ts  cookie name/options + base64url session codec (shared with proxy.ts)
+lib/auth/session.ts read/create/delete the session cookie
+lib/auth/dal.ts     getCurrentUser() / verifySession() — the authoritative check
+lib/auth/actions.ts sign-out Server Action
+proxy.ts            optimistic gate: bounce protected routes to /login (no data fetch)
+app/api/auth/refresh/route.ts  rotates the token pair when the access token lapses
+```
+
+- **Sign in / up** are Server Actions (`app/(auth)/login/actions.ts`) that validate
+  input, call the gateway, set the cookie and redirect to `/dashboard`.
+- **The Proxy only checks cookie presence** — the real check is the DAL, which
+  validates against `GET /api/auth/me` next to the data (per Next's auth guide).
+- **Token refresh** happens in a Route Handler: on a lapsed access token the DAL
+  redirects through `/api/auth/refresh`, which rotates the pair (the only place
+  allowed to write the cookie outside a Server Action) and returns the operator
+  to where they were.
+
 ## Getting Started
 
 First, run the development server:

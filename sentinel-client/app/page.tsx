@@ -81,7 +81,7 @@ export default function Home() {
                 Try it out
                 <ArrowRight className="h-4 w-4" />
               </ButtonLink>
-              <ButtonLink href="/login" variant="outline" size="lg">
+              <ButtonLink href="/login?tab=create" variant="outline" size="lg">
                 Get started
               </ButtonLink>
             </div>
@@ -222,7 +222,7 @@ export default function Home() {
               verified before it runs.
             </p>
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-              <ButtonLink href="/login" size="lg">
+              <ButtonLink href="/login?tab=create" size="lg">
                 Get started
                 <ArrowRight className="h-4 w-4" />
               </ButtonLink>
