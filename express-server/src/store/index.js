@@ -1,16 +1,17 @@
 'use strict';
 
-const { createMemoryStore } = require('./memory');
+const env = require('../config/env');
+const { createSqliteStore } = require('./sqlite');
 
 /**
  * Data-store factory.
  *
- * Currently returns the in-memory store. To move to Supabase later, add a
- * `createSupabaseStore()` here and select it based on config — the services are
- * written only against the returned interface.
+ * The gateway persists everything to a local SQLite database (see
+ * `createSqliteStore()` in ./sqlite.js and `env.dbPath`). Pass `filename` to
+ * override the file (e.g. `:memory:` in tests); defaults to `env.dbPath`.
  */
-function createStore() {
-  return createMemoryStore();
+function createStore({ filename } = {}) {
+  return createSqliteStore({ filename: filename || env.dbPath });
 }
 
 module.exports = { createStore };

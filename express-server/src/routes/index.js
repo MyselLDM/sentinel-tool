@@ -10,7 +10,7 @@ const createModelsRoutes = require('./models.routes');
 
 /** Mount every router onto the app. */
 function mountRoutes(app, store) {
-  app.use(createHealthRoutes()); // /healthz, /readyz
+  app.use(createHealthRoutes(store)); // /healthz, /readyz
 
   app.use('/api/auth', createAuthRoutes(store));
   app.use('/api/keys', createKeysRoutes(store));

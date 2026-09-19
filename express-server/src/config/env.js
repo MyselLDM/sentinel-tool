@@ -62,6 +62,14 @@ const env = {
   apiKeyPrefix: process.env.API_KEY_PREFIX || (isProd ? 'sk_live_' : 'sk_test_'),
   rateLimitDefaultPerMinute: toInt(process.env.RATE_LIMIT_DEFAULT_PER_MIN, 60),
 
+  /**
+   * SQLite database file. Defaults to `<express-server>/data/sentinel.db`.
+   * Use `:memory:` for an ephemeral store (tests).
+   */
+  dbPath: process.env.DB_PATH
+    ? process.env.DB_PATH
+    : path.resolve(__dirname, '..', '..', 'data', 'sentinel.db'),
+
   seedDemo: toBool(process.env.SEED_DEMO, !isProd),
   /** When set, the dev seed issues this exact key so it stays stable across restarts. */
   seedDemoApiKey: process.env.SEED_DEMO_API_KEY || null,

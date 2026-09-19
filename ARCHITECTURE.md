@@ -68,7 +68,7 @@ Three deployable pieces:
 2. **Next server → Express**: Bearer API key (server-held).
 3. **Express → FastAPI**: unauthenticated, network-local. FastAPI is assumed reachable only from
    Express (bind to localhost / private network).
-4. **Express → data store**: today an in-process in-memory store; the seam is `src/store/index.js`.
+4. **Express → data store**: a local SQLite database (file-backed, `better-sqlite3`); the seam is `src/store/index.js`.
 
 ---
 
@@ -93,7 +93,7 @@ flowchart LR
     RATE["rate limiters"]
     VAL["zod validate"]
     SVC["services"]
-    STORE[("in-memory store<br/>users · apiKeys · requests<br/>refreshTokens · modelMetrics")]
+    STORE[("SQLite<br/>users · apiKeys · requests<br/>refreshTokens · modelMetrics")]
     INF["inference.client"]
   end
 
@@ -189,7 +189,7 @@ src/
                             requireApiKey, rateLimit (per-key/per-IP/per-user), notFound, errorHandler
   schemas/                  zod: auth, keys, evaluate, requests, stats, common
   services/                 auth · keys · inference.client · evaluation · requests · stats · models
-  store/                    index.js (seam) · memory.js (users, apiKeys, requests, refreshTokens, modelMetrics)
+  store/                    index.js (builds store) · sqlite.js (schema + repos)
   routes/                   auth, keys, evaluate, requests, stats, models, health + index (mounts)
 ```
 
@@ -278,7 +278,7 @@ sequenceDiagram
   autonumber
   participant A as Agent / SDK
   participant E as Express :4000
-  participant S as Store (in-memory)
+  participant S as Store (SQLite)
   participant F as FastAPI :8000
   participant M as Models
 
@@ -435,7 +435,11 @@ deterministic mock scores when `INFERENCE_MOCK` / `INFERENCE_MOCK_FALLBACK` are 
 
 ## 9. Data model
 
-### 9.1 Current — in-memory store (`express-server/src/store/memory.js`)
+### 9.1 Store — local SQLite (`express-server/src/store/sqlite.js`)
+
+Everything below is a JS object shape returned by the store. `createStore()` (in
+`store/index.js`) opens one SQLite file via `better-sqlite3` (synchronous) and
+returns these repositories; `store/sqlite.js` holds the DDL + queries.
 
 ```
 users           { id, email, username, fullName, passwordHash, isActive, isAdmin,
@@ -452,10 +456,19 @@ modelMetrics    { modelType, evaluationCount, rejectionCount, avgScore,
                   avgResponseTimeMs, lastUpdated }
 ```
 
-**Nothing persists across restarts.** Swapping to Supabase means implementing the same method
-surface in `store/index.js` (`createSupabaseStore()`).
+**Everything persists across restarts** in one local SQLite file (`env.dbPath`,
+default `express-server/data/sentinel.db`; WAL mode, foreign keys on). `users.email`
+is `COLLATE NOCASE UNIQUE` and `api_keys.api_key_hash` is unique. The DB file and
+its `-wal`/`-shm` sidecars are git-ignored.
 
-### 9.2 Planned — Postgres schema (from `full_plan.md`, with revisions)
+### 9.2 Relational schema — SQLite (from `full_plan.md`, with revisions)
+
+SQLite is dynamically typed, so the type names below map to storage classes:
+`uuid`/`varchar`/`text`/`char`/`timestamptz` → **TEXT** (ISO-8601 for timestamps),
+`bool` → **INTEGER** `0`/`1` (mapped back to JS booleans by the store), `float` →
+**REAL**, `int` → **INTEGER**, `jsonb` → **TEXT** (JSON string). The `users`,
+`api_keys`, `evaluation_requests`, `refresh_tokens` and `model_metrics` tables are
+confirmed implemented in `store/sqlite.js` (no `threshold_configs`).
 
 ```mermaid
 erDiagram
@@ -557,6 +570,7 @@ erDiagram
 | `INFERENCE_MOCK_FALLBACK` | `false` | Degrade to mock on connection failure |
 | `API_KEY_PREFIX` | `sk_test_`/`sk_live_` | Key prefix |
 | `RATE_LIMIT_DEFAULT_PER_MIN` | `60` | Default per-key limit |
+| `DB_PATH` | `data/sentinel.db` | SQLite file for the whole store; `:memory:` = ephemeral |
 | `SEED_DEMO` | `true` (non-prod) | Seed demo user + key at startup |
 | `SEED_DEMO_API_KEY` | — | Pin the seeded key (stable across restarts) |
 
@@ -588,7 +602,7 @@ erDiagram
 | Frontend | React + Vite + React Router | **Next.js 16 App Router** | Server-side proxy for the playground; file routing |
 | Data fetching | React Query | **RSC + route handlers** (no client data lib) | Fewer moving parts for this scale |
 | Backend split | Express primary, FastAPI "alternative" | **Both**: Express gateway + FastAPI inference | Keeps model runtime isolated, gateway stays I/O |
-| Database | Supabase (Postgres + Auth) | **In-memory store** behind a Supabase seam | Runs with zero external services today |
+| Database | Supabase (Postgres + Auth) | **Local SQLite** (`better-sqlite3`) | Fully local, zero external services, persists across restarts |
 | Console auth | Supabase Auth | **Custom JWT** (access + rotating refresh) | Provider-agnostic; scrypt passwords |
 | API keys | Plaintext column | **sha256 hash + prefix + last4** | Security |
 | Thresholds | `threshold_configs`, user-editable | **Training artifacts, read-only** | Thresholds are F1-tuned during training |
@@ -612,8 +626,8 @@ erDiagram
 
 **Persistence & ops**
 
-- [ ] Replace the in-memory store with Supabase (implement `createSupabaseStore()`; run the revised
-      migration in §9.2).
+- [x] **Local SQLite store** — `store/sqlite.js` (better-sqlite3) persists users, API keys,
+      evaluation logs, refresh tokens and model metrics in one file (§9.1). No Supabase.
 - [ ] Rate limiting is per-instance in-memory (Express and the playground route) — needs a shared
       store for multi-instance.
 - [ ] No deployment artifacts (Dockerfiles / compose / CI).
@@ -650,7 +664,7 @@ A compact, tool-friendly description of the same graph — handy for prompting a
     { "id": "console_api",  "type": "endpoint",  "label": "/api/auth|keys|requests|stats|models|metrics", "host": "express:4000", "auth": "jwt" },
     { "id": "mw",           "type": "middleware","label": "helmet/cors/json/requestId/log/rate-limit/validate", "host": "express:4000" },
     { "id": "services",     "type": "layer",     "label": "services (auth,keys,evaluation,requests,stats,models)", "host": "express:4000" },
-    { "id": "store",        "type": "store",     "label": "in-memory store",            "host": "express:4000" },
+    { "id": "store",        "type": "store",     "label": "SQLite store",               "host": "express:4000" },
     { "id": "inference_cli","type": "client",    "label": "inference.client",           "host": "express:4000" },
     { "id": "eval_api",     "type": "endpoint",  "label": "POST /evaluate",             "host": "fastapi:8000" },
     { "id": "preprocess",   "type": "module",    "label": "preprocess (training-parity)", "host": "fastapi:8000" },

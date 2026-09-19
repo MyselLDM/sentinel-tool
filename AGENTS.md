@@ -52,9 +52,10 @@ the app — the real entry point is `express-server/src/server.js`.
 - **`express-server/src/routes → services → store`** — strict layering. Routes are
   thin; zod validation lives in `middleware/validate.js`; errors are thrown as
   `AppError` and rendered by the single `middleware/errorHandler.js`.
-- **`express-server/src/store/index.js`** — the persistence seam. Today
-  `memory.js` is in-memory (nothing survives restart); a Supabase store implements
-  the same method surface here.
+- **`express-server/src/store/`** — the persistence layer. `sqlite.js` (better-sqlite3)
+  holds the DDL + repositories and backs everything in one local SQLite file
+  (`DB_PATH`, default `express-server/data/sentinel.db`); `index.js` builds the store.
+  Same method surface is what services depend on.
 - **`express-server/src/services/inference.client.js`** — the single place the
   gateway calls FastAPI (5s timeout, 1 retry; can degrade to mock scores).
 - **`fastapi/model_config.json`** — model dirs, label order, and thresholds.

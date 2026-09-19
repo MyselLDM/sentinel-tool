@@ -49,6 +49,7 @@ Key variables (all optional in development — see `.env.example` for the full l
 | `INFERENCE_MOCK` | `false` | `true` = never call FastAPI; synthesize deterministic scores. |
 | `INFERENCE_MOCK_FALLBACK` | `false` | `true` = fall back to mock when a live call fails. |
 | `RATE_LIMIT_DEFAULT_PER_MIN` | `60` | Default per-key limit for `/api/evaluate`. |
+| `DB_PATH` | `data/sentinel.db` | SQLite file backing the whole store (created on first run). `:memory:` = ephemeral. |
 | `SEED_DEMO` | `true` (non-prod) | Seed a demo user + API key at startup and log them. |
 
 `.env` is loaded automatically (no `dotenv` dependency).
@@ -83,8 +84,13 @@ are then invalidated on restart.
 ```
 {"level":"warn","msg":"demo_seed_created","email":"demo@sentinel.local",
  "password":"demo-password-123","apiKey":"sk_test_..."}
-{"level":"info","msg":"server_started","port":4000,"store":"in-memory", ...}
+{"level":"info","msg":"server_started","port":4000,"store":"sqlite",
+ "dbPath":".../express-server/data/sentinel.db", ...}
 ```
+
+The demo seed is idempotent: on later startups an existing `dev-seed-key` is
+reused (log `demo_seed_key_exists`) instead of creating a duplicate. Set
+`SEED_DEMO_API_KEY` to pin the key value; it is then re-logged on every start.
 
 ---
 
@@ -135,7 +141,7 @@ See [`API.md`](./API.md) for every endpoint and its exact response shape.
 ```
 console (Next.js, :3000) ──Bearer JWT──┐
                                         ▼
-                          express-server (:4000)  ──  in-memory store
+                          express-server (:4000)  ──  SQLite (local file)
                                         │
              agents ──API key──▶ /api/evaluate
                                         │
@@ -147,8 +153,10 @@ console (Next.js, :3000) ──Bearer JWT──┐
   **API key** (`sk_test_…` / `sk_live_…`).
 - **Two response shapes:** console endpoints use the `{ data, meta }` /
   `{ error }` envelope; `/api/evaluate` returns the spec's flat shape.
-- **Storage:** currently **in-memory** (nothing persists across restarts).
-  `src/store/index.js` is the seam for swapping in Supabase later.
+- **Storage:** a single **local SQLite database** (`better-sqlite3`, synchronous)
+  holds users, API keys, evaluation logs, refresh tokens and model metrics —
+  everything persists across restarts. `src/store/index.js` builds the store;
+  `src/store/sqlite.js` holds the schema + repositories.
 
 ---
 
@@ -162,7 +170,7 @@ express-server/
 │  ├─ config/env.js            # env loading + validation
 │  ├─ seed.js                  # dev demo user + API key
 │  ├─ lib/                     # errors, crypto, jwt, password, csv, logger
-│  ├─ store/                   # in-memory repository (+ Supabase seam)
+│  ├─ store/                   # SQLite repository (schema + repos)
 │  ├─ middleware/              # requestId, logger, auth, apiKey, rateLimit, validate, ...
 │  ├─ schemas/                 # zod request schemas
 │  ├─ services/                # auth, keys, inference client, evaluation, requests, stats, models

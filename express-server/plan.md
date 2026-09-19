@@ -2,7 +2,7 @@
 
 > **Status:** Draft for review (nothing here is implemented yet — `server.js` is empty).
 > **Owner:** `express-server`
-> **Scope:** Full backend plan for the Express gateway — architecture, auth, endpoints (API-key issuance, evaluation proxy to FastAPI, logs, stats, model info), Supabase persistence, inference integration with a mock mode, security, testing, and build order.
+> **Scope:** Full backend plan for the Express gateway — architecture, auth, endpoints (API-key issuance, evaluation proxy to FastAPI, logs, stats, model info), SQLite persistence, inference integration with a mock mode, security, testing, and build order.
 > **Companion docs:** [`../sentinel-client/plan.md`](../sentinel-client/plan.md) (frontend), [`../Thesis Tool Plan.md`](../Thesis%20Tool%20Plan.md) (product spec).
 
 The Express server is the **single backend gateway** for the NLI Security Gateway. It owns persistence, auth, API-key lifecycle, rate limiting, request logging, and — critically — it **proxies evaluation requests to the FastAPI inference service** (not yet implemented).
@@ -729,7 +729,7 @@ Error codes: `VALIDATION_ERROR`(400), `UNAUTHORIZED`(401), `INVALID_CREDENTIALS`
 
 | # | Decision | Choice |
 | --- | --- | --- |
-| D1 | Persistence | **Supabase** (Postgres; service-role from the server) — the target. **Implemented as in-memory for now** behind the `src/store` seam (`createStore()`), so the server runs with no external DB; swap in `createSupabaseStore()` later. |
+| D1 | Persistence | **Local SQLite** (single file, `better-sqlite3`, synchronous), fully local — no external service. Implemented behind the `src/store` seam (`createStore()` → `store/sqlite.js`); see `../ARCHITECTURE.md` §9.1. *(Supersedes the earlier Supabase/in-memory plan.)* |
 | D2 | Console auth | **JWT bearer tokens** (access + refresh), issued by Express, held httpOnly by the Next layer. |
 | D3 | FastAPI integration | Real proxy **+ mock/fallback mode** so the console/SDK can be built before `fastapi/` exists. |
 | D4 | Thresholds | **Training-derived**, exposed **read-only** via `/api/models`; `threshold_configs` dropped; overrides only on the console-only `/api/evaluate/preview`. |
@@ -740,7 +740,7 @@ Error codes: `VALIDATION_ERROR`(400), `UNAUTHORIZED`(401), `INVALID_CREDENTIALS`
 - **Q1 — Language.** **Resolved:** CommonJS JavaScript (see D5).
 - **Q2 — Refresh-token storage.** DB table vs a `users.token_version` column for revocation. *Proposed default: `refresh_tokens` table.*
 - **Q3 — Rate-limit store.** In-memory (single instance) vs Redis (multi-instance). *Proposed default: in-memory for v1.*
-- **Q4 — Test database.** Shared Supabase test project vs repository doubles. *Proposed default: doubles for unit, a test project for integration.*
+- **Q4 — Test database.** Repository doubles vs a throwaway SQLite file (`DB_PATH=:memory:` or a temp file). *Proposed default: doubles for unit, a temp SQLite file for integration.*
 - **Q5 — Key hashing.** Plain `sha256` vs `hmac` with a server pepper. *Proposed default: `sha256` now, pepper later.*
 - **Q6 — Key deletion.** Hard delete vs soft (`is_active=false`). *Proposed default: soft-delete (keeps log FK history).*
 - **Q7 — CSV export scope.** Max rows / streaming vs materialized. *Proposed default: stream with a 50k row cap.*

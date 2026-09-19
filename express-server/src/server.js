@@ -21,7 +21,8 @@ function main() {
       corsOrigins: env.corsOrigins,
       inferenceUrl: env.inferenceUrl,
       inferenceMock: env.inferenceMock,
-      store: 'in-memory',
+      store: 'sqlite',
+      dbPath: store.filename,
     });
     if (env.ephemeralSecret) {
       logger.warn('jwt_secret_ephemeral', {
@@ -32,7 +33,10 @@ function main() {
 
   const shutdown = (signal) => {
     logger.info('shutting_down', { signal });
-    server.close(() => process.exit(0));
+    server.close(() => {
+      store.close();
+      process.exit(0);
+    });
   };
 
   process.on('SIGINT', () => shutdown('SIGINT'));
