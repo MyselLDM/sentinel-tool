@@ -622,9 +622,10 @@ erDiagram
 - [x] **`/login` exists** (`app/(auth)/login/page.tsx`) — one surface with **Sign in** / **Create
       account** tabs, wired end-to-end to `POST /api/auth/{login,register}`; the navbar/footer CTAs
       (`Sign in` → `/login`, `Get started` → `/login?tab=create`) now resolve.
-- [ ] **Console pages are mostly unbuilt.** Only `/` (landing), `/login` and a placeholder
-      `/dashboard` exist. API keys / logs / model info are not built yet — the Express REST surface
-      for them is fully implemented and unused by the UI.
+- [ ] **Console pages are routed but mostly unbuilt.** `(app)` now has a sidebar console shell
+      (`components/console/`) covering `/dashboard`, `/api-keys`, `/logs`, `/settings`; only
+      `/dashboard` has content — the other three are placeholders. The Express REST surface behind
+      them is fully implemented and still unused by the UI.
 
 **Persistence & ops**
 

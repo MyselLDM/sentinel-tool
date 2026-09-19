@@ -30,10 +30,19 @@ Express server must be running to sign in or create an account.
 | --- | --- |
 | `/` | Marketing landing page + playground. |
 | `/login` | **Auth surface** — `Sign in` / `Create account` tabs (daisyUI). `?tab=create` opens on create. |
-| `/dashboard` | Protected console placeholder (proves the session end-to-end). |
+| `/dashboard` | Console home. |
+| `/api-keys` | Console: API keys. |
+| `/logs` | Console: evaluation logs. |
+| `/settings` | Console: model info. |
 
-`/dashboard` (and future `/api-keys`, `/logs`, `/settings`) live under the `(app)`
-route group; `/login` lives under `(auth)`.
+`/dashboard`, `/api-keys`, `/logs` and `/settings` live under the `(app)` route
+group and share the **console shell** (`components/console/console-shell.tsx`):
+a daisyUI `drawer` with a navigation sidebar (persistent on `lg+`, off-canvas on
+mobile) plus a topbar breadcrumb. The sidebar footer holds the account block and
+sign-out. `/login` lives under `(auth)`.
+
+The three non-dashboard console routes are **routed placeholders** for now — the
+gateway endpoints behind them are already live.
 
 ## Auth
 

@@ -46,8 +46,10 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Run on everything except API routes and static assets.
+  // Run on everything except API routes and static assets. NOTE: exclude `api`
+  // as a whole path segment (`api/`) — a bare `api` prefix would also exclude
+  // the `/api-keys` console route.
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpe?g|svg|ico|webp|woff2?|txt|xml)$).*)",
+    "/((?!api/|api$|_next/static|_next/image|favicon.ico|.*\\.(?:png|jpe?g|svg|ico|webp|woff2?|txt|xml)$).*)",
   ],
 };

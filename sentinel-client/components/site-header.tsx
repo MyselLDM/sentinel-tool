@@ -1,12 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
-import { signOut } from "@/lib/auth/actions";
-
-export type SessionUser = { name: string; email: string };
 
 const NAV = [
   { href: "#product", label: "Product" },
@@ -15,45 +12,12 @@ const NAV = [
   { href: "#docs", label: "Docs" },
 ] as const;
 
-const ACCOUNT_LINKS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/api-keys", label: "API keys" },
-  { href: "/logs", label: "Logs" },
-  { href: "/settings", label: "Model info" },
-] as const;
-
-function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .map((part) => part[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
-
-export function SiteHeader({ user = null }: { user?: SessionUser | null }) {
+/**
+ * Marketing-site header for the public pages. The authenticated console has its
+ * own chrome (sidebar + topbar) — see `components/console/console-shell.tsx`.
+ */
+export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const onPointerDown = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [menuOpen]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-paper/85 backdrop-blur-md">
@@ -81,74 +45,15 @@ export function SiteHeader({ user = null }: { user?: SessionUser | null }) {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          {user ? (
-            <div className="relative" ref={menuRef}>
-              <button
-                type="button"
-                onClick={() => setMenuOpen((open) => !open)}
-                aria-haspopup="menu"
-                aria-expanded={menuOpen}
-                className="flex h-9 items-center gap-2 border border-line-strong pl-1 pr-2.5 text-sm transition-colors hover:border-ink"
-              >
-                <span className="flex h-7 w-7 items-center justify-center bg-ink font-mono text-[11px] text-paper">
-                  {initials(user.name) || "S"}
-                </span>
-                <span className="hidden max-w-[10rem] truncate sm:inline">
-                  {user.name}
-                </span>
-                <ChevronDown className="h-3.5 w-3.5 text-muted" />
-              </button>
-
-              {menuOpen && (
-                <div
-                  role="menu"
-                  className="absolute right-0 mt-2 w-56 border border-line bg-paper"
-                >
-                  <div className="border-b border-line px-3 py-2.5">
-                    <p className="truncate text-sm font-medium">{user.name}</p>
-                    <p className="truncate font-mono text-[11px] text-muted">
-                      {user.email}
-                    </p>
-                  </div>
-                  <div className="py-1">
-                    {ACCOUNT_LINKS.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        role="menuitem"
-                        className="block px-3 py-1.5 text-sm text-ink-soft transition-colors hover:bg-paper-soft hover:text-ink"
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
-                  <div className="border-t border-line py-1">
-                    <form action={signOut}>
-                      <button
-                        type="submit"
-                        role="menuitem"
-                        className="block w-full px-3 py-1.5 text-left text-sm text-muted transition-colors hover:bg-paper-soft hover:text-ink"
-                      >
-                        Sign out
-                      </button>
-                    </form>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
-              <Link
-                href="/login"
-                className="hidden text-sm text-muted transition-colors hover:text-ink sm:inline"
-              >
-                Sign in
-              </Link>
-              <ButtonLink href="/login?tab=create" size="sm">
-                Get started
-              </ButtonLink>
-            </>
-          )}
+          <Link
+            href="/login"
+            className="hidden text-sm text-muted transition-colors hover:text-ink sm:inline"
+          >
+            Sign in
+          </Link>
+          <ButtonLink href="/login?tab=create" size="sm">
+            Get started
+          </ButtonLink>
 
           {/* Mobile toggle */}
           <button
@@ -177,15 +82,13 @@ export function SiteHeader({ user = null }: { user?: SessionUser | null }) {
                 {item.label}
               </Link>
             ))}
-            {!user && (
-              <Link
-                href="/login"
-                onClick={() => setMobileOpen(false)}
-                className="py-3 text-sm text-muted"
-              >
-                Sign in
-              </Link>
-            )}
+            <Link
+              href="/login"
+              onClick={() => setMobileOpen(false)}
+              className="py-3 text-sm text-muted"
+            >
+              Sign in
+            </Link>
           </nav>
         </div>
       )}
