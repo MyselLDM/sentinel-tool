@@ -6,10 +6,10 @@ import { Menu, X } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 
 const NAV = [
-  { href: "#product", label: "Product" },
-  { href: "#how", label: "How it works" },
-  { href: "#playground", label: "Playground" },
-  { href: "#docs", label: "Docs" },
+  { href: "/#product", label: "Product" },
+  { href: "/#how", label: "How it works" },
+  { href: "/#playground", label: "Playground" },
+  { href: "/#docs", label: "API" },
 ] as const;
 
 /**
@@ -45,6 +45,12 @@ export function SiteHeader() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          <Link
+            href="/docs"
+            className="hidden text-sm text-muted transition-colors hover:text-ink sm:inline"
+          >
+            Docs
+          </Link>
           <Link
             href="/login"
             className="hidden text-sm text-muted transition-colors hover:text-ink sm:inline"
@@ -82,6 +88,13 @@ export function SiteHeader() {
                 {item.label}
               </Link>
             ))}
+            <Link
+              href="/docs"
+              onClick={() => setMobileOpen(false)}
+              className="border-b border-line py-3 text-sm text-ink-soft"
+            >
+              Docs
+            </Link>
             <Link
               href="/login"
               onClick={() => setMobileOpen(false)}

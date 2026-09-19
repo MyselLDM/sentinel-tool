@@ -4,9 +4,9 @@ const COLUMNS = [
   {
     title: "Product",
     links: [
-      { href: "#product", label: "Overview" },
-      { href: "#how", label: "How it works" },
-      { href: "#docs", label: "API reference" },
+      { href: "/#product", label: "Overview" },
+      { href: "/#how", label: "How it works" },
+      { href: "/#playground", label: "Playground" },
     ],
   },
   {
@@ -20,9 +20,9 @@ const COLUMNS = [
   {
     title: "Resources",
     links: [
+      { href: "/docs", label: "Documentation" },
       { href: "/logs", label: "Logs" },
       { href: "/settings", label: "Model info" },
-      { href: "/docs", label: "Documentation" },
     ],
   },
 ] as const;

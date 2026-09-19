@@ -29,6 +29,7 @@ Express server must be running to sign in or create an account.
 | Route | Purpose |
 | --- | --- |
 | `/` | Marketing landing page + playground. |
+| `/docs` | **API reference + tutorials** (public). Content lives in `lib/docs/api-reference.ts`. |
 | `/login` | **Auth surface** — `Sign in` / `Create account` tabs (daisyUI). `?tab=create` opens on create. |
 | `/dashboard` | Console home. |
 | `/api-keys` | Console: API keys. |

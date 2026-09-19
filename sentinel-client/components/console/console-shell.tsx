@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Menu } from "lucide-react";
+import { BookOpen, LogOut, Menu } from "lucide-react";
 
 import { signOut } from "@/lib/auth/actions";
 import { cn } from "@/lib/cn";
@@ -81,6 +81,13 @@ export function ConsoleShell({ user, children }: { user: ConsoleUser; children: 
                 </li>
               </ol>
             </nav>
+
+            <Link
+              href="/docs"
+              className="ml-auto text-sm text-muted transition-colors hover:text-ink"
+            >
+              Docs
+            </Link>
           </div>
         </header>
 
@@ -118,6 +125,18 @@ export function ConsoleShell({ user, children }: { user: ConsoleUser; children: 
               })}
             </ul>
           </nav>
+
+          {/* Bottom of the sidebar: docs, then the account block. */}
+          <div className="border-t border-line p-3">
+            <ul className="menu w-full">
+              <li>
+                <Link href="/docs" className="gap-2.5 text-muted">
+                  <BookOpen className="h-4 w-4" />
+                  Documentation
+                </Link>
+              </li>
+            </ul>
+          </div>
 
           <div className="border-t border-line p-3">
             <div className="flex items-center gap-2.5 px-2 py-1.5">

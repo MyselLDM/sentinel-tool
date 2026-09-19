@@ -265,6 +265,11 @@ Full request/response shapes: [`express-server/API.md`](./express-server/API.md)
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/` | Landing page (static) |
+| GET | `/docs` | **Public API reference + tutorials** (`app/docs`) |
+| GET | `/login` | Auth surface — sign in / create account (`(auth)` group) |
+| GET | `/dashboard` | Console home (`(app)` group; session required) |
+| GET | `/api-keys` · `/logs` · `/settings` | Console routes (`(app)` group; placeholders) |
+| GET | `/api/auth/refresh` | Rotates the session token pair (Route Handler) |
 | POST | `/api/playground` | Public playground proxy → Express `/api/evaluate` |
 
 ---
