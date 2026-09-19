@@ -16,9 +16,6 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
         {children}
 
-        <p className="mt-6 text-center font-mono text-[11px] tracking-wider text-muted">
-          NLI + CONTRASTIVE · MINILM
-        </p>
       </div>
     </main>
   );
