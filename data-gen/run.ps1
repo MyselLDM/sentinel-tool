@@ -189,6 +189,11 @@ while ($pass -lt $MaxPasses) {
 
   # Tee-Object writes UTF-16LE on Windows PowerShell 5.1 and mangles the
   # progress glyphs, so stream to the log ourselves as UTF-8 (no BOM).
+  # A stderr line from python becomes a NativeCommandError, and under
+  # $ErrorActionPreference = 'Stop' that aborts the ENTIRE run - which is what
+  # killed a job the moment an item was dropped. Relax it for the duration of
+  # the call so nothing the model server or prompt.py prints can stop the job.
+  $ErrorActionPreference = 'Continue'
   $utf8 = [System.Text.UTF8Encoding]::new($false)
   $writer = [System.IO.StreamWriter]::new($LogPath, $true, $utf8)
   $writer.AutoFlush = $true
@@ -199,6 +204,7 @@ while ($pass -lt $MaxPasses) {
     }
   } finally {
     $writer.Dispose()
+    $ErrorActionPreference = 'Stop'
   }
   if ($LASTEXITCODE -ne 0) {
     Write-Warning "prompt.py exited with code $LASTEXITCODE (progress is saved; re-run to continue)."

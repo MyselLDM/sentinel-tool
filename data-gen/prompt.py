@@ -773,6 +773,16 @@ class Generator:
                     max(int(r.get("data_number", 0)) for r in self.triplets) + 1
                 )
             print(f"↻ resume: {len(self.triplets)} triplets already on disk")
+            stale = [
+                r for r in self.triplets if int(r.get("schema", 1)) < SCHEMA_VERSION
+            ]
+            if stale:
+                print(
+                    f"WARNING  {len(stale)} records predate schema {SCHEMA_VERSION} and "
+                    "use the old policy IDs.\n"
+                    "         Run `python prompt.py --prune` first - otherwise cells "
+                    "will be skipped or mislabelled."
+                )
         else:
             # Fresh run — start clean so numbering and keys are deterministic.
             for path in (self.positives_path, self.triplets_path, self.aggregate_path):
@@ -970,14 +980,16 @@ class Generator:
         return None
 
     def report_drop(self, what: str, detail: str) -> None:
-        """A work item exhausted its retries. Loud, on stderr, so it survives any
-        log filtering and is impossible to miss in a long run."""
+        """A work item exhausted its retries.
+
+        Written to STDOUT deliberately: the runner merges stdout and stderr into
+        one log, and a stderr line becomes a PowerShell NativeCommandError which
+        - under $ErrorActionPreference = 'Stop' - aborts the whole run.
+        """
         print(
             f"\nERROR  dropped after {self.args.retries} attempts — {what}\n"
             f"       reasons: {detail}\n"
-            f"       not written; re-run to retry it (--resume)\n",
-            file=sys.stderr,
-            flush=True,
+            f"       not written; re-run to retry it (--resume)\n"
         )
 
     # ── runs ────────────────────────────────────────────────────────────────
