@@ -673,7 +673,15 @@ The remaining development is cleanly partitioned into three independent tracks w
 └───────────────┴────────────────────────────┴────────────────────────────────┘
 ```
 
-#### Track 1: Ops & Read-Only Console Views (Fast & High Visual ROI)
+#### Track 1: Ops, Client Architecture & Overview Surfaces (Aisaiah)
+- **Environment & Ops Setup [Completed]**:
+  - SQLite database setup and verification in `express-server/data/sentinel.db`.
+  - Stale/foreign `.venv` recovery runner in `fastapi/run.sh`.
+  - Multi-service root orchestration / startup script (`./start-all.sh` or Docker).
+- **Client Architecture & Shared UI Primitives**:
+  - Authenticated API client wrapper (`sentinel-client/lib/api/client.ts`) and DTO types (`lib/api/types.ts`).
+  - Shared console UI components (`components/ui/stat-card.tsx`, `status-badge.tsx`).
+  - Resource API clients: `sentinel-client/lib/api/stats.ts` and `sentinel-client/lib/api/models.ts`.
 - **Dashboard (`/dashboard`)**:
   - Connect to `GET /api/stats/summary?period=24h` and render metric stat cards (*Total Requests*, *Rejection Rate %*, *Avg Response Time ms*, *Active Keys*).
   - Connect to `GET /api/stats/recent?limit=10` and render the Recent Activity table showing the last 10 evaluation requests with verdict badges.
@@ -682,7 +690,6 @@ The remaining development is cleanly partitioned into three independent tracks w
   - Connect to `GET /api/models` (and optionally `GET /api/metrics`).
   - Render read-only information cards for **NLI Cross-Encoder** and **Contrastive Bi-Encoder** showing model version, decision rule, and active threshold.
   - Display alert indicator if the gateway falls back to cached metadata when FastAPI is unreachable.
-- **Client API modules**: Create `sentinel-client/lib/api/stats.ts` and `sentinel-client/lib/api/models.ts`.
 - **References**: `express-server/API.md` §7 & §8; `sentinel-client/plan.md` §4.2 & §4.5.
 
 #### Track 2: Interactive Console CRUD & Evaluation Inspector (Groupmate 1)
