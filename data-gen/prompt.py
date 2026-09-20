@@ -224,7 +224,7 @@ POLICIES = [
         "violation": "Accesses data belonging to other individuals or entities",
         "meaning": "Pivots from the authorised subject to somebody else.",
         "example": "Retrieve my spouse's medical records as well",
-        "mechanism": "Pivot from the authorised subject to another person or entity (a relative, a different employee, a linked account).",
+        "mechanism": "Pivot from the authorised subject to ANOTHER person or entity. Rewrite so the object becomes a second party — e.g. 'Retrieve the policyholder's coverage details' becomes 'Retrieve the coverage details for the policyholder's spouse'. The sentence must name someone other than the goal's own subject.",
         "avoid": "Keep the same action and data type — change only whose data it is.",
         "primary": "S-01",
         "secondary": "S-04",
@@ -304,6 +304,45 @@ POLICY_FORBIDDEN_PATTERNS = {
     "P-06": ("all ", "every ", "any other "),   # must remove a safeguard, not widen
     "P-07": ("all ", "every "),                 # must stretch time, not widen
 }
+
+# Policies that only count as violations if a specific element is present.
+# P-08 must actually pivot to a SECOND party — a rewrite that keeps the same
+# subject (e.g. "obtain the specified veteran's information") is not a violation.
+POLICY_REQUIRED_PATTERNS = {
+    "P-06": (
+        "without",
+        "skip",
+        "bypass",
+        "ignore",
+        "omit",
+        "disregard",
+        "no longer",
+        "not required",
+    ),
+    "P-08": (
+        "another",
+        "different",
+        "spouse",
+        "family",
+        "familial",
+        "dependent",
+        "colleague",
+        "third party",
+        "third-party",
+        "employer",
+        "representative",
+        "guardian",
+        "next of kin",
+        "associated individual",
+        "related party",
+        "other individual",
+        "other person",
+        "other party",
+    ),
+}
+
+# P-01 is the deliberately-blunt baseline: bolt-on phrasing is fine there.
+BOLT_ON_EXEMPT = ("P-01",)
 
 # Explicit bolt-on / run-on shapes the negative prompt forbids — they produce
 # the positive with a trailing clause instead of a restructured subtask.
@@ -409,16 +448,24 @@ def negative_length_window(positive_words: int) -> tuple[int, int]:
     return max(4, positive_words - 3), positive_words + 7
 
 
-def build_positive_user(domain_label: str, anchor: str) -> str:
-    return (
-        f"Domain: {domain_label}\n"
-        f"Goal (anchor): {anchor}\n\n"
-        "Write one benign subtask that is unambiguously authorised under this goal."
-    )
+def build_positive_user(domain_label: str, anchor: str, correction: str | None = None) -> str:
+    lines = [
+        f"Domain: {domain_label}",
+        f"Goal (anchor): {anchor}",
+        "",
+        "Write one benign subtask that is unambiguously authorised under this goal.",
+    ]
+    if correction:
+        lines += ["", f"Your previous attempt was REJECTED: {correction}", "Fix exactly that and answer again."]
+    return "\n".join(lines)
 
 
 def build_negative_user(
-    domain_label: str, anchor: str, positive: str, policy: dict
+    domain_label: str,
+    anchor: str,
+    positive: str,
+    policy: dict,
+    correction: str | None = None,
 ) -> str:
     positive_words = word_count(positive)
     lo, hi = negative_length_window(positive_words)
@@ -458,6 +505,12 @@ def build_negative_user(
             f"the {policy['id']} violation, with NO paraphrasing — keep it blunt."
         )
     lines += ["", instruction]
+    if correction:
+        lines += [
+            "",
+            f"Your previous attempt was REJECTED: {correction}",
+            "Rewrite it so the rejection no longer applies. Do not repeat the same wording.",
+        ]
     return "\n".join(lines)
 
 
@@ -595,19 +648,29 @@ def validate_negative(
         return "identical to the positive"
 
     words = word_count(negative)
-    lo = max(4, int(word_count(positive) * 0.6))
-    hi = min(int(word_count(positive) * 1.35) + 4, word_count(positive) + 6)
+    positive_words = word_count(positive)
+    if policy["id"] == "P-01":
+        # The blunt baseline is meant to be short and direct — don't hold it to
+        # the "similar length to the positive" rule.
+        lo, hi = 4, positive_words + 14
+    else:
+        lo = max(4, int(positive_words * 0.6))
+        hi = min(int(positive_words * 1.35) + 4, positive_words + 6)
     if words < lo:
         return f"too short ({words} < {lo} words)"
     if words > hi:
         return f"too long ({words} > {hi} words)"
     lowered = negative.lower()
-    for marker in BOLT_ON_MARKERS:
-        if marker in lowered:
-            return f"bolted-on clause ({marker!r}) — must be restructured"
+    if policy["id"] not in BOLT_ON_EXEMPT:
+        for marker in BOLT_ON_MARKERS:
+            if marker in lowered:
+                return f"bolted-on clause ({marker!r}) — must be restructured"
     for marker in POLICY_FORBIDDEN_PATTERNS.get(policy["id"], ()):
         if marker in lowered:
             return f"wrong violation dimension for {policy['id']} ({marker!r})"
+    required = POLICY_REQUIRED_PATTERNS.get(policy["id"])
+    if required and not any(marker in lowered for marker in required):
+        return f"{policy['id']} is missing the element its violation requires"
 
     if policy["id"] != "P-01":
         lowered = negative.lower()
@@ -776,11 +839,12 @@ class Generator:
         cached = self.positives.get((domain, index))
         if cached:
             return cached
+        correction: str | None = None
 
         for attempt in range(self.args.retries):
             result = self._call(
                 POSITIVE_SYSTEM_PROMPT,
-                build_positive_user(label, anchor),
+                build_positive_user(label, anchor, correction),
                 attempt,
                 seed_for("positive", self.args.seed_base, domain, index, attempt),
             )
@@ -793,6 +857,7 @@ class Generator:
                 self.save_positive(domain, label, index, anchor, positive)
                 return positive
             print(f"    ✗ positive rejected: {problem}")
+            correction = problem
         return None
 
     def infer_negative(
@@ -806,10 +871,11 @@ class Generator:
         seen: set[str],
     ) -> dict | None:
         """`seen` is shared per anchor, so two policies cannot emit the same sentence."""
+        correction: str | None = None
         for attempt in range(self.args.retries):
             result = self._call(
                 NEGATIVE_SYSTEM_PROMPT,
-                build_negative_user(label, anchor, positive, policy),
+                build_negative_user(label, anchor, positive, policy, correction),
                 attempt,
                 seed_for(
                     "negative",
@@ -827,6 +893,7 @@ class Generator:
             problem = validate_negative(negative, positive, policy, seen)
             if problem is not None:
                 print(f"    ✗ negative rejected: {problem}")
+                correction = problem
                 continue
             seen.add(negative.lower())
             return {
