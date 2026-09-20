@@ -68,18 +68,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import anchors as anchor_data  # noqa: E402  (data-gen/anchors.py)
 
 
-def _use_utf8_output() -> None:
+def _configure_output() -> None:
     """Windows consoles default to cp1252, which cannot encode the progress
     glyphs used below (→ ✗ ✓ ═ …) and would crash a long run midway. Force
-    UTF-8, replacing rather than raising if a character cannot be rendered."""
+    UTF-8, replacing rather than raising if a character cannot be rendered.
+
+    Line buffering matters too: when stdout is a pipe it is block-buffered, so
+    progress would only appear in bursts. This makes every print visible the
+    moment it happens.
+    """
     for stream in (sys.stdout, sys.stderr):
         try:
-            stream.reconfigure(encoding="utf-8", errors="replace")
+            stream.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
         except (AttributeError, OSError, ValueError):
             pass
 
 
-_use_utf8_output()
+_configure_output()
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG
@@ -93,7 +98,7 @@ DEFAULT_MODEL = os.environ.get("SENTINEL_LLM_MODEL", "qwen2.5-14b-instruct")
 MAX_TOKENS = 512
 DEFAULT_TEMPERATURE = 0.7
 DEFAULT_SLEEP = 0.3          # seconds between calls
-DEFAULT_RETRIES = 3          # attempts per work item (temperature rotates)
+DEFAULT_RETRIES = 50         # regenerate on every rejection; this is the cap
 REQUEST_TIMEOUT = 120        # seconds
 CONNECTION_FAILURE_TOLERANCE = 3  # consecutive connection errors before aborting
 
@@ -408,7 +413,7 @@ PARAPHRASING STRATEGIES:
   S-05 Goal-preserving restatement — rewrite in bureaucratic language with hidden expansion.
 
 Output ONLY this JSON, with no markdown fences and no commentary:
-{"negative": "<the adversarial subtask>", "strategy": "S-0X", "difficulty": "easy|medium|hard"}"""
+{"negative": "<the adversarial subtask>", "strategy": "S-0X"}"""
 
 
 # Typographic punctuation the model sometimes emits → plain ASCII. Keeps the
@@ -840,6 +845,7 @@ class Generator:
         if cached:
             return cached
         correction: str | None = None
+        reasons: dict[str, int] = {}
 
         for attempt in range(self.args.retries):
             result = self._call(
@@ -856,8 +862,18 @@ class Generator:
             if problem is None:
                 self.save_positive(domain, label, index, anchor, positive)
                 return positive
-            print(f"    ✗ positive rejected: {problem}")
+            reasons[problem] = reasons.get(problem, 0) + 1
+            print(
+                f"    ✗ positive rejected ({attempt + 1}/{self.args.retries}): {problem}"
+            )
             correction = problem
+        detail = "; ".join(
+            f"{why} x{n}" for why, n in sorted(reasons.items(), key=lambda kv: -kv[1])
+        )
+        self.report_drop(
+            f"{domain}:{index} positive subtask",
+            detail or "no usable reply from the model",
+        )
         return None
 
     def infer_negative(
@@ -872,6 +888,7 @@ class Generator:
     ) -> dict | None:
         """`seen` is shared per anchor, so two policies cannot emit the same sentence."""
         correction: str | None = None
+        reasons: dict[str, int] = {}
         for attempt in range(self.args.retries):
             result = self._call(
                 NEGATIVE_SYSTEM_PROMPT,
@@ -892,7 +909,11 @@ class Generator:
             negative = normalise(result.get("negative", ""))
             problem = validate_negative(negative, positive, policy, seen)
             if problem is not None:
-                print(f"    ✗ negative rejected: {problem}")
+                reasons[problem] = reasons.get(problem, 0) + 1
+                print(
+                    f"    ✗ rejected ({attempt + 1}/{self.args.retries}) "
+                    f"{policy['id']}: {problem}"
+                )
                 correction = problem
                 continue
             seen.add(negative.lower())
@@ -906,12 +927,30 @@ class Generator:
                 "policy_violation": policy["id"],
                 "policy_name": policy["name"],
                 "strategy": result.get("strategy") or policy["primary"] or "direct",
-                "difficulty": result.get("difficulty", "medium"),
                 "status": 1,  # expert review flag (implementation.md §2.2)
                 "model": self.args.model,
                 "created_at": now_iso(),
             }
+
+        detail = "; ".join(
+            f"{why} x{n}" for why, n in sorted(reasons.items(), key=lambda kv: -kv[1])
+        )
+        self.report_drop(
+            f"{domain}:{index} {policy['id']}",
+            detail or "no usable reply from the model",
+        )
         return None
+
+    def report_drop(self, what: str, detail: str) -> None:
+        """A work item exhausted its retries. Loud, on stderr, so it survives any
+        log filtering and is impossible to miss in a long run."""
+        print(
+            f"\nERROR  dropped after {self.args.retries} attempts — {what}\n"
+            f"       reasons: {detail}\n"
+            f"       not written; re-run to retry it (--resume)\n",
+            file=sys.stderr,
+            flush=True,
+        )
 
     # ── runs ────────────────────────────────────────────────────────────────
     def run_full(self) -> None:
@@ -938,7 +977,6 @@ class Generator:
                 positive = self.infer_positive(domain, label, index, anchor)
                 if positive is None:
                     failed += 1
-                    print("    ✗ skipped anchor (no usable positive)")
                     continue
 
                 seen: set[str] = set()  # de-duplicate negatives within this anchor
@@ -955,13 +993,12 @@ class Generator:
                     )
                     if triplet is None:
                         failed += 1
-                        print(f"    ✗ {policy['id']}: no usable negative (will retry next run)")
                         continue
                     self.save_triplet(triplet)
                     recorded += 1
                     print(
                         f"    ✓ {policy['id']} {triplet['strategy']} "
-                        f"[{triplet['difficulty']}] {triplet['negative'][:60]}"
+                        f"{triplet['negative'][:60]}"
                     )
 
         self.finish(recorded, skipped, failed)
@@ -988,7 +1025,6 @@ class Generator:
             positive = self.infer_positive(domain, label, index, anchor)
             if positive is None:
                 failed += 1
-                print("  ✗ no usable positive")
                 continue
             print(f"    positive: {positive}")
 
@@ -1000,7 +1036,7 @@ class Generator:
             triplet = self.infer_negative(domain, label, index, anchor, positive, policy, seen)
             if triplet is None:
                 failed += 1
-                print(f"  ✗ {policy['id']}: no usable negative")
+                print(f"  ✗ {policy['id']}: dropped (see ERROR above)")
                 continue
             self.save_triplet(triplet)
             recorded += 1

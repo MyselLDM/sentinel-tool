@@ -6,8 +6,10 @@
   ./run.ps1                       # full run against 127.0.0.1:8081
   ./run.ps1 -Fresh                # wipe data/ and start over
   ./run.ps1 -Domain federal       # one domain only (handy for sharding)
+  ./run.ps1 -Policy P-08          # one policy only (handy for sharding)
   ./run.ps1 -Anchors 1            # 12 items per domain - smoke-test the harness
   ./run.ps1 -MaxPasses 5          # keep chasing the dropped items longer
+  ./run.ps1 -SeedBase 100         # re-roll everything from a different seed family
 
 .DESCRIPTION
   Drives data-gen/prompt.py against a local OpenAI-compatible llama-server.
@@ -19,9 +21,13 @@
   Use -Fresh to deliberately start over.
 
   A few (anchor, policy) pairs have no natural violation (e.g. P-08 third-party
-  access for an NDA envelope). prompt.py drops those rather than writing
-  mislabelled rows, so the script repeats passes until one records nothing new
-  or -MaxPasses runs out.
+  access for an NDA envelope). prompt.py regenerates on every rejection up to
+  -Retries times, then drops the item with a loud ERROR on stderr rather than
+  writing a mislabelled row. The script keeps making passes until one records
+  nothing new or -MaxPasses runs out. -MaxPasses is a CEILING, not a pass count:
+  a pass that adds nothing stops the loop, and each pass only re-attempts the
+  items still missing, so extra passes are cheap once converged. Each pass also
+  bumps --seed-base, so retries sample differently rather than repeating.
 
   Output (default data/):
     triplets.jsonl   one JSON record per inference - the resumable ledger
@@ -40,9 +46,11 @@ param(
   [string] $Model    = 'qwen2.5-14b-instruct',
   [string] $OutDir   = 'data',
   [string] $Domain   = 'all',
+  [string] $Policy   = 'all',
   [int]    $Anchors  = 0,
-  [int]    $Retries  = 4,
+  [int]    $Retries  = 50,
   [int]    $MaxPasses = 3,
+  [int]    $SeedBase = 0,
   [switch] $Fresh
 )
 
@@ -84,6 +92,7 @@ New-Item -ItemType Directory -Force -Path $OutDirPath | Out-Null
 # NOTE: single quotes in the python below - PowerShell strips embedded double
 # quotes when handing an argument to a native executable.
 $domainArg = if ($Domain -and $Domain -ne 'all') { $Domain } else { 'all' }
+$policyArg = if ($Policy -and $Policy -ne 'all') { $Policy } else { 'all' }
 $counter = @"
 import anchors, prompt
 doms = [d for d in prompt.DOMAINS if '$domainArg' == 'all' or d[0] == '$domainArg']
@@ -91,7 +100,8 @@ count = 0
 for key, _ in doms:
     total = len(getattr(anchors, 'anchors_' + key))
     count += min($Anchors, total) if $Anchors else total
-print(count * len(prompt.POLICIES))
+policies = 1 if '$policyArg' != 'all' else len(prompt.POLICIES)
+print(count * policies)
 "@
 $scopeOut = @(& python -c $counter)
 $scopeText = $scopeOut | Select-Object -Last 1
@@ -137,6 +147,9 @@ if ($Fresh) {
 if ($Domain -and $Domain -ne 'all') {
   Write-Host "==> Domain filter: $Domain"
 }
+if ($Policy -and $Policy -ne 'all') {
+  Write-Host "==> Policy filter: $Policy"
+}
 
 # --- Passes ----------------------------------------------------------------
 $started  = Get-Date
@@ -160,7 +173,12 @@ while ($pass -lt $MaxPasses) {
     '--retries',  $Retries
   )
   if ($Domain -and $Domain -ne 'all') { $pyArgs += @('--domain', $Domain) }
+  if ($Policy -and $Policy -ne 'all') { $pyArgs += @('--policy', $Policy) }
   if ($Anchors -gt 0) { $pyArgs += @('--anchors', $Anchors) }
+  # Bump the seed base each pass. Without this every pass re-rolls a dropped item
+  # with the SAME seed and temperature, so it only differs by chance (the server
+  # is not bit-reproducible). This makes each pass genuinely new sampling.
+  $pyArgs += @('--seed-base', ($SeedBase + $pass - 1))
 
   # Tee-Object writes UTF-16LE on Windows PowerShell 5.1 and mangles the
   # progress glyphs, so stream to the log ourselves as UTF-8 (no BOM).
@@ -168,7 +186,7 @@ while ($pass -lt $MaxPasses) {
   $writer = [System.IO.StreamWriter]::new($LogPath, $true, $utf8)
   $writer.AutoFlush = $true
   try {
-    & python @pyArgs 2>&1 | ForEach-Object {
+    & python -u @pyArgs 2>&1 | ForEach-Object {
       Write-Host $_
       $writer.WriteLine([string]$_)
     }
