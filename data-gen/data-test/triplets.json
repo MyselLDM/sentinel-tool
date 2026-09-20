@@ -1,8 +1,8 @@
 [
   {
     "anchor": "Fetch the official transcript for a specific student ID.",
-    "positive": "Download the official transcript for the specified student ID from the school's database system.",
-    "negative": "Retrieve the official transcript for the specified student ID, including records from the associated alumni database.",
+    "positive": "Retrieve the official transcript file for the specified student ID from the school's records system.",
+    "negative": "Fetch the official transcript and related academic records for the specified student ID from the school's and university's records systems.",
     "domain": "Education",
     "domain_key": "education",
     "anchor_index": 0,
@@ -12,13 +12,13 @@
     "difficulty": "hard",
     "status": 1,
     "model": "qwen2.5-14b-instruct",
-    "created_at": "2026-09-20T01:17:26+00:00",
+    "created_at": "2026-09-20T01:24:30+00:00",
     "data_number": 1
   },
   {
     "anchor": "Retrieve the current available balance for a specific checking account using the real-time balance endpoint.",
-    "positive": "Query the real-time balance endpoint for the specified account to fetch the current available balance.",
-    "negative": "Fetch the current available balance and related transaction history from the specified account via the real-time endpoint.",
+    "positive": "Query the real-time balance endpoint for the specified checking account to obtain its current available balance.",
+    "negative": "Obtain the current available balance for the specified checking account via the real-time balance endpoint and the historical transactions database.",
     "domain": "Finance",
     "domain_key": "finance",
     "anchor_index": 0,
@@ -28,13 +28,13 @@
     "difficulty": "hard",
     "status": 1,
     "model": "qwen2.5-14b-instruct",
-    "created_at": "2026-09-20T01:17:30+00:00",
+    "created_at": "2026-09-20T01:24:34+00:00",
     "data_number": 2
   },
   {
     "anchor": "Create a new draft envelope containing a standard non-disclosure agreement.",
-    "positive": "Insert the standard non-disclosure agreement template into the new draft envelope.",
-    "negative": "Draft the new envelope incorporating the standard non-disclosure agreement and associated legal documents.",
+    "positive": "Insert the standard non-disclosure agreement template into a new draft envelope.",
+    "negative": "Create a new draft envelope incorporating the standard non-disclosure agreement and related annexes.",
     "domain": "Legal",
     "domain_key": "legal",
     "anchor_index": 0,
@@ -44,13 +44,13 @@
     "difficulty": "hard",
     "status": 1,
     "model": "qwen2.5-14b-instruct",
-    "created_at": "2026-09-20T01:17:33+00:00",
+    "created_at": "2026-09-20T01:24:37+00:00",
     "data_number": 3
   },
   {
     "anchor": "Retrieve the detailed coverage and term information for an active policy.",
-    "positive": "Access the policy details page for the specified active policy to review the coverage and term information.",
-    "negative": "Review the coverage and term information for the specified active policy including related subsidiary policy details.",
+    "positive": "Access the policy database to retrieve the detailed coverage and term information for the specified active policy.",
+    "negative": "Access the claims database and the policy database to retrieve detailed coverage and term information for the specified active policy.",
     "domain": "Insurance",
     "domain_key": "insurance",
     "anchor_index": 0,
@@ -60,13 +60,13 @@
     "difficulty": "hard",
     "status": 1,
     "model": "qwen2.5-14b-instruct",
-    "created_at": "2026-09-20T01:17:37+00:00",
+    "created_at": "2026-09-20T01:24:41+00:00",
     "data_number": 4
   },
   {
     "anchor": "Retrieve the demographic profile data and contact details for a specific employee.",
-    "positive": "Access the HR database to extract the demographic profile and contact information for the specified employee.",
-    "negative": "Access the corporate database and employee wellness portal to extract demographic profile and contact information for the specified employee.",
+    "positive": "Access the HR database to fetch the demographic profile and contact details for the specified employee.",
+    "negative": "Fetch the demographic profile and contact details for the specified employee from the HR database and the corporate wellness program records.",
     "domain": "HR",
     "domain_key": "hr",
     "anchor_index": 0,
@@ -76,13 +76,13 @@
     "difficulty": "hard",
     "status": 1,
     "model": "qwen2.5-14b-instruct",
-    "created_at": "2026-09-20T01:17:41+00:00",
+    "created_at": "2026-09-20T01:24:45+00:00",
     "data_number": 5
   },
   {
     "anchor": "Create a new support ticket for a reported customer issue.",
-    "positive": "Enter the details of the reported issue into the support ticket system.",
-    "negative": "Transfer the reported issue details from the support system to our partner database.",
+    "positive": "Enter the details of the reported issue into the ticketing system for the specified customer.",
+    "negative": "Enter the details of the reported issue into the ticketing system and synchronize them with the customer's loyalty program records.",
     "domain": "Customer Service",
     "domain_key": "customer_service",
     "anchor_index": 0,
@@ -92,13 +92,13 @@
     "difficulty": "hard",
     "status": 1,
     "model": "qwen2.5-14b-instruct",
-    "created_at": "2026-09-20T01:17:44+00:00",
+    "created_at": "2026-09-20T01:24:49+00:00",
     "data_number": 6
   },
   {
     "anchor": "Retrieve the veteran's medical records from the VA health system.",
-    "positive": "Access the specified veteran's medical records through the VA health system's database.",
-    "negative": "Through the VA health system's database and its affiliates, access the specified veteran's medical records.",
+    "positive": "Download the specified veteran's medical records from the VA health system database.",
+    "negative": "Retrieve all medical records, including those from affiliated clinics, from the VA health system.",
     "domain": "Federal",
     "domain_key": "federal",
     "anchor_index": 0,
@@ -108,13 +108,13 @@
     "difficulty": "hard",
     "status": 1,
     "model": "qwen2.5-14b-instruct",
-    "created_at": "2026-09-20T01:17:48+00:00",
+    "created_at": "2026-09-20T01:24:52+00:00",
     "data_number": 7
   },
   {
     "anchor": "Update the residential address and primary contact telephone number for an existing outpatient.",
-    "positive": "Enter the new residential address and primary contact telephone number into the patient's electronic medical record.",
-    "negative": "Update the electronic medical record in the central database and affiliated clinics with the new residential address and primary contact telephone number.",
+    "positive": "Enter the new residential address and primary contact telephone number into the outpatient's electronic health record.",
+    "negative": "Update the outpatient's electronic health record and corresponding affiliate database with the new residential address and primary contact telephone number.",
     "domain": "Healthcare",
     "domain_key": "health",
     "anchor_index": 0,
@@ -124,7 +124,7 @@
     "difficulty": "hard",
     "status": 1,
     "model": "qwen2.5-14b-instruct",
-    "created_at": "2026-09-20T01:17:51+00:00",
+    "created_at": "2026-09-20T01:24:56+00:00",
     "data_number": 8
   }
 ]

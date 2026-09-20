@@ -28,6 +28,16 @@ be interrupted (ctrl-c, crash, endpoint restart) and continued:
 ``--test`` writes a single policy violation for one anchor per domain into
 ``data-test/`` so the data can be eyeballed before committing to a full run.
 
+Sampling
+--------
+Every request pins ``temperature`` / ``top_p`` / ``min_p`` / ``top_k`` /
+``repeat_penalty`` plus a per-item ``seed``, so the corpus does not depend on how
+``llama-server`` was launched. Start the server **without** ``--mirostat``:
+mirostat replaces the top-p/min-p truncation samplers (making
+``--top-p``/``--min-p`` inert), and ``--temp`` is overridden by our per-call
+value anyway. Seeds are best-effort, not a determinism guarantee -- ``--resume``
+is what carries a long run across interruptions.
+
 Usage
 -----
     python prompt.py --test                  # 8 samples (1 per domain) for review
@@ -43,6 +53,7 @@ The endpoint is NOT contacted for ``--dry-run`` / ``--finalize``.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -85,6 +96,18 @@ DEFAULT_SLEEP = 0.3          # seconds between calls
 DEFAULT_RETRIES = 3          # attempts per work item (temperature rotates)
 REQUEST_TIMEOUT = 120        # seconds
 CONNECTION_FAILURE_TOLERANCE = 3  # consecutive connection errors before aborting
+
+# ── Sampling ────────────────────────────────────────────────────────────────
+# Sent on EVERY request so the corpus does not depend on how llama-server was
+# launched. Two server flags are inert in practice: `--temp` is overridden by
+# our per-call temperature, and `--top-p`/`--min-p` are ignored entirely while
+# `--mirostat` is on (mirostat replaces the truncation samplers). Run the
+# server WITHOUT --mirostat for these to take effect.
+DEFAULT_TOP_P = 0.9
+DEFAULT_MIN_P = 0.05
+DEFAULT_TOP_K = 40
+DEFAULT_REPEAT_PENALTY = 1.12
+DEFAULT_SEED_BASE = 0        # mixed into each work item's deterministic seed
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"          # full run (git-ignored)
@@ -368,6 +391,19 @@ _PUNCTUATION_MAP = str.maketrans(
 def word_count(text: str) -> int:
     return len(text.split())
 
+
+def seed_for(*parts: object) -> int:
+    """Deterministic 32-bit seed for a work item, so a resumed run tends to
+    reproduce the same sampling for the same item while different items diverge.
+
+    NOTE: llama-server honours ``seed`` but does NOT guarantee bit-level
+    reproducibility -- I observed both stable and unstable repeats on this
+    build (unstable when the distribution is flat, e.g. high temperature).
+    Continuity across runs comes from ``--resume``, not from seeds.
+    """
+    digest = hashlib.sha256("|".join(str(p) for p in parts).encode("utf-8")).digest()
+    return int.from_bytes(digest[:4], "big")
+
 def negative_length_window(positive_words: int) -> tuple[int, int]:
     """Word-count window requested in the prompt (validation is slightly looser)."""
     return max(4, positive_words - 3), positive_words + 7
@@ -456,6 +492,11 @@ def call_llm(
     endpoint: str,
     model: str,
     temperature: float,
+    top_p: float,
+    min_p: float,
+    top_k: int,
+    repeat_penalty: float,
+    seed: int,
 ) -> dict:
     """One chat-completion call. Returns the parsed JSON object.
 
@@ -470,6 +511,11 @@ def call_llm(
         ],
         "max_tokens": MAX_TOKENS,
         "temperature": temperature,
+        "top_p": top_p,
+        "min_p": min_p,
+        "top_k": top_k,
+        "repeat_penalty": repeat_penalty,
+        "seed": seed,
         "stream": False,
     }
     request = urllib.request.Request(
@@ -696,7 +742,7 @@ class Generator:
         base = self.args.temperature
         return round(min(1.0, base + attempt * 0.08), 2)
 
-    def _call(self, system: str, user: str, attempt: int) -> dict | None:
+    def _call(self, system: str, user: str, attempt: int, seed: int) -> dict | None:
         try:
             result = call_llm(
                 system,
@@ -704,6 +750,11 @@ class Generator:
                 endpoint=self.args.endpoint,
                 model=self.args.model,
                 temperature=self._temperature(attempt),
+                top_p=self.args.top_p,
+                min_p=self.args.min_p,
+                top_k=self.args.top_k,
+                repeat_penalty=self.args.repeat_penalty,
+                seed=seed,
             )
         except EndpointDown as exc:
             self.consecutive_connection_failures += 1
@@ -728,7 +779,10 @@ class Generator:
 
         for attempt in range(self.args.retries):
             result = self._call(
-                POSITIVE_SYSTEM_PROMPT, build_positive_user(label, anchor), attempt
+                POSITIVE_SYSTEM_PROMPT,
+                build_positive_user(label, anchor),
+                attempt,
+                seed_for("positive", self.args.seed_base, domain, index, attempt),
             )
             time.sleep(self.args.sleep)
             if result is None:
@@ -757,6 +811,14 @@ class Generator:
                 NEGATIVE_SYSTEM_PROMPT,
                 build_negative_user(label, anchor, positive, policy),
                 attempt,
+                seed_for(
+                    "negative",
+                    self.args.seed_base,
+                    domain,
+                    index,
+                    policy["id"],
+                    attempt,
+                ),
             )
             time.sleep(self.args.sleep)
             if result is None:
@@ -989,6 +1051,16 @@ def build_parser() -> argparse.ArgumentParser:
                        help=f"attempts per item (default: {DEFAULT_RETRIES})")
     model.add_argument("--sleep", type=float, default=DEFAULT_SLEEP,
                        help=f"seconds between calls (default: {DEFAULT_SLEEP})")
+    model.add_argument("--top-p", type=float, default=DEFAULT_TOP_P,
+                       help=f"nucleus sampling (default: {DEFAULT_TOP_P})")
+    model.add_argument("--min-p", type=float, default=DEFAULT_MIN_P,
+                       help=f"min-p sampling (default: {DEFAULT_MIN_P})")
+    model.add_argument("--top-k", type=int, default=DEFAULT_TOP_K,
+                       help=f"top-k sampling (default: {DEFAULT_TOP_K})")
+    model.add_argument("--repeat-penalty", type=float, default=DEFAULT_REPEAT_PENALTY,
+                       help=f"repetition penalty (default: {DEFAULT_REPEAT_PENALTY})")
+    model.add_argument("--seed-base", type=int, default=DEFAULT_SEED_BASE,
+                       help="mixed into each work item's seed (best-effort; change it to re-roll the corpus)")
     return parser
 
 
