@@ -28,6 +28,20 @@ if [ -z "$PY" ]; then
 fi
 
 # --- Create the virtual environment on first run ---------------------------
+# A venv is NOT portable across operating systems: a checkout copied from
+# Windows still carries .venv/Scripts/python.exe, which is not executable here.
+# Such a venv looks present but has no interpreter for this OS — rebuild it.
+if [ -d "$VENV" ] && [ ! -x "$VENV/Scripts/python.exe" ] && [ ! -x "$VENV/bin/python" ]; then
+  if [ -f "$VENV/pyvenv.cfg" ]; then
+    echo "==> $VENV has no interpreter for this OS (stale/foreign venv); rebuilding"
+    rm -rf "$VENV"
+  else
+    echo "error: $VENV exists but is not a virtual environment." >&2
+    echo "       Move it aside, or point VENV at another path." >&2
+    exit 1
+  fi
+fi
+
 if [ ! -d "$VENV" ]; then
   echo "==> Creating virtual environment in $VENV"
   "$PY" -m venv "$VENV"
@@ -40,6 +54,7 @@ elif [ -x "$VENV/bin/python" ]; then
   VPY="$VENV/bin/python"
 else
   echo "error: no python interpreter found in $VENV" >&2
+  echo "       Delete it and re-run: rm -rf '$VENV'" >&2
   exit 1
 fi
 
