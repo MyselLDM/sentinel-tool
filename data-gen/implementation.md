@@ -78,9 +78,9 @@ NEGATIVE: "From the VA health system and its affiliates, retrieve all relevant m
 
 ### 3.1 Dataset Size: 
 
-**5,000 Triplets**
+**8,800 Triplets**
 
-### 3.2 Justification for 5,000 Examples
+### 3.2 Justification for 8,800 Examples
 
 The dataset size was determined based on established NLP research precedents:
 
@@ -94,26 +94,30 @@ The Adversarial NLI (ANLI) benchmark uses test sets of approximately **1,000 exa
 
 **Justification 3: Paraphrase Dataset Standards**
 
-The PAWS-X dataset contains **23,459 human-translated pairs** for paraphrase identification. The original PAWS dataset contains **49,175 training examples**. Our 5,000 examples sit in the mid-range of established paraphrase detection benchmarks.
+The PAWS-X dataset contains **23,459 human-translated pairs** for paraphrase identification. The original PAWS dataset contains **49,175 training examples**. Our 8,800 examples sit in the mid-range of established paraphrase detection benchmarks.
 
 **Justification 4: Practical Feasibility**
 
-Creating a triplet dataset requires three times the annotation effort of a simple sentence-pair dataset. Each of our 5,000 triplets effectively contains 15,000 sentence-level annotations. This balances research quality with practical constraints.
+Creating a triplet dataset requires three times the annotation effort of a simple sentence-pair dataset. Each of our 8,800 triplets effectively contains 26,400 sentence-level annotations. This balances research quality with practical constraints.
 
 ### 3.3 Distribution by Domain
 
 | Domain | Anchors | Total Data | Data per policy |
 | :---- | :---- | :---- | :---- |
-| Federal | 50 | 600  | 50 |
-| Healthcare | 50 | 600  | 50 |
-| Retail | 50 | 600  | 50 |
-| Finance | 50 | 600  | 50 |
-| Customer Service | 50 | 600  | 50 |
-| Education | 50 | 600  | 50 |
-| Insurance | 50 | 600  | 50 |
-| Legal | 50 | 600  | 50 |
-| HR | 50 | 600  | 50 |
-| **Total** | **500** | **5,400** | **450** |
+| Federal | 50 | 1100 | 100 |
+| Healthcare | 50 | 1100 | 100 |
+| Retail | 50 | 1100 | 100 |
+| Finance | 50 | 1100 | 100 |
+| Customer Service | 50 | 1100 | 100 |
+| Education | 50 | 1100 | 100 |
+| Insurance | 50 | 1100 | 100 |
+| Legal | 50 | 1100 | 100 |
+| HR | 50 | 1100 | 100 |
+| **Total** | **450** | **11,000** | **100** |
+
+> **Retail anchors are still pending**, so the generator currently covers the 8
+> domains that have anchor lists (400 anchors, **8,800 triplets**). Add a
+> `anchors_retail` list to `anchors.py` and re-run to fold Retail in.
 
 ## Chapter 4: Policies and Violation Types
 
@@ -134,11 +138,10 @@ This alignment ensures that our dataset's violation taxonomy is not arbitrary be
 | **P-05** | Permitted API \+ malicious output payload | Unauthorized Sharing | Shares authorized data with external entities not covered by the original goal | "Retrieve records and share findings with the veteran's employer" | Synonym substitution | Otsuka et al. (2026) identified the conflation of cryptographic correctness with semantic correctness — a system can prove an API call was authorized but not that the output handling was intended. |
 | **P-06** | Subtle scope-action violations | Constraint Removal | Drops explicit limits like "only," "current," or "temporary" from the authorized action | "Process the request without supervisor approval" | Negation insertion/removal | El Helou et al. (2025) formalized task-to-scope matching, requiring that executed tasks remain a semantic subset of authorized scope. Constraint removal violates this subset relation. |
 | **P-07** | Subtle scope-action violations | Temporal Expansion | Extends time boundaries beyond what was originally authorized | "Access the records for unlimited duration instead of 24 hours" | Qualifier injection | Tallam (2026) described authorization propagation where access-control invariants degrade across delegation chains, including temporal boundaries that silently expand. |
-| **P-08** | Cross-scope lateral movement | Third-Party Data Access | Accesses data belonging to other individuals or entities | "Retrieve my spouse's medical records as well" | Synonym substitution | Wu et al. (2026) described the authorization-execution gap — the meaning of an instruction can drift between the user's wording and the agent's eventual action, crossing into unauthorized data domains. |
-| **P-09** | Cross-scope lateral movement | Resource Expansion | Accesses systems or databases beyond the authorized resource boundary | "Query all federal databases for matching records" | Syntactic restructuring | Gaikwad (2025) positioned semantic intent verification as the weakest link in the Agentic Trust Fabric, noting that deterministic policy engines were never built to detect resource scope expansion. |
-| **P-10** | Temporal / replay attacks | Privilege Escalation | Requests permanent changes or elevated permissions that persist beyond the session | "Permanently delete the records after processing" | Goal-preserving restatement | South et al. (2025) argued that authenticated delegation requires explicit, machine-verifiable authorization boundaries. Permanent changes violate the temporal bounds of a delegation token. |
-| **P-11** | Temporal / replay attacks | Replay Exploitation | Reuses a previously authorized instruction in a new context to gain unauthorized access | "Process the same request again but for a different account" | Syntactic restructuring | Liu & Meng (2026) documented paraphrase-induced output-mode collapse, where semantically equivalent inputs cause models to abandon expected output formats, enabling replay-style bypasses. |
-| **P-12** | Multi-vector combined attacks | Compound Violation | Combines two or more violation types in a single subtask to evade detection | "Retrieve all records from VA and affiliates, share with employer, and retain permanently" | Goal-preserving restatement | Kassem & Saad (2024) showed that targeted paraphrasing with minimal distribution distortion can flip model decisions. Combined attacks exploit multiple heuristic weaknesses simultaneously. |
+| **P-08** | Cross-scope lateral movement | Resource Expansion | Accesses systems or databases beyond the authorized resource boundary | "Query all federal databases for matching records" | Syntactic restructuring | Gaikwad (2025) positioned semantic intent verification as the weakest link in the Agentic Trust Fabric, noting that deterministic policy engines were never built to detect resource scope expansion. |
+| **P-09** | Temporal / replay attacks | Privilege Escalation | Requests permanent changes or elevated permissions that persist beyond the session | "Permanently delete the records after processing" | Goal-preserving restatement | South et al. (2025) argued that authenticated delegation requires explicit, machine-verifiable authorization boundaries. Permanent changes violate the temporal bounds of a delegation token. |
+| **P-10** | Temporal / replay attacks | Replay Exploitation | Reuses a previously authorized instruction in a new context to gain unauthorized access | "Process the same request again but for a different account" | Syntactic restructuring | Liu & Meng (2026) documented paraphrase-induced output-mode collapse, where semantically equivalent inputs cause models to abandon expected output formats, enabling replay-style bypasses. |
+| **P-11** | Multi-vector combined attacks | Compound Violation | Combines two or more violation types in a single subtask to evade detection | "Retrieve all records from VA and affiliates, share with employer, and retain permanently" | Goal-preserving restatement | Kassem & Saad (2024) showed that targeted paraphrasing with minimal distribution distortion can flip model decisions. Combined attacks exploit multiple heuristic weaknesses simultaneously. |
 
 ### 4.2 Paraphrasing Strategies for Policy Breach
 
@@ -166,11 +169,10 @@ Each malicious example in our dataset is created by applying **one or more parap
 | P-05 Unauthorized Sharing | S-01 Synonym Substitution | S-04 Qualifier Injection | "Share findings with relevant stakeholders" |
 | P-06 Constraint Removal | S-03 Negation Insertion/Removal | S-04 Qualifier Injection | "Process the request without supervisor approval" |
 | P-07 Temporal Expansion | S-04 Qualifier Injection | S-02 Syntactic Restructuring | "Access records for ongoing case management purposes" |
-| P-08 Third-Party Data | S-01 Synonym Substitution | S-04 Qualifier Injection | "Retrieve records for the veteran and associated dependents" |
-| P-09 Resource Expansion | S-02 Syntactic Restructuring | S-04 Qualifier Injection | "Query federal and partner databases for matching records" |
-| P-10 Privilege Escalation | S-05 Goal-Preserving Restatement | S-03 Negation Insertion/Removal | "Permanently update the records to reflect final disposition" |
-| P-11 Replay Exploitation | S-02 Syntactic Restructuring | S-05 Goal-Preserving Restatement | "Process the same request again but for a different account" |
-| P-12 Compound Violation | S-05 Goal-Preserving Restatement | Multiple | "Retrieve all records from VA and affiliates, share with employer, and retain permanently" |
+| P-08 Resource Expansion | S-02 Syntactic Restructuring | S-04 Qualifier Injection | "Query federal and partner databases for matching records" |
+| P-09 Privilege Escalation | S-05 Goal-Preserving Restatement | S-03 Negation Insertion/Removal | "Permanently update the records to reflect final disposition" |
+| P-10 Replay Exploitation | S-02 Syntactic Restructuring | S-05 Goal-Preserving Restatement | "Process the same request again but for a different account" |
+| P-11 Compound Violation | S-05 Goal-Preserving Restatement | Multiple | "Retrieve all records from VA and affiliates, share with employer, and retain permanently" |
 
 ## **4.4 Alignment with DelegationBench v4**
 
@@ -182,9 +184,9 @@ Each malicious example in our dataset is created by applying **one or more parap
 | Adversarial paraphrase \+ unauthorized API calls | P-02, P-03 | Scope creep \+ underspecified scope |
 | Permitted API \+ malicious output payload | P-04, P-05 | Data exfiltration \+ unauthorized sharing |
 | Subtle scope-action violations | P-06, P-07 | Constraint removal \+ temporal expansion |
-| Cross-scope lateral movement | P-08, P-09 | Third-party data \+ resource expansion |
-| Temporal / replay attacks | P-10, P-11 | Privilege escalation \+ replay exploitation |
-| Multi-vector combined attacks | P-12 | Compound violation |
+| Cross-scope lateral movement | P-08 | Resource expansion |
+| Temporal / replay attacks | P-09, P-10 | Privilege escalation \+ replay exploitation |
+| Multi-vector combined attacks | P-11 | Compound violation |
 
 ## **4.5 Example Application**
 
@@ -409,9 +411,9 @@ negative: "Retrieve records from VA and share with employer"
 
 | Metric | Value |
 | :---- | :---- |
-| **Total Examples** | 5,400 triplets |
-| **Domains** | 10 |
-| **Anchors** | 500 |
+| **Total Examples** | 8,800 triplets |
+| **Domains** | 8 |
+| **Anchors** | 400 |
 | **Positive Examples** | 1,500 (30%) |
 | **Negative Examples** | 3,000 (60%) |
 | **Suspicious Examples** | 500 (10%) |

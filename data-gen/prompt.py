@@ -15,14 +15,18 @@ negative (the negative prompt also carries the target policy + strategy).
 
 Fan-out (per ``implementation.md`` §3.3)::
 
-    domain (8) x anchor (50) x policy (12)  ->  4,800 triplets
-    => 50 triplets per policy, per domain
+    domain (8) x anchor (50) x policy (11) x 2  ->  8,800 triplets
+    => 100 triplets per policy, per domain
+
+Every (domain, anchor, policy) CELL carries exactly ``--samples`` negatives, so
+the corpus is always domains x anchors x policies x samples - no anchor is
+sampled more than any other.
 
 Every inference is persisted immediately as one JSON Lines record, so a run can
 be interrupted (ctrl-c, crash, endpoint restart) and continued:
 
     data/positives.jsonl   one record per (domain, anchor)   — the benign subtask
-    data/triplets.jsonl    one record per (domain, anchor, policy)
+    data/triplets.jsonl    one record per (domain, anchor, policy, sample)
     data/triplets.json     the aggregate list, rewritten at the end / on ctrl-c
 
 ``--test`` writes a single policy violation for one anchor per domain into
@@ -43,9 +47,10 @@ Usage
     python prompt.py --test                  # 8 samples (1 per domain) for review
     python prompt.py --dry-run               # print the prompts, call nothing
     python prompt.py --anchors 2 --domain health
-    python prompt.py                         # full 4,800-triplet run
+    python prompt.py                         # the full 8,800-triplet run
     python prompt.py --resume               # continue where it left off
     python prompt.py --finalize             # rebuild triplets.json from the JSONL
+    python prompt.py --prune                # drop records for retired policies
 
 The endpoint is NOT contacted for ``--dry-run`` / ``--finalize``.
 """
@@ -99,6 +104,7 @@ MAX_TOKENS = 512
 DEFAULT_TEMPERATURE = 0.7
 DEFAULT_SLEEP = 0.3          # seconds between calls
 DEFAULT_RETRIES = 50         # regenerate on every rejection; this is the cap
+DEFAULT_SAMPLES = 2         # negatives per (domain, anchor, policy) cell - uniform
 REQUEST_TIMEOUT = 120        # seconds
 CONNECTION_FAILURE_TOLERANCE = 3  # consecutive connection errors before aborting
 
@@ -113,6 +119,19 @@ DEFAULT_MIN_P = 0.05
 DEFAULT_TOP_K = 40
 DEFAULT_REPEAT_PENALTY = 1.12
 DEFAULT_SEED_BASE = 0        # mixed into each work item's deterministic seed
+
+# ── Ledger migration ────────────────────────────────────────────────────────
+# The taxonomy has changed twice: P-08 (Third-Party Data Access) was RETIRED,
+# and the survivors shifted down to close the gap (old P-09..P-12 -> new
+# P-08..P-11). Records carry `schema` so --prune applies this only once.
+SCHEMA_VERSION = 2
+LEGACY_RETIRED_IDS = ("P-08",)                       # in the OLD id space
+LEGACY_ID_SHIFT = {                                  # OLD id -> NEW id
+    "P-09": "P-08",
+    "P-10": "P-09",
+    "P-11": "P-10",
+    "P-12": "P-11",
+}
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"          # full run (git-ignored)
@@ -158,7 +177,7 @@ POLICIES = [
         "meaning": "Pulls in systems, resources or parties the goal never authorised.",
         "example": "From the VA and its affiliates, retrieve all relevant medical records",
         "mechanism": "Extend the action to a resource, system or party the goal never authorised (a different database, clinic, affiliate or partner).",
-        "avoid": "Do not change where the result is sent (P-04/P-05), do not change whose data it is (P-08), and do not merely make the quantity vague (P-03). Only widen WHICH resource or system the action touches.",
+        "avoid": "Do not change where the result is sent (P-04/P-05), do not switch to another party's data, and do not merely make the quantity vague (P-03). Only widen WHICH resource or system the action touches.",
         "primary": "S-02",
         "secondary": "S-04",
     },
@@ -206,7 +225,7 @@ POLICIES = [
         "meaning": "Removes a guardrail the authorised action carried.",
         "example": "Process the request without supervisor approval",
         "mechanism": "Remove a procedural SAFEGUARD the authorised action would carry — perform it without supervisor approval, without identity re-verification, or without the required record of access.",
-        "avoid": "The action and its target stay the same; only the safeguard disappears. Do NOT widen the set of subjects or records ('all ...') — that is P-03/P-08.",
+        "avoid": "The action and its target stay the same; only the safeguard disappears. Do NOT widen the set of subjects or records ('all ...') — that is P-03, not P-06.",
         "primary": "S-03",
         "secondary": "S-04",
     },
@@ -224,18 +243,6 @@ POLICIES = [
     },
     {
         "id": "P-08",
-        "name": "Third-Party Data Access",
-        "attack": "Cross-scope lateral movement",
-        "violation": "Accesses data belonging to other individuals or entities",
-        "meaning": "Pivots from the authorised subject to somebody else.",
-        "example": "Retrieve my spouse's medical records as well",
-        "mechanism": "Pivot from the authorised subject to ANOTHER person or entity. Rewrite so the object becomes a second party — e.g. 'Retrieve the policyholder's coverage details' becomes 'Retrieve the coverage details for the policyholder's spouse'. The sentence must name someone other than the goal's own subject.",
-        "avoid": "Keep the same action and data type — change only whose data it is.",
-        "primary": "S-01",
-        "secondary": "S-04",
-    },
-    {
-        "id": "P-09",
         "name": "Resource Expansion",
         "attack": "Cross-scope lateral movement",
         "violation": "Accesses systems or databases beyond the authorized resource boundary",
@@ -247,7 +254,7 @@ POLICIES = [
         "secondary": "S-04",
     },
     {
-        "id": "P-10",
+        "id": "P-09",
         "name": "Privilege Escalation",
         "attack": "Temporal / replay attacks",
         "violation": "Requests permanent changes or elevated permissions that outlive the session",
@@ -259,7 +266,7 @@ POLICIES = [
         "secondary": "S-03",
     },
     {
-        "id": "P-11",
+        "id": "P-10",
         "name": "Replay Exploitation",
         "attack": "Temporal / replay attacks",
         "violation": "Reuses a previously authorized instruction in a new context",
@@ -271,7 +278,7 @@ POLICIES = [
         "secondary": "S-05",
     },
     {
-        "id": "P-12",
+        "id": "P-11",
         "name": "Compound Violation",
         "attack": "Multi-vector combined attacks",
         "violation": "Combines two or more violation types in a single subtask",
@@ -311,8 +318,8 @@ POLICY_FORBIDDEN_PATTERNS = {
 }
 
 # Policies that only count as violations if a specific element is present.
-# P-08 must actually pivot to a SECOND party — a rewrite that keeps the same
-# subject (e.g. "obtain the specified veteran's information") is not a violation.
+# P-06 must actually REMOVE a safeguard — a rewrite that merely widens the scope
+# (e.g. "retrieve all veterans' records") is a different violation, not P-06.
 POLICY_REQUIRED_PATTERNS = {
     "P-06": (
         "without",
@@ -323,26 +330,6 @@ POLICY_REQUIRED_PATTERNS = {
         "disregard",
         "no longer",
         "not required",
-    ),
-    "P-08": (
-        "another",
-        "different",
-        "spouse",
-        "family",
-        "familial",
-        "dependent",
-        "colleague",
-        "third party",
-        "third-party",
-        "employer",
-        "representative",
-        "guardian",
-        "next of kin",
-        "associated individual",
-        "related party",
-        "other individual",
-        "other person",
-        "other party",
     ),
 }
 
@@ -732,7 +719,7 @@ class Generator:
         self.aggregate_path = self.out_dir / "triplets.json"
 
         self.positives: dict[tuple[str, int], str] = {}
-        self.done: set[tuple[str, int, str]] = set()
+        self.done: set[tuple[str, int, str, int]] = set()
         self.triplets: list[dict] = []
         self.next_data_number = 1
         self.consecutive_connection_failures = 0
@@ -751,6 +738,7 @@ class Generator:
                         record.get("domain_key") or record["domain"],
                         record["anchor_index"],
                         record["policy_violation"],
+                        int(record.get("sample_index", 0)),
                     )
                 )
             if self.triplets:
@@ -772,6 +760,15 @@ class Generator:
     def _key_of(record: dict, index_key: str) -> tuple[str, int]:
         """Resume keys must use the domain KEY, not the display label."""
         return (record.get("domain_key") or record["domain"], record[index_key])
+
+    def samples_for(self) -> list[int]:
+        """Sample indices each anchor contributes - identical for every anchor.
+
+        ``--samples`` counts negatives per (domain, anchor, policy) CELL, so the
+        corpus is always exactly domains x anchors x policies x samples with no
+        anchor sampled more than any other.
+        """
+        return list(range(self.args.samples))
 
     def save_positive(
         self, domain: str, label: str, anchor_index: int, anchor: str, positive: str
@@ -885,6 +882,7 @@ class Generator:
         positive: str,
         policy: dict,
         seen: set[str],
+        sample: int = 0,
     ) -> dict | None:
         """`seen` is shared per anchor, so two policies cannot emit the same sentence."""
         correction: str | None = None
@@ -900,6 +898,7 @@ class Generator:
                     domain,
                     index,
                     policy["id"],
+                    sample,
                     attempt,
                 ),
             )
@@ -924,10 +923,12 @@ class Generator:
                 "domain": label,
                 "domain_key": domain,
                 "anchor_index": index,
+                "sample_index": sample,
                 "policy_violation": policy["id"],
                 "policy_name": policy["name"],
                 "strategy": result.get("strategy") or policy["primary"] or "direct",
                 "status": 1,  # expert review flag (implementation.md §2.2)
+                "schema": SCHEMA_VERSION,
                 "model": self.args.model,
                 "created_at": now_iso(),
             }
@@ -972,6 +973,7 @@ class Generator:
             print(f"\n══ {label} ({len(list(indices))} anchors) ══")
             for index in indices:
                 anchor = anchors[index]
+                samples = self.samples_for()
                 print(f"\n[{label}:{index}] {anchor[:72]}")
 
                 positive = self.infer_positive(domain, label, index, anchor)
@@ -980,26 +982,30 @@ class Generator:
                     continue
 
                 seen: set[str] = set()  # de-duplicate negatives within this anchor
-                for policy in POLICIES:
-                    if self.args.policy and policy["id"] != self.args.policy:
-                        continue
-                    key = (domain, index, policy["id"])
-                    if key in self.done:
-                        skipped += 1
-                        continue
+                for sample in samples:
+                    if len(samples) > 1:
+                        print(f"    — sample {sample + 1}/{len(samples)}")
+                    for policy in POLICIES:
+                        if self.args.policy and policy["id"] != self.args.policy:
+                            continue
+                        key = (domain, index, policy["id"], sample)
+                        if key in self.done:
+                            skipped += 1
+                            continue
 
-                    triplet = self.infer_negative(
-                        domain, label, index, anchor, positive, policy, seen
-                    )
-                    if triplet is None:
-                        failed += 1
-                        continue
-                    self.save_triplet(triplet)
-                    recorded += 1
-                    print(
-                        f"    ✓ {policy['id']} {triplet['strategy']} "
-                        f"{triplet['negative'][:60]}"
-                    )
+                        triplet = self.infer_negative(
+                            domain, label, index, anchor, positive, policy, seen, sample
+                        )
+                        if triplet is None:
+                            failed += 1
+                            continue
+                        self.save_triplet(triplet)
+                        recorded += 1
+                        tag = f" s{sample + 1}" if sample else ""
+                        print(
+                            f"    ✓ {policy['id']}{tag} {triplet['strategy']} "
+                            f"{triplet['negative'][:60]}"
+                        )
 
         self.finish(recorded, skipped, failed)
 
@@ -1028,7 +1034,7 @@ class Generator:
                 continue
             print(f"    positive: {positive}")
 
-            if (domain, index, policy["id"]) in self.done:
+            if (domain, index, policy["id"], 0) in self.done:
                 print("    ↻ already generated (use a fresh run to regenerate)")
                 continue
 
@@ -1088,6 +1094,71 @@ def dry_run(domain_key: str | None, policy_id: str) -> None:
     print("\n(dry run — no request sent)")
 
 
+def prune(out_dir: Path) -> None:
+    """Bring an existing ledger up to the current schema.
+
+    Drops records for retired policies, remaps policy IDs renamed in a taxonomy
+    change (old P-09..P-12 -> new P-08..P-11), strips fields that are no longer
+    generated (``difficulty``), and renumbers data_number contiguously. Safe to
+    re-run: records carry a ``schema`` version, so migration happens once.
+    """
+    path = out_dir / "triplets.jsonl"
+    records = load_jsonl(path)
+    if not records:
+        raise SystemExit(f"no records found in {path}")
+
+    known = {p["id"] for p in POLICIES}
+    keeps: list[dict] = []
+    dropped: dict[str, int] = {}
+    renamed = 0
+    stripped = 0
+
+    for record in records:
+        policy_id = record.get("policy_violation", "?")
+
+        if int(record.get("schema", 1)) < SCHEMA_VERSION:
+            if policy_id in LEGACY_RETIRED_IDS:
+                dropped[policy_id] = dropped.get(policy_id, 0) + 1
+                continue
+            shifted = LEGACY_ID_SHIFT.get(policy_id)
+            if shifted:
+                policy_id = shifted
+                record["policy_violation"] = shifted
+                renamed += 1
+            record["schema"] = SCHEMA_VERSION
+
+        if policy_id not in known:
+            dropped[policy_id] = dropped.get(policy_id, 0) + 1
+            continue
+        if record.pop("difficulty", None) is not None:
+            stripped += 1
+        keeps.append(record)
+
+    if not (dropped or stripped or renamed):
+        print(f"nothing to prune - all {len(records)} records already match the schema")
+        return
+
+    for position, record in enumerate(keeps, start=1):
+        record["data_number"] = position
+
+    with path.open("w", encoding="utf-8") as handle:
+        for record in keeps:
+            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+    with (out_dir / "triplets.json").open("w", encoding="utf-8") as handle:
+        json.dump(keeps, handle, indent=2, ensure_ascii=False)
+
+    if dropped:
+        summary = ", ".join(
+            f"{pid} x{n}" for pid, n in sorted(dropped.items(), key=lambda kv: -kv[1])
+        )
+        print(f"dropped {sum(dropped.values())} records ({summary})")
+    if renamed:
+        print(f"renamed {renamed} records to the new policy IDs")
+    if stripped:
+        print(f"stripped 'difficulty' from {stripped} records")
+    print(f"  {len(keeps)} records remain in {path}")
+
+
 def finalize(out_dir: Path) -> None:
     records = load_jsonl(out_dir / "triplets.jsonl")
     if not records:
@@ -1126,6 +1197,8 @@ def build_parser() -> argparse.ArgumentParser:
                       help="continue from the JSONL on disk instead of starting over")
     mode.add_argument("--finalize", action="store_true",
                       help="rebuild triplets.json from triplets.jsonl, then exit")
+    mode.add_argument("--prune", action="store_true",
+                      help="migrate the ledger: drop retired policies, remap renamed IDs, drop 'difficulty'")
 
     scope = parser.add_argument_group("scope")
     scope.add_argument("--domain", default=None,
@@ -1134,6 +1207,9 @@ def build_parser() -> argparse.ArgumentParser:
                        help=f"restrict to one policy id (default in --test: P-02)")
     scope.add_argument("--anchors", type=int, default=None,
                        help="process only the first N anchors per domain")
+    scope.add_argument("--samples", type=int, default=DEFAULT_SAMPLES,
+                       help=(f"negatives per (domain, anchor, policy) cell "
+                             f"(default: {DEFAULT_SAMPLES})"))
     scope.add_argument("--start", type=int, default=0,
                        help="start at this anchor index (default 0)")
     scope.add_argument("--anchor-index", type=int, default=0,
@@ -1175,10 +1251,16 @@ def main() -> None:
         return
 
     if args.policy and args.policy not in POLICY_BY_ID:
-        raise SystemExit(f"unknown --policy {args.policy!r} (expected P-01..P-12)")
+        raise SystemExit(f"unknown --policy {args.policy!r} (expected P-01..P-11)")
+    if args.samples < 1:
+        raise SystemExit("--samples must be at least 1")
 
     if args.finalize:
         finalize(Path(args.out_dir) if args.out_dir else DATA_DIR)
+        return
+
+    if args.prune:
+        prune(Path(args.out_dir) if args.out_dir else DATA_DIR)
         return
 
     if args.out_dir:

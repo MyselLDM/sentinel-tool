@@ -6,8 +6,9 @@
   ./run.ps1                       # full run against 127.0.0.1:8081
   ./run.ps1 -Fresh                # wipe data/ and start over
   ./run.ps1 -Domain federal       # one domain only (handy for sharding)
-  ./run.ps1 -Policy P-08          # one policy only (handy for sharding)
-  ./run.ps1 -Anchors 1            # 12 items per domain - smoke-test the harness
+  ./run.ps1 -Policy P-06          # one policy only (handy for sharding)
+  ./run.ps1 -Anchors 1            # 22 items per domain - smoke-test the harness
+  ./run.ps1 -Samples 1            # one negative per (anchor, policy) cell
   ./run.ps1 -MaxPasses 5          # keep chasing the dropped items longer
   ./run.ps1 -SeedBase 100         # re-roll everything from a different seed family
 
@@ -20,8 +21,8 @@
   --resume, so simply running it again continues where it left off.
   Use -Fresh to deliberately start over.
 
-  A few (anchor, policy) pairs have no natural violation (e.g. P-08 third-party
-  access for an NDA envelope). prompt.py regenerates on every rejection up to
+  A few (anchor, policy) pairs have no natural violation (e.g. P-07 temporal
+  expansion for a one-off action). prompt.py regenerates on every rejection up to
   -Retries times, then drops the item with a loud ERROR on stderr rather than
   writing a mislabelled row. The script keeps making passes until one records
   nothing new or -MaxPasses runs out. -MaxPasses is a CEILING, not a pass count:
@@ -48,6 +49,7 @@ param(
   [string] $Domain   = 'all',
   [string] $Policy   = 'all',
   [int]    $Anchors  = 0,
+  [int]    $Samples  = 2,
   [int]    $Retries  = 50,
   [int]    $MaxPasses = 3,
   [int]    $SeedBase = 0,
@@ -88,9 +90,11 @@ if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
 
 New-Item -ItemType Directory -Force -Path $OutDirPath | Out-Null
 
-# How many triplets this scope should produce - also validates the domain name.
+# How many triplets this scope should produce - also validates the names.
 # NOTE: single quotes in the python below - PowerShell strips embedded double
-# quotes when handing an argument to a native executable.
+# quotes when handing an argument to a native executable. And avoid a colon
+# straight after an interpolated $var - PowerShell lexes "$var:" as a variable
+# reference and fails to parse the script.
 $domainArg = if ($Domain -and $Domain -ne 'all') { $Domain } else { 'all' }
 $policyArg = if ($Policy -and $Policy -ne 'all') { $Policy } else { 'all' }
 $counter = @"
@@ -99,14 +103,16 @@ doms = [d for d in prompt.DOMAINS if '$domainArg' == 'all' or d[0] == '$domainAr
 count = 0
 for key, _ in doms:
     total = len(getattr(anchors, 'anchors_' + key))
-    count += min($Anchors, total) if $Anchors else total
+    count += (min($Anchors, total) if $Anchors else total)
 policies = 1 if '$policyArg' != 'all' else len(prompt.POLICIES)
-print(count * policies)
+if '$policyArg' != 'all' and '$policyArg' not in [p['id'] for p in prompt.POLICIES]:
+    raise SystemExit('unknown policy')
+print(count * policies * $Samples)
 "@
 $scopeOut = @(& python -c $counter)
 $scopeText = $scopeOut | Select-Object -Last 1
 if (-not $scopeText) {
-  throw "Could not determine the scope for -Domain '$Domain'. Check the domain name."
+  throw "Could not determine the scope for -Domain '$Domain' -Policy '$Policy'. Check the names."
 }
 $ExpectedTotal = [int]("$scopeText".Trim())
 if ($ExpectedTotal -le 0) {
@@ -175,6 +181,7 @@ while ($pass -lt $MaxPasses) {
   if ($Domain -and $Domain -ne 'all') { $pyArgs += @('--domain', $Domain) }
   if ($Policy -and $Policy -ne 'all') { $pyArgs += @('--policy', $Policy) }
   if ($Anchors -gt 0) { $pyArgs += @('--anchors', $Anchors) }
+  $pyArgs += @('--samples', $Samples)
   # Bump the seed base each pass. Without this every pass re-rolls a dropped item
   # with the SAME seed and temperature, so it only differs by chance (the server
   # is not bit-reproducible). This makes each pass genuinely new sampling.
