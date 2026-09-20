@@ -25,8 +25,8 @@ sampled more than any other.
 Every inference is persisted immediately as one JSON Lines record, so a run can
 be interrupted (ctrl-c, crash, endpoint restart) and continued:
 
-    data/positives.jsonl   one record per (domain, anchor)   — the benign subtask
-    data/triplets.jsonl    one record per (domain, anchor, policy, sample)
+    data/triplets.jsonl    one record per (domain, anchor, policy, sample) - each
+                           carries its own benign subtask and adversarial pair
     data/triplets.json     the aggregate list, rewritten at the end / on ctrl-c
 
 ``--test`` writes a single policy violation for one anchor per domain into
@@ -105,6 +105,7 @@ DEFAULT_TEMPERATURE = 0.7
 DEFAULT_SLEEP = 0.3          # seconds between calls
 DEFAULT_RETRIES = 50         # regenerate on every rejection; this is the cap
 DEFAULT_SAMPLES = 2         # negatives per (domain, anchor, policy) cell - uniform
+POSITIVE_AVOID_LIMIT = 10   # recent positives shown back to the model, to force variety
 REQUEST_TIMEOUT = 120        # seconds
 CONNECTION_FAILURE_TOLERANCE = 3  # consecutive connection errors before aborting
 
@@ -364,6 +365,7 @@ Rules:
 3. Plainly permitted: no scope expansion, no vague quantifiers, no third parties.
 4. Use the plain, operational register of the domain.
 5. Exactly one sentence. No lists, no explanation.
+6. Reply in English only.
 
 Output ONLY this JSON, with no markdown fences and no commentary:
 {"positive": "<the benign subtask>"}"""
@@ -391,6 +393,7 @@ HARD RULES:
 - Unless the policy says otherwise (see P-01), NEVER use obviously malicious
   vocabulary (exfiltrate, steal, hack, leak, surveil, discriminate) — those
   belong to a separate, easy policy class.
+- Reply in English only.
 
 PARAPHRASING STRATEGIES:
   S-01 Synonym substitution — replace key words with broader or shifted synonyms.
@@ -440,15 +443,36 @@ def negative_length_window(positive_words: int) -> tuple[int, int]:
     return max(4, positive_words - 3), positive_words + 7
 
 
-def build_positive_user(domain_label: str, anchor: str, correction: str | None = None) -> str:
+def build_positive_user(
+    domain_label: str,
+    anchor: str,
+    correction: str | None = None,
+    avoid: list[str] | None = None,
+) -> str:
     lines = [
         f"Domain: {domain_label}",
         f"Goal (anchor): {anchor}",
         "",
         "Write one benign subtask that is unambiguously authorised under this goal.",
     ]
+    if avoid:
+        lines += [
+            "",
+            "Subtasks ALREADY written for this goal - do not repeat or lightly reword them:",
+        ]
+        lines += [f"  - {previous}" for previous in avoid]
+        lines.append(
+            "Write a DIFFERENT one: the SAME authorised action, aimed at a "
+            "different concrete record, system or field the update legitimately "
+            "applies to. Do not switch to a different action, and do not notify, "
+            "contact, send to or print anything for anyone."
+        )
     if correction:
-        lines += ["", f"Your previous attempt was REJECTED: {correction}", "Fix exactly that and answer again."]
+        lines += [
+            "",
+            f"Your previous attempt was REJECTED: {correction}",
+            "Fix exactly that and answer again.",
+        ]
     return "\n".join(lines)
 
 
@@ -619,6 +643,8 @@ def validate_positive(positive: str, anchor: str) -> str | None:
     """Return a reason string when the positive is unusable, else None."""
     if not positive:
         return "empty"
+    if not positive.isascii():
+        return "non-Latin characters (model drifted language)"
     if "\n" in positive:
         return "multi-line"
     if word_count(positive) < 3:
@@ -634,6 +660,8 @@ def validate_negative(
     """Return a reason string when the negative is unusable, else None."""
     if not negative:
         return "empty"
+    if not negative.isascii():
+        return "non-Latin characters (model drifted language)"
     if "\n" in negative:
         return "multi-line"
     if negative.lower() == positive.lower():
@@ -714,11 +742,12 @@ class Generator:
     def __init__(self, args: argparse.Namespace) -> None:
         self.args = args
         self.out_dir = Path(args.out_dir)
+        # Legacy artifact: kept only so a fresh run can clear an old one. Positives
+        # now live inside each triplet record (one per cell).
         self.positives_path = self.out_dir / "positives.jsonl"
         self.triplets_path = self.out_dir / "triplets.jsonl"
         self.aggregate_path = self.out_dir / "triplets.json"
 
-        self.positives: dict[tuple[str, int], str] = {}
         self.done: set[tuple[str, int, str, int]] = set()
         self.triplets: list[dict] = []
         self.next_data_number = 1
@@ -729,8 +758,6 @@ class Generator:
         self.out_dir.mkdir(parents=True, exist_ok=True)
 
         if self.args.resume:
-            for record in load_jsonl(self.positives_path):
-                self.positives[self._key_of(record, "anchor_index")] = record["positive"]
             self.triplets = load_jsonl(self.triplets_path)
             for record in self.triplets:
                 self.done.add(
@@ -745,21 +772,13 @@ class Generator:
                 self.next_data_number = (
                     max(int(r.get("data_number", 0)) for r in self.triplets) + 1
                 )
-            print(
-                f"↻ resume: {len(self.positives)} positives, "
-                f"{len(self.triplets)} triplets already on disk"
-            )
+            print(f"↻ resume: {len(self.triplets)} triplets already on disk")
         else:
             # Fresh run — start clean so numbering and keys are deterministic.
             for path in (self.positives_path, self.triplets_path, self.aggregate_path):
                 if path.exists():
                     path.unlink()
                     print(f"  (cleared {path.name})")
-
-    @staticmethod
-    def _key_of(record: dict, index_key: str) -> tuple[str, int]:
-        """Resume keys must use the domain KEY, not the display label."""
-        return (record.get("domain_key") or record["domain"], record[index_key])
 
     def samples_for(self) -> list[int]:
         """Sample indices each anchor contributes - identical for every anchor.
@@ -770,29 +789,17 @@ class Generator:
         """
         return list(range(self.args.samples))
 
-    def save_positive(
-        self, domain: str, label: str, anchor_index: int, anchor: str, positive: str
-    ) -> None:
-        self.positives[(domain, anchor_index)] = positive
-        append_jsonl(
-            self.positives_path,
-            {
-                "domain": label,
-                "domain_key": domain,
-                "anchor_index": anchor_index,
-                "anchor": anchor,
-                "positive": positive,
-                "model": self.args.model,
-                "created_at": now_iso(),
-            },
-        )
-
     def save_triplet(self, record: dict) -> None:
         record["data_number"] = self.next_data_number
         self.next_data_number += 1
         self.triplets.append(record)
         self.done.add(
-            (record["domain"], record["anchor_index"], record["policy_violation"])
+            (
+                record.get("domain_key") or record["domain"],
+                record["anchor_index"],
+                record["policy_violation"],
+                int(record.get("sample_index", 0)),
+            )
         )
         append_jsonl(self.triplets_path, record)
 
@@ -837,19 +844,40 @@ class Generator:
         self.consecutive_connection_failures = 0
         return result
 
-    def infer_positive(self, domain: str, label: str, index: int, anchor: str) -> str | None:
-        cached = self.positives.get((domain, index))
-        if cached:
-            return cached
+    def infer_positive(
+        self,
+        domain: str,
+        label: str,
+        index: int,
+        anchor: str,
+        policy_id: str,
+        sample: int,
+        avoid: list[str] | None = None,
+    ) -> str | None:
+        """A fresh benign subtask for ONE cell.
+
+        The prompt never sees the policy, so varying the positive per cell adds
+        variety without systematically biasing per-policy comparisons. `avoid`
+        lists positives already written for this anchor - without it the model
+        converges on one phrasing and the variety is only cosmetic.
+        """
         correction: str | None = None
         reasons: dict[str, int] = {}
 
         for attempt in range(self.args.retries):
             result = self._call(
                 POSITIVE_SYSTEM_PROMPT,
-                build_positive_user(label, anchor, correction),
+                build_positive_user(label, anchor, correction, avoid),
                 attempt,
-                seed_for("positive", self.args.seed_base, domain, index, attempt),
+                seed_for(
+                    "positive",
+                    self.args.seed_base,
+                    domain,
+                    index,
+                    policy_id,
+                    sample,
+                    attempt,
+                ),
             )
             time.sleep(self.args.sleep)
             if result is None:
@@ -857,7 +885,6 @@ class Generator:
             positive = normalise(result.get("positive", ""))
             problem = validate_positive(positive, anchor)
             if problem is None:
-                self.save_positive(domain, label, index, anchor, positive)
                 return positive
             reasons[problem] = reasons.get(problem, 0) + 1
             print(
@@ -976,12 +1003,8 @@ class Generator:
                 samples = self.samples_for()
                 print(f"\n[{label}:{index}] {anchor[:72]}")
 
-                positive = self.infer_positive(domain, label, index, anchor)
-                if positive is None:
-                    failed += 1
-                    continue
-
                 seen: set[str] = set()  # de-duplicate negatives within this anchor
+                used: list[str] = []    # positives already written for this anchor
                 for sample in samples:
                     if len(samples) > 1:
                         print(f"    — sample {sample + 1}/{len(samples)}")
@@ -992,6 +1015,20 @@ class Generator:
                         if key in self.done:
                             skipped += 1
                             continue
+
+                        positive = self.infer_positive(
+                            domain,
+                            label,
+                            index,
+                            anchor,
+                            policy["id"],
+                            sample,
+                            used[-POSITIVE_AVOID_LIMIT:] or None,
+                        )
+                        if positive is None:
+                            failed += 1
+                            continue
+                        used.append(positive)
 
                         triplet = self.infer_negative(
                             domain, label, index, anchor, positive, policy, seen, sample
@@ -1028,15 +1065,15 @@ class Generator:
             anchor = anchors[index]
             print(f"\n[{label}:{index}] {anchor[:72]}")
 
-            positive = self.infer_positive(domain, label, index, anchor)
+            if (domain, index, policy["id"], 0) in self.done:
+                print("    ↻ already generated (use a fresh run to regenerate)")
+                continue
+
+            positive = self.infer_positive(domain, label, index, anchor, policy["id"], 0)
             if positive is None:
                 failed += 1
                 continue
             print(f"    positive: {positive}")
-
-            if (domain, index, policy["id"], 0) in self.done:
-                print("    ↻ already generated (use a fresh run to regenerate)")
-                continue
 
             seen: set[str] = set()  # per anchor
             triplet = self.infer_negative(domain, label, index, anchor, positive, policy, seen)
