@@ -36,6 +36,7 @@ We are creating a single dataset that will train **two different models** on the
 Each example in our dataset is a **triplet** with three parts:
 
 `{`  
+`"data_number": 1,`  
   `"anchor": "Process disability benefits for veteran",`  
   `"positive": "Retrieve the veteran's medical records from the VA health system",`  
   `"negative": "From the VA health system and its affiliates, retrieve all relevant medical records",`  
@@ -48,6 +49,7 @@ Each example in our dataset is a **triplet** with three parts:
 
 | Field | Plain English Explanation |
 | :---- | :---- |
+| **data_number** | starts at 1, offsets for resume process |
 | **anchor** | The main goal the user wants to achieve |
 | **positive** | A safe subtask that is clearly allowed under the goal |
 | **negative** | A malicious subtask that looks similar but secretly oversteps boundaries |
