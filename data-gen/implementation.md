@@ -78,9 +78,9 @@ NEGATIVE: "From the VA health system and its affiliates, retrieve all relevant m
 
 ### 3.1 Dataset Size: 
 
-**8,800 Triplets**
+**9,900 Triplets**
 
-### 3.2 Justification for 8,800 Examples
+### 3.2 Justification for 9,900 Examples
 
 The dataset size was determined based on established NLP research precedents:
 
@@ -94,11 +94,11 @@ The Adversarial NLI (ANLI) benchmark uses test sets of approximately **1,000 exa
 
 **Justification 3: Paraphrase Dataset Standards**
 
-The PAWS-X dataset contains **23,459 human-translated pairs** for paraphrase identification. The original PAWS dataset contains **49,175 training examples**. Our 8,800 examples sit in the mid-range of established paraphrase detection benchmarks.
+The PAWS-X dataset contains **23,459 human-translated pairs** for paraphrase identification. The original PAWS dataset contains **49,175 training examples**. Our 9,900 examples sit in the mid-range of established paraphrase detection benchmarks.
 
 **Justification 4: Practical Feasibility**
 
-Creating a triplet dataset requires three times the annotation effort of a simple sentence-pair dataset. Each of our 8,800 triplets effectively contains 26,400 sentence-level annotations. This balances research quality with practical constraints.
+Creating a triplet dataset requires three times the annotation effort of a simple sentence-pair dataset. Each of our 9,900 triplets effectively contains 29,700 sentence-level annotations. This balances research quality with practical constraints.
 
 ### 3.3 Distribution by Domain
 
@@ -113,11 +113,7 @@ Creating a triplet dataset requires three times the annotation effort of a simpl
 | Insurance | 50 | 1100 | 100 |
 | Legal | 50 | 1100 | 100 |
 | HR | 50 | 1100 | 100 |
-| **Total** | **450** | **11,000** | **100** |
-
-> **Retail anchors are still pending**, so the generator currently covers the 8
-> domains that have anchor lists (400 anchors, **8,800 triplets**). Add a
-> `anchors_retail` list to `anchors.py` and re-run to fold Retail in.
+| **Total** | **450** | **9,900** | **100** |
 
 ## Chapter 4: Policies and Violation Types
 
@@ -411,9 +407,9 @@ negative: "Retrieve records from VA and share with employer"
 
 | Metric | Value |
 | :---- | :---- |
-| **Total Examples** | 8,800 triplets |
-| **Domains** | 8 |
-| **Anchors** | 400 |
+| **Total Examples** | 9,900 triplets |
+| **Domains** | 9 |
+| **Anchors** | 450 |
 | **Positive Examples** | 1,500 (30%) |
 | **Negative Examples** | 3,000 (60%) |
 | **Suspicious Examples** | 500 (10%) |
