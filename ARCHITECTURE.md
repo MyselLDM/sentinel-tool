@@ -692,7 +692,7 @@ The remaining development is cleanly partitioned into three independent tracks w
   - Display alert indicator if the gateway falls back to cached metadata when FastAPI is unreachable.
 - **References**: `express-server/API.md` §7 & §8; `sentinel-client/plan.md` §4.2 & §4.5.
 
-#### Track 2: Interactive Console CRUD & Evaluation Inspector (Groupmate 1)
+#### Track 2: Interactive Console CRUD & Evaluation Inspector (Ash)
 - **API Key Management (`/api-keys`)**:
   - Implement keys table (`GET /api/keys`) displaying name, prefix, last 4, rate limit, creation date, last used date, and status.
   - Create key modal invoking `POST /api/keys` (`keyName`, `rateLimitPerMinute`, `expiresAt`).
@@ -708,7 +708,7 @@ The remaining development is cleanly partitioned into three independent tracks w
 - **Client API modules**: Create `sentinel-client/lib/api/keys.ts` and `sentinel-client/lib/api/requests.ts`.
 - **References**: `express-server/API.md` §4 & §6; `sentinel-client/plan.md` §4.3 & §4.4.
 
-#### Track 3: Model Calibration & Automated Testing (Groupmate 2)
+#### Track 3: Model Calibration & Automated Testing (Jen)
 - **Model Threshold Calibration**:
   - Replace placeholder `0.5` values in `fastapi/model_config.json` with cross-validation F1-optimal values (`recommended_nli_threshold` and contrastive CV cut-off) from training logs.
 - **FastAPI HTTP Endpoint Tests**:
