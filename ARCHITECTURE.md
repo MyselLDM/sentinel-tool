@@ -617,40 +617,107 @@ erDiagram
 
 ---
 
-## 13. Gaps and next steps
+## 13. Gaps, next steps & team task dissemination
 
-**Blocking / correctness**
+### 13.1 Current implementation status
 
-- [ ] **Thresholds are placeholders (`0.5`).** Merge training output
-      (`logs/nli_cv_results.json`, `logs/contrastive_cv_results.json`) into
-      `fastapi/model_config.json` → then `nli.metrics` / `contrastive.metrics` populate `/api/models`.
-- [x] **`/login` exists** (`app/(auth)/login/page.tsx`) — one surface with **Sign in** / **Create
-      account** tabs, wired end-to-end to `POST /api/auth/{login,register}`; the navbar/footer CTAs
-      (`Sign in` → `/login`, `Get started` → `/login?tab=create`) now resolve.
-- [ ] **Console pages are routed but mostly unbuilt.** `(app)` now has a sidebar console shell
-      (`components/console/`) covering `/dashboard`, `/api-keys`, `/logs`, `/settings`; only
-      `/dashboard` has content — the other three are placeholders. The Express REST surface behind
-      them is fully implemented and still unused by the UI.
-
-**Persistence & ops**
+**Persistence & environment**
 
 - [x] **Local SQLite store** — `store/sqlite.js` (better-sqlite3) persists users, API keys,
-      evaluation logs, refresh tokens and model metrics in one file (§9.1). No Supabase.
+      evaluation logs, refresh tokens and model metrics in one file (§9.1). Seed data installed in
+      `express-server/data/sentinel.db`.
+- [x] **Linux / cross-platform runner** — `fastapi/run.sh` enhanced with stale/foreign `.venv`
+      detection to automatically rebuild broken virtualenvs across OS checkouts.
+- [x] **Scratch file cleanup** — stray root `server.js` and `express-server/test.js` removed.
 - [ ] Rate limiting is per-instance in-memory (Express and the playground route) — needs a shared
       store for multi-instance.
 - [ ] No deployment artifacts (Dockerfiles / compose / CI).
 
-**Testing**
+**Frontend & core routes**
 
-- [ ] `fastapi`: 14 unit tests (preprocess + decision logic). No HTTP-level tests yet.
-- [ ] `express-server`: no automated tests.
-- [ ] `sentinel-client`: no tests.
+- [x] **`/login` exists** (`app/(auth)/login/page.tsx`) — one surface with **Sign in** / **Create
+      account** tabs, wired end-to-end to `POST /api/auth/{login,register}`; session token cookies
+      and refresh rotation live.
+- [x] **`/docs` explorer** (`app/docs/page.tsx`) — full interactive API reference and tutorials.
+- [ ] **Console pages are routed but mostly unbuilt.** `(app)` has a sidebar console shell
+      (`components/console/`) covering `/dashboard`, `/api-keys`, `/logs`, `/settings`; the Express
+      REST endpoints behind them are fully implemented and ready to be consumed.
 
-**Nice-to-have**
+---
 
-- [ ] Wire the playground to the console preview route (threshold overrides) for experimentation.
-- [ ] Batch/`POST /evaluate/batch` if agents need bulk verification.
-- [ ] ONNX / quantized models for lower latency (noted in `full_plan.md`).
+### 13.2 Team task dissemination (3-person matrix)
+
+The remaining development is cleanly partitioned into three independent tracks with zero code overlaps:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       TASK DISSEMINATION MATRIX                             │
+├───────────────┬────────────────────────────┬────────────────────────────────┤
+│ Role          │ Focus Area                 │ Target Surfaces & Files        │
+├───────────────┼────────────────────────────┼────────────────────────────────┤
+│ Track 1       │ Ops Setup & Read-Only      │ • sentinel-client/app/(app)/   │
+│ (Fast & High  │ Console Views              │   dashboard/page.tsx           │
+│  Visual ROI)  │                            │ • sentinel-client/app/(app)/   │
+│               │                            │   settings/page.tsx            │
+│               │                            │ • lib/api/stats.ts, models.ts  │
+├───────────────┼────────────────────────────┼────────────────────────────────┤
+│ Track 2       │ Interactive Console CRUD   │ • sentinel-client/app/(app)/   │
+│ (Groupmate 1) │ & Request Inspector        │   api-keys/page.tsx            │
+│               │                            │ • sentinel-client/app/(app)/   │
+│               │                            │   logs/page.tsx & [requestId]/ │
+│               │                            │ • lib/api/keys.ts, requests.ts │
+├───────────────┼────────────────────────────┼────────────────────────────────┤
+│ Track 3       │ Model Calibration,         │ • fastapi/model_config.json    │
+│ (Groupmate 2) │ Verification & Test Suites │ • fastapi/tests/test_api.py    │
+│               │                            │ • express-server/tests/        │
+└───────────────┴────────────────────────────┴────────────────────────────────┘
+```
+
+#### Track 1: Ops, Client Architecture & Overview Surfaces (Aisaiah)
+- **Environment & Ops Setup [Completed]**:
+  - SQLite database setup and verification in `express-server/data/sentinel.db`.
+  - Stale/foreign `.venv` recovery runner in `fastapi/run.sh`.
+  - Multi-service root orchestration / startup script (`./start-all.sh` or Docker).
+- **Client Architecture & Shared UI Primitives**:
+  - Authenticated API client wrapper (`sentinel-client/lib/api/client.ts`) and DTO types (`lib/api/types.ts`).
+  - Shared console UI components (`components/ui/stat-card.tsx`, `status-badge.tsx`).
+  - Resource API clients: `sentinel-client/lib/api/stats.ts` and `sentinel-client/lib/api/models.ts`.
+- **Dashboard (`/dashboard`)**:
+  - Connect to `GET /api/stats/summary?period=24h` and render metric stat cards (*Total Requests*, *Rejection Rate %*, *Avg Response Time ms*, *Active Keys*).
+  - Connect to `GET /api/stats/recent?limit=10` and render the Recent Activity table showing the last 10 evaluation requests with verdict badges.
+  - Implement empty state ("No evaluations yet") and skeleton loading state (`loading.tsx`).
+- **Model Info (`/settings`)**:
+  - Connect to `GET /api/models` (and optionally `GET /api/metrics`).
+  - Render read-only information cards for **NLI Cross-Encoder** and **Contrastive Bi-Encoder** showing model version, decision rule, and active threshold.
+  - Display alert indicator if the gateway falls back to cached metadata when FastAPI is unreachable.
+- **References**: `express-server/API.md` §7 & §8; `sentinel-client/plan.md` §4.2 & §4.5.
+
+#### Track 2: Interactive Console CRUD & Evaluation Inspector (Groupmate 1)
+- **API Key Management (`/api-keys`)**:
+  - Implement keys table (`GET /api/keys`) displaying name, prefix, last 4, rate limit, creation date, last used date, and status.
+  - Create key modal invoking `POST /api/keys` (`keyName`, `rateLimitPerMinute`, `expiresAt`).
+  - **One-time secret reveal screen**: Plaintext API key is returned only once at creation; render in a modal with clipboard copy and warning.
+  - Key status toggle (`PATCH /api/keys/:id`) and delete confirmation dialog (`DELETE /api/keys/:id`).
+- **Logs Viewer (`/logs`)**:
+  - Filter bar supporting status (`all`, `accepted`, `rejected`), date range (`from`/`to`), and request ID search.
+  - Paginated table (`GET /api/requests`) with latency, decision badge, and timestamp.
+  - CSV export button linking to `GET /api/requests/export.csv`.
+- **Evaluation Detail Page (`/logs/[requestId]`)**:
+  - Create route `sentinel-client/app/(app)/logs/[requestId]/page.tsx` calling `GET /api/requests/:requestId`.
+  - Render full goal/subtask text, combined verdict, dual `ScoreMeter`s (score vs. threshold), raw NLI label probabilities (`rawScores`), and request metadata.
+- **Client API modules**: Create `sentinel-client/lib/api/keys.ts` and `sentinel-client/lib/api/requests.ts`.
+- **References**: `express-server/API.md` §4 & §6; `sentinel-client/plan.md` §4.3 & §4.4.
+
+#### Track 3: Model Calibration & Automated Testing (Groupmate 2)
+- **Model Threshold Calibration**:
+  - Replace placeholder `0.5` values in `fastapi/model_config.json` with cross-validation F1-optimal values (`recommended_nli_threshold` and contrastive CV cut-off) from training logs.
+- **FastAPI HTTP Endpoint Tests**:
+  - Add integration tests using `pytest` and `fastapi.testclient.TestClient` covering `POST /evaluate`, `GET /models`, and `GET /health`.
+- **Express API Integration Tests**:
+  - Add automated tests in `express-server/` testing auth registration/login/refresh, API key creation/hashing, and evaluation proxy/rate limiting.
+- **Model Fallback Verification**:
+  - Verify `app/models.py` gracefully loads Hugging Face base models when fine-tuned weight files are absent.
+- **References**: `fastapi/model_config.json`; `fastapi/README.md`; `express-server/API.md`.
 
 ---
 
