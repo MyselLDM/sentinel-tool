@@ -639,9 +639,8 @@ erDiagram
       account** tabs, wired end-to-end to `POST /api/auth/{login,register}`; session token cookies
       and refresh rotation live.
 - [x] **`/docs` explorer** (`app/docs/page.tsx`) — full interactive API reference and tutorials.
-- [ ] **Console pages are routed but mostly unbuilt.** `(app)` has a sidebar console shell
-      (`components/console/`) covering `/dashboard`, `/api-keys`, `/logs`, `/settings`; the Express
-      REST endpoints behind them are fully implemented and ready to be consumed.
+- [x] **Dashboard & Model Info views built** (`/dashboard`, `/settings`) — connected to Express `/api/stats/summary`, `/api/stats/recent`, `/api/models`, and `/api/metrics` with typed client (`lib/api/`), shared UI primitives (`stat-card.tsx`, `status-badge.tsx`), and skeleton loaders.
+- [ ] **Remaining console pages:** `/api-keys` (key CRUD) and `/logs` (with `/logs/[requestId]` inspector).
 
 ---
 
@@ -656,8 +655,8 @@ The remaining development is cleanly partitioned into three independent tracks w
 │ Role          │ Focus Area                 │ Target Surfaces & Files        │
 ├───────────────┼────────────────────────────┼────────────────────────────────┤
 │ Track 1       │ Ops Setup & Read-Only      │ • sentinel-client/app/(app)/   │
-│ (Fast & High  │ Console Views              │   dashboard/page.tsx           │
-│  Visual ROI)  │                            │ • sentinel-client/app/(app)/   │
+│ (Aisaiah)     │ Console Views [COMPLETED]  │   dashboard/page.tsx           │
+│               │                            │ • sentinel-client/app/(app)/   │
 │               │                            │   settings/page.tsx            │
 │               │                            │ • lib/api/stats.ts, models.ts  │
 ├───────────────┼────────────────────────────┼────────────────────────────────┤
@@ -670,26 +669,27 @@ The remaining development is cleanly partitioned into three independent tracks w
 │ Track 3       │ Model Calibration,         │ • fastapi/model_config.json    │
 │ (Groupmate 2) │ Verification & Test Suites │ • fastapi/tests/test_api.py    │
 │               │                            │ • express-server/tests/        │
-└───────────────┴────────────────────────────┴────────────────────────────────┘
+│ └───────────────┴────────────────────────────┴────────────────────────────────┘
 ```
 
-#### Track 1: Ops, Client Architecture & Overview Surfaces (Aisaiah)
+#### Track 1: Ops, Client Architecture & Overview Surfaces (Aisaiah) [Completed]
 - **Environment & Ops Setup [Completed]**:
   - SQLite database setup and verification in `express-server/data/sentinel.db`.
   - Stale/foreign `.venv` recovery runner in `fastapi/run.sh`.
   - Multi-service root orchestration / startup script (`./start-all.sh` or Docker).
-- **Client Architecture & Shared UI Primitives**:
+- **Client Architecture & Shared UI Primitives [Completed]**:
   - Authenticated API client wrapper (`sentinel-client/lib/api/client.ts`) and DTO types (`lib/api/types.ts`).
   - Shared console UI components (`components/ui/stat-card.tsx`, `status-badge.tsx`).
   - Resource API clients: `sentinel-client/lib/api/stats.ts` and `sentinel-client/lib/api/models.ts`.
-- **Dashboard (`/dashboard`)**:
-  - Connect to `GET /api/stats/summary?period=24h` and render metric stat cards (*Total Requests*, *Rejection Rate %*, *Avg Response Time ms*, *Active Keys*).
+- **Dashboard (`/dashboard`) [Completed]**:
+  - Connect to `GET /api/stats/summary?period=24h` and render metric stat cards (*Total Requests*, *Rejection Rate %*, *Avg Response Time ms*, *Active Keys*) with 24h/7d/30d period selector.
   - Connect to `GET /api/stats/recent?limit=10` and render the Recent Activity table showing the last 10 evaluation requests with verdict badges.
   - Implement empty state ("No evaluations yet") and skeleton loading state (`loading.tsx`).
-- **Model Info (`/settings`)**:
-  - Connect to `GET /api/models` (and optionally `GET /api/metrics`).
-  - Render read-only information cards for **NLI Cross-Encoder** and **Contrastive Bi-Encoder** showing model version, decision rule, and active threshold.
-  - Display alert indicator if the gateway falls back to cached metadata when FastAPI is unreachable.
+- **Model Info (`/settings`) [Completed]**:
+  - Connect to `GET /api/models` and `GET /api/metrics`.
+  - Render read-only information cards for **NLI Cross-Encoder** and **Contrastive Bi-Encoder** showing model version, decision rule, active threshold, and runtime counters.
+  - Display alert indicator if the gateway falls back to cached metadata when FastAPI is unreachable (`stale: true`).
+  - Skeleton loading state (`loading.tsx`).
 - **References**: `express-server/API.md` §7 & §8; `sentinel-client/plan.md` §4.2 & §4.5.
 
 #### Track 2: Interactive Console CRUD & Evaluation Inspector (Ash)
