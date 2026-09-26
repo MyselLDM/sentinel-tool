@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Download, Search } from "lucide-react";
 
 import { fetchLogsAction } from "./actions";
 import { LogsClient } from "./logs-client";
