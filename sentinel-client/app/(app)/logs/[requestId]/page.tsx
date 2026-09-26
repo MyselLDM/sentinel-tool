@@ -1,202 +1,360 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { AlertTriangle, ArrowLeft, Clock3, Download, Gauge, ShieldAlert, UserRound } from "lucide-react";
 import Link from "next/link";
+import { ArrowLeft, Clock, Info } from "lucide-react";
+import { notFound } from "next/navigation";
 
-import { getCurrentUser } from "@/lib/auth/dal";
-import { readSession } from "@/lib/auth/session";
-import { getRequest } from "@/lib/api/requests";
-import { Section } from "@/components/ui/section";
 import { Eyebrow } from "@/components/ui/eyebrow";
+import { getRequest } from "@/lib/api/requests";
+import type { NliDetail, ModelDetail, RequestDetail } from "@/lib/api/requests";
+import { readSession } from "@/lib/auth/session";
+import { cn } from "@/lib/cn";
 
-export const metadata: Metadata = {
-  title: "Evaluation details — Sentinel",
+// ── Metadata ──────────────────────────────────────────────────────────────────
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ requestId: string }>;
+}): Promise<Metadata> {
+  const { requestId } = await params;
+  return {
+    title: `Request ${requestId.slice(0, 8)} — Sentinel`,
+    description: "Full evaluation detail including NLI and contrastive model scores.",
+  };
+}
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+function fmtDateTime(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZoneName: "short",
+  });
+}
+
+function pct(n: number): string {
+  return `${(n * 100).toFixed(1)}%`;
+}
+
+// ── Score Meter ───────────────────────────────────────────────────────────────
+
+/**
+ * Renders a horizontal bar with the score and a threshold tick-mark.
+ * `signed` normalises the [-1, 1] cosine range to [0, 1] for display.
+ */
+function ScoreMeter({
+  score,
+  threshold,
+  signed = false,
+}: {
+  score: number;
+  threshold: number;
+  signed?: boolean;
+}) {
+  const normalize = (n: number) => (signed ? (n + 1) / 2 : n);
+  const clamp = (n: number) => Math.min(100, Math.max(0, n * 100));
+
+  const fill = clamp(normalize(score));
+  const tick = clamp(normalize(threshold));
+
+  return (
+    <div className="relative h-2 w-full border border-line bg-paper-soft" role="img" aria-label={`Score ${score.toFixed(3)}, threshold ${threshold.toFixed(3)}`}>
+      <div className="absolute inset-y-0 left-0 bg-ink" style={{ width: `${fill}%` }} />
+      <span
+        aria-hidden
+        className="absolute -bottom-1 -top-1 w-px bg-ink/40"
+        style={{ left: `${tick}%` }}
+      />
+    </div>
+  );
+}
+
+// ── Model Card ────────────────────────────────────────────────────────────────
+
+function ModelCard({
+  name,
+  rule,
+  model,
+  signed = false,
+  children,
+}: {
+  name: string;
+  rule: string;
+  model: ModelDetail;
+  signed?: boolean;
+  children?: React.ReactNode;
+}) {
+  const rejected = model.result; // nli/contrastive result = true means rejected (stored model reject)
+
+  return (
+    <div className="border border-line bg-paper p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="label-mono">{name}</p>
+          <p className="mt-1 font-mono text-[11px] tracking-wider text-muted">{rule}</p>
+        </div>
+        <span
+          className={cn(
+            "shrink-0 font-mono text-xs tracking-wider",
+            rejected ? "text-ink" : "text-muted",
+          )}
+        >
+          {rejected ? "REJECTED" : "ACCEPTED"}
+        </span>
+      </div>
+
+      <div className="mt-4">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="font-mono text-xs text-muted">Score</span>
+          <span className="font-mono text-sm">{model.score.toFixed(4)}</span>
+        </div>
+        <ScoreMeter score={model.score} threshold={model.threshold} signed={signed} />
+        <div className="mt-1.5 flex items-center justify-between font-mono text-[10px] tracking-wider text-muted">
+          <span>0{signed ? " (−1)" : ""}</span>
+          <span>THRESHOLD {model.threshold.toFixed(3)}</span>
+          <span>1{signed ? " (+1)" : ""}</span>
+        </div>
+      </div>
+
+      {children}
+    </div>
+  );
+}
+
+// ── Raw NLI Scores ────────────────────────────────────────────────────────────
+
+function RawScoresCard({ rawScores }: { rawScores: NliDetail["rawScores"] }) {
+  const labels: Array<{ key: keyof typeof rawScores; label: string }> = [
+    { key: "contradiction", label: "Contradiction" },
+    { key: "entailment", label: "Entailment" },
+    { key: "neutral", label: "Neutral" },
+  ];
+
+  return (
+    <div className="mt-4 border-t border-line pt-4 space-y-2">
+      <p className="label-mono mb-3">Raw NLI probabilities</p>
+      {labels.map(({ key, label }) => {
+        const val = rawScores[key];
+        return (
+          <div key={key}>
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-mono text-xs text-muted uppercase tracking-wider">{label}</span>
+              <span className="font-mono text-xs">{pct(val)}</span>
+            </div>
+            <div className="relative h-1.5 w-full border border-line bg-paper-soft">
+              <div
+                className={cn("absolute inset-y-0 left-0", key === "contradiction" ? "bg-ink" : "bg-line-strong")}
+                style={{ width: pct(val) }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Verdict Banner ────────────────────────────────────────────────────────────
+
+const REASON_LABEL: Record<string, string> = {
+  accepted: "Both models agree — subtask is aligned with the goal.",
+  nli_reject: "NLI model detected contradiction with the goal.",
+  contrastive_reject: "Contrastive model found insufficient semantic similarity.",
+  both_reject: "Both models rejected — NLI contradiction and low cosine similarity.",
 };
 
-function formatDate(value: string | null): string {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+function VerdictBanner({
+  isRejected,
+  rejectionReason,
+}: {
+  isRejected: boolean;
+  rejectionReason: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-4 border p-5",
+        isRejected ? "border-ink bg-ink text-paper" : "border-line bg-paper",
+      )}
+    >
+      <div
+        className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center border font-mono text-lg",
+          isRejected ? "border-paper/40" : "border-ink",
+        )}
+        aria-hidden
+      >
+        {isRejected ? "✕" : "✓"}
+      </div>
+      <div className="min-w-0">
+        <p className="font-mono text-sm font-medium tracking-widest">
+          {isRejected ? "REJECTED" : "ACCEPTED"}
+        </p>
+        <p
+          className={cn(
+            "mt-1 text-sm leading-relaxed",
+            isRejected ? "text-paper/80" : "text-muted",
+          )}
+        >
+          {REASON_LABEL[rejectionReason] ?? rejectionReason}
+        </p>
+      </div>
+    </div>
+  );
 }
 
-function scorePercent(score: number | null | undefined): string {
-  if (typeof score !== "number") return "—";
-  return `${Math.round(score * 100)}%`;
+// ── Metadata row ──────────────────────────────────────────────────────────────
+
+function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-3 border-b border-line py-2.5 last:border-0">
+      <span className="label-mono w-36 shrink-0">{label}</span>
+      <span className="min-w-0 font-mono text-xs leading-relaxed">{value}</span>
+    </div>
+  );
 }
 
-function badgeClass(status: boolean | null): string {
-  if (status === true) return "badge badge-error";
-  if (status === false) return "badge badge-success";
-  return "badge badge-neutral";
-}
+// ── Page ──────────────────────────────────────────────────────────────────────
 
-export default async function RequestDetailPage({ params }: { params: Promise<{ requestId: string }> }) {
+export default async function RequestDetailPage({
+  params,
+}: {
+  params: Promise<{ requestId: string }>;
+}) {
   const { requestId } = await params;
-  const user = await getCurrentUser();
-  if (!user) notFound();
 
   const session = await readSession();
   if (!session) notFound();
 
-  let request;
+  let detail: RequestDetail;
   try {
-    request = await getRequest(session.accessToken, requestId);
-  } catch {
-    notFound();
+    detail = await getRequest(session.accessToken, requestId);
+  } catch (err) {
+    const e = err as { status?: number };
+    if (e.status === 404) notFound();
+    // Other errors — show a minimal error state
+    throw err;
   }
 
-  const rawScores = request.nli.rawScores ?? {};
+  const {
+    goal,
+    subtask,
+    isRejected,
+    rejectionReason,
+    nli,
+    contrastive,
+    responseTimeMs,
+    modelVersion,
+    evaluationMode,
+    userAgent,
+    createdAt,
+    apiKeyId,
+  } = detail;
 
   return (
-    <div className="flex flex-col gap-6 md:gap-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <Eyebrow>Evaluation</Eyebrow>
-          <h1 className="mt-5 font-serif text-4xl tracking-[-0.01em] md:text-5xl">
-            Request {request.requestId}
-          </h1>
-        </div>
-        <Link href="/logs" className="btn btn-ghost btn-sm gap-2 self-start">
-          <ArrowLeft className="h-4 w-4" />
-          Back to logs
+    <div className="space-y-8">
+      {/* Back + header */}
+      <div>
+        <Link
+          href="/logs"
+          className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wider text-muted transition-colors hover:text-ink"
+        >
+          <ArrowLeft className="h-3 w-3" />
+          BACK TO LOGS
         </Link>
-      </div>
 
-      <Section className="p-6 md:p-8">
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-6">
-            <div>
-              <div className="label-mono text-xs uppercase tracking-[0.18em] text-muted">Goal</div>
-              <p className="mt-2 whitespace-pre-wrap text-base leading-relaxed">{request.goal}</p>
-            </div>
-
-            <div>
-              <div className="label-mono text-xs uppercase tracking-[0.18em] text-muted">Subtask</div>
-              <p className="mt-2 whitespace-pre-wrap text-base leading-relaxed">{request.subtask}</p>
-            </div>
-          </div>
-
-          <div className="space-y-4 rounded-none border border-line bg-paper-soft p-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="label-mono text-xs uppercase tracking-[0.18em] text-muted">Decision</span>
-              <span className={badgeClass(request.isRejected)}>{request.isRejected ? "Rejected" : "Accepted"}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted">
-              <ShieldAlert className="h-4 w-4" />
-              <span>{request.rejectionReason ?? "accepted"}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted">
-              <Clock3 className="h-4 w-4" />
-              <span>{request.responseTimeMs ?? 0} ms</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted">
-              <Download className="h-4 w-4" />
-              <span>{request.evaluationMode ?? "standard"}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted">
-              <UserRound className="h-4 w-4" />
-              <span>{request.userAgent ?? "unknown user-agent"}</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-muted">
-              <Gauge className="h-4 w-4" />
-              <span>{request.modelVersion ?? "unknown model"}</span>
-            </div>
-          </div>
+        <div className="mt-5">
+          <Eyebrow>Evaluation Detail</Eyebrow>
+          <h1 className="mt-3 font-serif text-3xl leading-tight tracking-[-0.01em] md:text-4xl">
+            Request Inspector
+          </h1>
+          <p className="mt-2 font-mono text-xs text-muted" title={detail.requestId}>
+            ID: {detail.requestId}
+          </p>
         </div>
-      </Section>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Section className="p-6 md:p-8">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="font-serif text-2xl tracking-tight">NLI model</h2>
-            <span className={badgeClass(request.nli.result)}>{request.nli.result === true ? "Reject" : request.nli.result === false ? "Accept" : "Unknown"}</span>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-muted">Score</span>
-              <span className="font-mono">{scorePercent(request.nli.score)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted">Threshold</span>
-              <span className="font-mono">{scorePercent(request.nli.threshold)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted">Decision</span>
-              <span className="font-mono">{request.nli.result === true ? "reject" : "accept"}</span>
-            </div>
-          </div>
-
-          <div className="mt-6 overflow-hidden border border-line">
-            <div className="grid grid-cols-[1fr_auto] border-b border-line bg-paper-soft px-3 py-2 text-xs uppercase tracking-[0.18em] text-muted">
-              <span>Label</span>
-              <span>Probability</span>
-            </div>
-            {Object.entries(rawScores).length === 0 ? (
-              <div className="px-3 py-4 text-sm text-muted">No raw scores recorded.</div>
-            ) : (
-              Object.entries(rawScores).map(([label, value]) => (
-                <div key={label} className="grid grid-cols-[1fr_auto] border-b border-line px-3 py-2 last:border-b-0">
-                  <span className="capitalize">{label}</span>
-                  <span className="font-mono">{Number(value).toFixed(4)}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </Section>
-
-        <Section className="p-6 md:p-8">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="font-serif text-2xl tracking-tight">Contrastive model</h2>
-            <span className={badgeClass(request.contrastive.result)}>{request.contrastive.result === true ? "Reject" : request.contrastive.result === false ? "Accept" : "Unknown"}</span>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-muted">Score</span>
-              <span className="font-mono">{request.contrastive.score ?? "—"}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted">Threshold</span>
-              <span className="font-mono">{request.contrastive.threshold ?? "—"}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted">Decision</span>
-              <span className="font-mono">{request.contrastive.result === true ? "reject" : "accept"}</span>
-            </div>
-          </div>
-
-          <div className="mt-6 rounded-none border border-line bg-paper-soft p-4 text-sm text-muted">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              <span>Dual-model decision logic: reject if either model rejects.</span>
-            </div>
-          </div>
-        </Section>
       </div>
 
-      <Section className="p-6 md:p-8">
-        <h2 className="font-serif text-2xl tracking-tight">Metadata</h2>
-        <dl className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div>
-            <dt className="label-mono text-xs uppercase tracking-[0.18em] text-muted">Created</dt>
-            <dd className="mt-2 font-mono text-sm">{formatDate(request.createdAt)}</dd>
-          </div>
-          <div>
-            <dt className="label-mono text-xs uppercase tracking-[0.18em] text-muted">API key</dt>
-            <dd className="mt-2 font-mono text-sm">{request.apiKeyId ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="label-mono text-xs uppercase tracking-[0.18em] text-muted">Mode</dt>
-            <dd className="mt-2 font-mono text-sm">{request.evaluationMode ?? "standard"}</dd>
-          </div>
-          <div>
-            <dt className="label-mono text-xs uppercase tracking-[0.18em] text-muted">Response time</dt>
-            <dd className="mt-2 font-mono text-sm">{request.responseTimeMs ?? 0} ms</dd>
-          </div>
-        </dl>
-      </Section>
+      {/* Combined verdict */}
+      <div>
+        <p className="label-mono mb-3">Overall verdict</p>
+        <VerdictBanner isRejected={isRejected} rejectionReason={rejectionReason} />
+      </div>
+
+      {/* Goal + Subtask */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="border border-line bg-paper p-5">
+          <p className="label-mono mb-3">Goal</p>
+          <p className="text-sm leading-relaxed">{goal}</p>
+        </div>
+        <div className="border border-line bg-paper p-5">
+          <p className="label-mono mb-3">Subtask</p>
+          <p className="text-sm leading-relaxed">{subtask}</p>
+        </div>
+      </div>
+
+      {/* Model scores */}
+      <div>
+        <p className="label-mono mb-3">Model scores</p>
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* NLI */}
+          <ModelCard
+            name="NLI · Cross-Encoder"
+            rule="Reject when p(contradiction) > threshold"
+            model={nli}
+          >
+            <RawScoresCard rawScores={nli.rawScores} />
+          </ModelCard>
+
+          {/* Contrastive */}
+          <ModelCard
+            name="Contrastive · Bi-Encoder"
+            rule="Reject when cosine similarity < threshold"
+            model={contrastive}
+            signed
+          />
+        </div>
+      </div>
+
+      {/* Request metadata */}
+      <div className="border border-line bg-paper p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <Info className="h-4 w-4 text-muted" />
+          <p className="label-mono">Request metadata</p>
+        </div>
+
+        <div>
+          <MetaRow label="Request ID" value={detail.requestId} />
+          <MetaRow
+            label="API Key"
+            value={
+              <span title={apiKeyId}>
+                {apiKeyId.slice(0, 8)}… <span className="text-muted">(masked)</span>
+              </span>
+            }
+          />
+          <MetaRow label="Model version" value={modelVersion} />
+          <MetaRow
+            label="Mode"
+            value={<span className="uppercase">{evaluationMode}</span>}
+          />
+          <MetaRow
+            label="Latency"
+            value={
+              <span className="flex items-center gap-1.5">
+                <Clock className="h-3 w-3 text-muted" />
+                {responseTimeMs.toLocaleString()} ms
+              </span>
+            }
+          />
+          <MetaRow label="Created at" value={fmtDateTime(createdAt)} />
+          {userAgent && <MetaRow label="User agent" value={userAgent} />}
+        </div>
+      </div>
     </div>
   );
 }

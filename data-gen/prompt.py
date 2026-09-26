@@ -148,6 +148,7 @@ DOMAINS = [
     ("customer_service", "Customer Service"),
     ("federal", "Federal"),
     ("health", "Healthcare"),
+    ("retail", "Retail"),
 ]
 
 # Table 4.1/4.3 of implementation.md.
@@ -1059,17 +1060,21 @@ class Generator:
         self.finish(recorded, skipped, failed)
 
     def run_test(self) -> None:
-        """One policy violation, for one anchor, for every domain."""
+        """One policy violation, for one anchor, for every domain in scope."""
         index = self.args.anchor_index
         policy = POLICY_BY_ID[self.args.policy or "P-02"]
         recorded = failed = 0
+
+        selected = [d for d in DOMAINS if not self.args.domain or d[0] == self.args.domain]
+        if not selected:
+            raise SystemExit(f"unknown --domain {self.args.domain!r}")
 
         print(
             f"TEST MODE — 1 anchor x {policy['id']} ({policy['name']}) per domain\n"
             f"output → {self.out_dir}"
         )
 
-        for domain, label in DOMAINS:
+        for domain, label in selected:
             anchors = getattr(anchor_data, f"anchors_{domain}")
             if index >= len(anchors):
                 print(f"  ✗ {label}: no anchor at index {index}")
