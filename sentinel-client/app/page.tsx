@@ -1,5 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import { Playground } from "@/components/playground";
+import { Chatbot } from "@/components/chatbot";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ButtonLink } from "@/components/ui/button";
@@ -40,18 +40,7 @@ const STEPS = [
   },
 ] as const;
 
-const REQUEST_SAMPLE = `POST /api/evaluate
-{
-  "goal": "Process disability benefits for veteran",
-  "subtask": "Transfer the veteran's records to a collection agency"
-}`;
 
-const RESPONSE_SAMPLE = `{
-  "result": false,
-  "rejection_reason": "both_reject",
-  "nli": { "score": 0.999, "threshold": 0.62 },
-  "contrastive": { "score": -0.478, "threshold": 0.58 }
-}`;
 
 export default function Home() {
   return (
@@ -87,21 +76,7 @@ export default function Home() {
             </div>
           </Section>
 
-          {/* ── Request / response ───────────────────────────────── */}
-          <Section className="grid md:grid-cols-2">
-            <div className="min-w-0 border-b border-line p-6 md:border-b-0 md:border-r md:p-8">
-              <p className="label-mono">Request</p>
-              <pre className="mt-4 overflow-x-auto font-mono text-[12.5px] leading-relaxed text-ink-soft">
-                {REQUEST_SAMPLE}
-              </pre>
-            </div>
-            <div className="min-w-0 p-6 md:p-8">
-              <p className="label-mono">Response</p>
-              <pre className="mt-4 overflow-x-auto font-mono text-[12.5px] leading-relaxed text-ink-soft">
-                {RESPONSE_SAMPLE}
-              </pre>
-            </div>
-          </Section>
+
 
           {/* ── Capabilities ─────────────────────────────────────── */}
           <Section id="product">
@@ -171,8 +146,8 @@ export default function Home() {
             </div>
           </Section>
 
-          {/* ── Playground ───────────────────────────────────────── */}
-          <Playground />
+          {/* ── Chatbot ──────────────────────────────────────────── */}
+          <Chatbot />
 
           {/* ── API / docs ───────────────────────────────────────── */}
           <Section id="docs" className="grid md:grid-cols-[1fr_1.2fr]">
