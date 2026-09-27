@@ -25,9 +25,9 @@ const REASON_LABELS: Record<string, string> = {
 };
 
 const QUICK_LINKS = [
-  { href: "/api-keys", title: "API keys", body: "Issue, rate-limit and revoke keys." },
-  { href: "/logs", title: "Logs", body: "Every evaluation, filterable and CSV-exportable." },
-  { href: "/settings", title: "Model info", body: "Which models are live and how they decide." },
+  { href: "/api-keys", title: "API keys", body: "Issue, rate-limit and revoke keys.", icon: KeyRound },
+  { href: "/logs", title: "Logs", body: "Every evaluation, filterable and CSV-exportable.", icon: Activity },
+  { href: "/settings", title: "Model info", body: "Which models are live and how they decide.", icon: ShieldCheck },
 ];
 
 function formatTimestamp(isoString: string): string {
@@ -88,17 +88,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <Eyebrow>Console</Eyebrow>
-          <h1 className="mt-5 font-serif text-4xl leading-tight tracking-[-0.01em] md:text-5xl">
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-heading md:text-3xl">
             Dashboard
           </h1>
-          <p className="mt-3 text-sm text-muted">
-            Signed in as <span className="font-mono text-ink-soft">{displayName}</span>.
+          <p className="mt-2 text-sm text-muted">
+            Welcome back, <span className="font-medium text-heading">{displayName}</span>
           </p>
         </div>
 
         {/* Period Selector Tabs */}
-        <div className="flex items-center gap-1 border border-line bg-paper p-1 self-start md:self-auto">
-          <span className="label-mono px-2 hidden sm:inline">Window:</span>
+        <div className="flex items-center gap-1 rounded-lg border border-border bg-surface p-1 self-start md:self-auto">
           {VALID_PERIODS.map((p) => {
             const isActive = period === p;
             return (
@@ -106,10 +105,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 key={p}
                 href={`/dashboard?period=${p}`}
                 className={cn(
-                  "px-3 py-1 font-mono text-xs tracking-wider transition-colors",
+                  "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-ink text-paper"
-                    : "text-muted hover:bg-paper-soft hover:text-ink",
+                    ? "bg-primary-blue text-white shadow-sm"
+                    : "text-muted hover:bg-page hover:text-heading",
                 )}
               >
                 {p}
@@ -120,14 +119,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       </div>
 
       {upstreamError && (
-        <div role="alert" className="flex items-center gap-3 border border-line-strong bg-paper p-4 text-sm text-ink">
-          <AlertCircle className="h-4 w-4 shrink-0 text-muted" />
+        <div role="alert" className="flex items-center gap-3 rounded-lg border border-error-red/20 bg-error-bg p-4 text-sm text-error-red">
+          <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{upstreamError}</span>
         </div>
       )}
 
       {/* ── Metric Stat Cards Grid ─────────────────────────────────── */}
-      <div className="grid gap-px border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Requests"
           value={summary.totalRequests.toLocaleString()}
@@ -153,9 +152,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           badge={
             <Link
               href="/api-keys"
-              className="font-mono text-[11px] text-muted hover:text-ink hover:underline flex items-center gap-0.5"
+              className="text-xs font-medium text-primary-blue hover:underline flex items-center gap-0.5"
             >
-              manage <ArrowUpRight className="h-3 w-3" />
+              Manage <ArrowUpRight className="h-3 w-3" />
             </Link>
           }
           icon={<KeyRound className="h-4 w-4" />}
@@ -164,18 +163,18 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
       {/* ── Recent Activity Section ────────────────────────────────── */}
       <Section className="p-6 md:p-8">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-line pb-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pb-5">
           <div>
-            <h2 className="font-serif text-2xl tracking-tight text-ink">Recent Activity</h2>
-            <p className="mt-1 text-xs text-muted">
+            <h2 className="text-lg font-semibold text-heading">Recent Activity</h2>
+            <p className="mt-1 text-sm text-muted">
               The latest 10 evaluation requests processed by the safety gateway.
             </p>
           </div>
           <Link
             href="/logs"
-            className="group inline-flex items-center gap-1.5 font-mono text-xs tracking-wider text-muted transition-colors hover:text-ink self-start sm:self-auto"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-blue transition-colors hover:text-primary-hover self-start sm:self-auto"
           >
-            VIEW ALL LOGS
+            View all logs
             <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
@@ -183,24 +182,24 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         {recentRequests.length === 0 ? (
           /* Empty State */
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="flex h-12 w-12 items-center justify-center border border-line bg-paper-soft text-muted">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-light text-primary-blue">
               <Activity className="h-5 w-5" />
             </div>
-            <h3 className="mt-4 font-serif text-xl tracking-tight">No evaluations recorded yet</h3>
+            <h3 className="mt-4 text-lg font-semibold text-heading">No evaluations recorded yet</h3>
             <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">
               Run a test query in the interactive playground or submit an evaluation request with your API key to see activity here.
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
               <Link
                 href="/#playground"
-                className="inline-flex items-center gap-2 border border-ink bg-ink px-4 py-2 text-sm font-medium text-paper transition-colors hover:bg-ink-soft"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary-blue px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover"
               >
                 <Play className="h-3.5 w-3.5" />
                 Open Playground
               </Link>
               <Link
                 href="/api-keys"
-                className="inline-flex items-center gap-2 border border-line bg-paper px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-ink"
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-4 py-2.5 text-sm font-medium text-heading transition-colors hover:bg-page"
               >
                 <KeyRound className="h-3.5 w-3.5" />
                 Manage API Keys
@@ -209,10 +208,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           </div>
         ) : (
           /* Activity Table */
-          <div className="mt-4 overflow-x-auto">
+          <div className="mt-2 overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
               <thead>
-                <tr className="border-b border-line text-[11px] font-mono uppercase tracking-wider text-muted">
+                <tr className="border-b border-border text-xs font-medium text-muted">
                   <th className="py-3 pr-4">Timestamp</th>
                   <th className="py-3 px-4">Request ID</th>
                   <th className="py-3 px-4">Subtask / Goal</th>
@@ -220,27 +219,27 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                   <th className="py-3 pl-4 text-right">Verdict</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line/60">
+              <tbody className="divide-y divide-border">
                 {recentRequests.map((req) => {
                   const statusKey = req.isRejected ? "rejected" : "accepted";
                   const reasonText = REASON_LABELS[req.rejectionReason] ?? req.rejectionReason;
 
                   return (
-                    <tr key={req.id} className="group hover:bg-paper-soft/60 transition-colors">
-                      <td className="py-3.5 pr-4 whitespace-nowrap font-mono text-xs text-muted">
+                    <tr key={req.id} className="group transition-colors hover:bg-page/60">
+                      <td className="py-3.5 pr-4 whitespace-nowrap text-xs text-muted">
                         {formatTimestamp(req.createdAt)}
                       </td>
-                      <td className="py-3.5 px-4 whitespace-nowrap font-mono text-xs">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         <Link
                           href={`/logs/${req.requestId}`}
-                          className="hover:text-ink hover:underline text-ink-soft"
+                          className="font-mono text-xs text-primary-blue hover:underline"
                           title="View evaluation detail"
                         >
                           {req.requestId.slice(0, 8)}…
                         </Link>
                       </td>
                       <td className="py-3.5 px-4 min-w-[280px]">
-                        <div className="font-medium text-ink leading-snug line-clamp-1">
+                        <div className="font-medium text-heading leading-snug line-clamp-1">
                           {req.subtask}
                         </div>
                         <div className="mt-0.5 text-xs text-muted line-clamp-1" title={req.goal}>
@@ -254,7 +253,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                         <div className="flex flex-col items-end gap-1">
                           <StatusBadge status={statusKey} />
                           {req.rejectionReason && (
-                            <span className="font-mono text-[10px] text-muted tracking-wider">
+                            <span className="text-[11px] text-muted">
                               {reasonText}
                             </span>
                           )}
@@ -270,25 +269,26 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       </Section>
 
       {/* ── Quick Navigation Links ─────────────────────────────────── */}
-      <Section className="p-6 md:p-8">
-        <h3 className="label-mono">Quick Links</h3>
-        <ul className="mt-4 grid gap-px border border-line bg-line md:grid-cols-3">
-          {QUICK_LINKS.map((item) => (
-            <li key={item.href} className="bg-paper">
-              <Link
-                href={item.href}
-                className="group flex h-full flex-col p-5 transition-colors hover:bg-paper-soft"
-              >
-                <span className="flex items-center gap-2 font-serif text-xl tracking-tight">
-                  {item.title}
-                  <ArrowRight className="h-4 w-4 text-muted transition-transform group-hover:translate-x-0.5" />
-                </span>
-                <span className="mt-2 text-sm leading-relaxed text-muted">{item.body}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </Section>
+      <div className="grid gap-4 md:grid-cols-3">
+        {QUICK_LINKS.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="group flex items-start gap-4 rounded-xl border border-border bg-surface p-5 transition-colors hover:border-primary-blue/30 hover:bg-primary-light/30"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-light text-primary-blue">
+              <item.icon className="h-5 w-5" />
+            </div>
+            <div>
+              <span className="flex items-center gap-2 text-base font-semibold text-heading">
+                {item.title}
+                <ArrowRight className="h-4 w-4 text-muted transition-transform group-hover:translate-x-0.5" />
+              </span>
+              <span className="mt-1 block text-sm leading-relaxed text-muted">{item.body}</span>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

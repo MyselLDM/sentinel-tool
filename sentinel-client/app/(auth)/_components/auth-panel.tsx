@@ -58,7 +58,7 @@ function Field({
 
 function FormAlert({ message }: { message: string }) {
   return (
-    <div role="alert" className="alert alert-error alert-outline">
+    <div role="alert" className="flex items-center gap-2.5 rounded-lg border border-error-red/20 bg-error-bg p-3 text-sm text-error-red">
       <span>{message}</span>
     </div>
   );
@@ -200,9 +200,9 @@ export function AuthPanel({
   const copy = COPY[tab];
 
   return (
-    <div className="card border border-line bg-paper">
-      <div className="card-body gap-0 p-6 sm:p-8">
-        <h1 className="font-serif text-3xl leading-tight tracking-tight">{copy.title}</h1>
+    <div className="rounded-xl border border-border bg-surface shadow-sm">
+      <div className="p-6 sm:p-8">
+        <h1 className="text-2xl font-semibold tracking-tight text-heading">{copy.title}</h1>
         <p className="mt-2 text-sm leading-relaxed text-muted">{copy.subtitle}</p>
 
         <div role="tablist" aria-label="Authentication" className="tabs tabs-box mt-6 w-full">
@@ -223,11 +223,9 @@ export function AuthPanel({
         {tab === "signin" ? <SignInForm next={next} /> : <SignUpForm next={next} />}
 
         {demoHint && (
-          <div className="alert alert-info alert-outline mt-6 py-2.5 text-xs">
-            <span>
-              Dev seed — <span className="font-mono">{demoHint.email}</span> /{" "}
-              <span className="font-mono">{demoHint.password}</span>
-            </span>
+          <div className="mt-6 rounded-lg border border-primary-blue/20 bg-primary-light px-4 py-2.5 text-xs text-body">
+            Dev seed — <span className="font-mono text-primary-blue">{demoHint.email}</span> /{" "}
+            <span className="font-mono text-primary-blue">{demoHint.password}</span>
           </div>
         )}
       </div>

@@ -8,14 +8,14 @@ type SectionProps = {
 };
 
 /**
- * A landing-page section: a solid panel on the hatched base, separated from its
- * neighbours by the parent's gap. Plain markup — no entrance animation.
+ * A content panel with the standard card appearance — rounded corners,
+ * subtle border, white background. Used on landing page and console pages.
  */
 export function Section({ id, className, children }: SectionProps) {
   return (
     <section
       id={id}
-      className={cn("scroll-mt-24 border border-line bg-paper", className)}
+      className={cn("scroll-mt-24 rounded-xl border border-border bg-surface", className)}
     >
       {children}
     </section>
