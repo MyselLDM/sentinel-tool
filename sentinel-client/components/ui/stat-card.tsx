@@ -21,17 +21,17 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "flex flex-col justify-between border border-line bg-paper p-5 transition-colors hover:border-line-strong md:p-6",
+        "flex flex-col justify-between rounded-xl border border-border bg-surface p-5 transition-colors hover:border-border-strong md:p-6",
         className,
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="label-mono">{title}</span>
+        <span className="text-[13px] font-medium text-muted">{title}</span>
         {badge ?? (icon && <span className="text-muted">{icon}</span>)}
       </div>
 
       <div className="mt-4">
-        <div className="font-serif text-3xl tracking-tight text-ink md:text-4xl">
+        <div className="text-3xl font-semibold tracking-tight text-heading md:text-4xl">
           {value}
         </div>
         {description && (

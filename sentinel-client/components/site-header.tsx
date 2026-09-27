@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, Shield, X } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 
 const NAV = [
@@ -20,12 +20,12 @@ export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-paper/85 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-border bg-surface/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
         {/* Wordmark */}
         <Link href="/" className="flex items-center gap-2.5">
-          <span aria-hidden className="block h-3 w-3 border border-ink" />
-          <span className="font-serif text-[22px] leading-none tracking-tight">
+          <Shield className="h-5 w-5 text-primary-blue" />
+          <span className="text-lg font-semibold tracking-tight text-heading">
             Sentinel
           </span>
         </Link>
@@ -36,7 +36,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="text-sm text-muted transition-colors hover:text-ink"
+              className="text-sm font-medium text-muted transition-colors hover:text-heading"
             >
               {item.label}
             </Link>
@@ -44,16 +44,16 @@ export function SiteHeader() {
         </nav>
 
         {/* Actions */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Link
             href="/docs"
-            className="hidden text-sm text-muted transition-colors hover:text-ink sm:inline"
+            className="hidden text-sm font-medium text-muted transition-colors hover:text-heading sm:inline"
           >
             Docs
           </Link>
           <Link
             href="/login"
-            className="hidden text-sm text-muted transition-colors hover:text-ink sm:inline"
+            className="hidden text-sm font-medium text-muted transition-colors hover:text-heading sm:inline"
           >
             Sign in
           </Link>
@@ -67,7 +67,7 @@ export function SiteHeader() {
             onClick={() => setMobileOpen((open) => !open)}
             aria-label="Toggle menu"
             aria-expanded={mobileOpen}
-            className="ml-1 flex h-9 w-9 items-center justify-center border border-line-strong transition-colors hover:border-ink md:hidden"
+            className="ml-1 flex h-9 w-9 items-center justify-center rounded-lg border border-border transition-colors hover:border-border-strong md:hidden"
           >
             {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
@@ -76,14 +76,14 @@ export function SiteHeader() {
 
       {/* Mobile panel */}
       {mobileOpen && (
-        <div className="border-t border-line md:hidden">
+        <div className="border-t border-border md:hidden">
           <nav className="mx-auto flex w-full max-w-6xl flex-col px-6">
             {NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
-                className="border-b border-line py-3 text-sm text-ink-soft"
+                className="border-b border-border py-3 text-sm font-medium text-body"
               >
                 {item.label}
               </Link>
@@ -91,7 +91,7 @@ export function SiteHeader() {
             <Link
               href="/docs"
               onClick={() => setMobileOpen(false)}
-              className="border-b border-line py-3 text-sm text-ink-soft"
+              className="border-b border-border py-3 text-sm font-medium text-body"
             >
               Docs
             </Link>

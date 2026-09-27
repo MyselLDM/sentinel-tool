@@ -41,19 +41,21 @@ function VerdictBadge({ rejected }: { rejected: boolean }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wider",
-        rejected ? "text-ink" : "text-muted",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium",
+        rejected
+          ? "bg-error-bg text-error-red"
+          : "bg-success-bg text-success-green",
       )}
       aria-label={rejected ? "Rejected" : "Accepted"}
     >
       <span
         aria-hidden
         className={cn(
-          "block h-1.5 w-1.5 border",
-          rejected ? "border-ink bg-ink" : "border-muted bg-transparent",
+          "block h-1.5 w-1.5 rounded-full",
+          rejected ? "bg-error-red" : "bg-success-green",
         )}
       />
-      {rejected ? "REJECTED" : "ACCEPTED"}
+      {rejected ? "Rejected" : "Accepted"}
     </span>
   );
 }
@@ -62,10 +64,10 @@ function VerdictBadge({ rejected }: { rejected: boolean }) {
 
 function SkeletonRow() {
   return (
-    <tr className="border-b border-line">
+    <tr className="border-b border-border">
       {[...Array<number>(5)].map((_, i) => (
         <td key={i} className="px-4 py-3">
-          <div className="h-4 w-full animate-pulse bg-line" />
+          <div className="h-4 w-full animate-pulse rounded bg-border" />
         </td>
       ))}
     </tr>
@@ -86,8 +88,8 @@ function Pagination({
   const end = Math.min(page * pageSize, total);
 
   return (
-    <div className="flex items-center justify-between border-t border-line px-4 py-3 text-sm">
-      <span className="font-mono text-xs text-muted">
+    <div className="flex items-center justify-between border-t border-border px-4 py-3 text-sm">
+      <span className="text-xs text-muted">
         {total === 0 ? "0 results" : `${start}–${end} of ${total.toLocaleString()}`}
       </span>
       <div className="flex items-center gap-1">
@@ -96,11 +98,11 @@ function Pagination({
           onClick={() => onPage(page - 1)}
           disabled={page <= 1}
           aria-label="Previous page"
-          className="flex h-8 w-8 items-center justify-center border border-line text-muted transition-colors hover:border-ink hover:text-ink disabled:pointer-events-none disabled:opacity-40"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-border-strong hover:text-heading disabled:pointer-events-none disabled:opacity-40"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <span className="flex h-8 min-w-[4rem] items-center justify-center border border-line font-mono text-xs">
+        <span className="flex h-8 min-w-[4rem] items-center justify-center rounded-lg border border-border text-xs font-medium text-heading">
           {page} / {totalPages || 1}
         </span>
         <button
@@ -108,7 +110,7 @@ function Pagination({
           onClick={() => onPage(page + 1)}
           disabled={page >= totalPages}
           aria-label="Next page"
-          className="flex h-8 w-8 items-center justify-center border border-line text-muted transition-colors hover:border-ink hover:text-ink disabled:pointer-events-none disabled:opacity-40"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-border-strong hover:text-heading disabled:pointer-events-none disabled:opacity-40"
         >
           <ChevronRight className="h-4 w-4" />
         </button>
@@ -143,7 +145,7 @@ function FilterBar({
     filters.status !== "" || filters.from !== "" || filters.to !== "" || filters.q !== "" || localQ !== "";
 
   return (
-    <div className="flex flex-wrap items-end gap-3 border-b border-line bg-paper px-4 py-3">
+    <div className="flex flex-wrap items-end gap-3 border-b border-border bg-surface px-4 py-3">
       {/* Status */}
       <fieldset className="fieldset p-0">
         <legend className="fieldset-legend">Status</legend>
@@ -153,7 +155,7 @@ function FilterBar({
           onChange={(e) =>
             onChange({ ...filters, status: e.target.value as ActiveFilters["status"] })
           }
-          className="select select-sm border-line font-mono text-xs"
+          className="select select-sm border-border text-sm"
         >
           <option value="">All</option>
           <option value="accepted">Accepted</option>
@@ -169,7 +171,7 @@ function FilterBar({
           type="date"
           value={filters.from}
           onChange={(e) => onChange({ ...filters, from: e.target.value })}
-          className="input input-sm border-line font-mono text-xs"
+          className="input input-sm border-border text-sm"
         />
       </fieldset>
 
@@ -181,7 +183,7 @@ function FilterBar({
           type="date"
           value={filters.to}
           onChange={(e) => onChange({ ...filters, to: e.target.value })}
-          className="input input-sm border-line font-mono text-xs"
+          className="input input-sm border-border text-sm"
         />
       </fieldset>
 
@@ -196,7 +198,7 @@ function FilterBar({
             value={localQ}
             onChange={(e) => onQChange(e.target.value)}
             placeholder="Search by request ID…"
-            className="input input-sm w-full border-line pl-8 font-mono text-xs"
+            className="input input-sm w-full border-border pl-8 text-sm"
           />
         </div>
       </fieldset>
@@ -209,10 +211,10 @@ function FilterBar({
             onQChange("");
             onChange(EMPTY_FILTERS);
           }}
-          className="flex h-8 items-center gap-1.5 border border-line px-2.5 font-mono text-[11px] tracking-wider text-muted transition-colors hover:border-ink hover:text-ink"
+          className="flex h-8 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:text-heading"
         >
           <X className="h-3 w-3" />
-          CLEAR
+          Clear
         </button>
       )}
     </div>
@@ -232,33 +234,33 @@ function LogsTable({
     <div className="overflow-x-auto">
       <table className="w-full min-w-[700px] table-auto text-sm">
         <thead>
-          <tr className="border-b border-line">
+          <tr className="border-b border-border">
             <th className="px-4 py-3 text-left">
-              <span className="label-mono">Request ID</span>
+              <span className="text-xs font-medium text-muted">Request ID</span>
             </th>
             <th className="px-4 py-3 text-left">
-              <span className="label-mono">Decision</span>
+              <span className="text-xs font-medium text-muted">Decision</span>
             </th>
             <th className="px-4 py-3 text-left">
-              <span className="label-mono">Latency</span>
+              <span className="text-xs font-medium text-muted">Latency</span>
             </th>
             <th className="px-4 py-3 text-left">
-              <span className="label-mono">Mode</span>
+              <span className="text-xs font-medium text-muted">Mode</span>
             </th>
             <th className="px-4 py-3 text-left">
-              <span className="label-mono">Timestamp</span>
+              <span className="text-xs font-medium text-muted">Timestamp</span>
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-line">
+        <tbody className="divide-y divide-border">
           {loading
             ? [...Array<number>(8)].map((_, i) => <SkeletonRow key={i} />)
             : rows.map((row) => (
-                <tr key={row.id} className="transition-colors hover:bg-paper-soft">
+                <tr key={row.id} className="transition-colors hover:bg-page/60">
                   <td className="px-4 py-3">
                     <Link
                       href={`/logs/${row.requestId}`}
-                      className="font-mono text-xs text-muted underline-offset-2 hover:text-ink hover:underline"
+                      className="font-mono text-xs text-primary-blue underline-offset-2 hover:underline"
                       title={row.requestId}
                     >
                       {row.requestId.slice(0, 8)}…
@@ -271,12 +273,12 @@ function LogsTable({
                     <span className="font-mono text-xs text-muted">{fmtMs(row.responseTimeMs)}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="font-mono text-[11px] uppercase tracking-wider text-muted">
+                    <span className="rounded-md bg-page px-2 py-0.5 text-xs font-medium text-muted capitalize">
                       {row.evaluationMode}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="font-mono text-xs text-muted" title={row.createdAt}>
+                    <span className="text-xs text-muted" title={row.createdAt}>
                       {fmtDateTime(row.createdAt)}
                     </span>
                   </td>
@@ -405,11 +407,14 @@ export function LogsClient({ initialResult }: { initialResult: FetchLogsResult }
       {/* Header */}
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="label-mono">Console</p>
-          <h1 className="mt-3 font-serif text-4xl leading-tight tracking-[-0.01em] md:text-5xl">
+          <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary-blue">
+            <span aria-hidden className="block h-1.5 w-1.5 rounded-full bg-primary-blue" />
+            Console
+          </p>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-heading md:text-3xl">
             Logs
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
             Every evaluation Sentinel has made, with scores, thresholds, and latency. Click a row
             to inspect the full evaluation detail.
           </p>
@@ -422,7 +427,7 @@ export function LogsClient({ initialResult }: { initialResult: FetchLogsResult }
             onClick={() => void fetchLogs(filters, page)}
             disabled={loading}
             aria-label="Refresh logs"
-            className="flex h-9 w-9 items-center justify-center border border-line text-muted transition-colors hover:border-ink hover:text-ink disabled:pointer-events-none disabled:opacity-50"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted transition-colors hover:border-border-strong hover:text-heading disabled:pointer-events-none disabled:opacity-50"
           >
             <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
           </button>
@@ -432,16 +437,16 @@ export function LogsClient({ initialResult }: { initialResult: FetchLogsResult }
             onClick={() => void handleExport()}
             disabled={exportLoading}
             aria-label="Export CSV"
-            className="flex h-9 items-center gap-2 border border-line px-3 font-mono text-[11px] tracking-wider text-muted transition-colors hover:border-ink hover:text-ink disabled:pointer-events-none disabled:opacity-50"
+            className="flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-sm font-medium text-muted transition-colors hover:border-border-strong hover:text-heading disabled:pointer-events-none disabled:opacity-50"
           >
             {exportLoading ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : exportSuccess ? (
-              <Check className="h-3.5 w-3.5" />
+              <Check className="h-3.5 w-3.5 text-success-green" />
             ) : (
               <Download className="h-3.5 w-3.5" />
             )}
-            EXPORT CSV
+            Export CSV
           </button>
         </div>
       </div>
@@ -450,15 +455,15 @@ export function LogsClient({ initialResult }: { initialResult: FetchLogsResult }
       {exportError && (
         <div
           role="alert"
-          className="flex items-center gap-3 border border-line bg-paper-soft p-3 text-sm"
+          className="flex items-center gap-3 rounded-lg border border-error-red/20 bg-error-bg p-3 text-sm text-error-red"
         >
-          <AlertCircle className="h-4 w-4 shrink-0 text-muted" />
+          <AlertCircle className="h-4 w-4 shrink-0" />
           <span className="flex-1">{exportError}</span>
           <button
             type="button"
             onClick={() => setExportError(null)}
             aria-label="Dismiss export error"
-            className="text-muted hover:text-ink"
+            className="text-error-red/60 hover:text-error-red"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -466,21 +471,23 @@ export function LogsClient({ initialResult }: { initialResult: FetchLogsResult }
       )}
 
       {/* Table panel */}
-      <div className="border border-line bg-paper">
+      <div className="rounded-xl border border-border bg-surface overflow-hidden">
         <FilterBar filters={filters} localQ={localQ} onChange={handleFiltersChange} onQChange={handleQChange} />
 
         {/* Error state */}
         {error && !loading && (
           <div className="flex flex-col items-center gap-4 py-16 text-center">
-            <AlertCircle className="h-8 w-8 text-muted" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-error-bg text-error-red">
+              <AlertCircle className="h-5 w-5" />
+            </div>
             <div>
-              <p className="font-medium">Failed to load logs</p>
+              <p className="font-medium text-heading">Failed to load logs</p>
               <p className="mt-1 text-sm text-muted">{error}</p>
             </div>
             <button
               type="button"
               onClick={() => void fetchLogs(filters, page)}
-              className="flex items-center gap-2 border border-ink px-4 py-2 text-sm transition-colors hover:bg-paper-soft"
+              className="flex items-center gap-2 rounded-lg bg-primary-blue px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover"
             >
               <RefreshCw className="h-4 w-4" />
               Retry
@@ -491,7 +498,10 @@ export function LogsClient({ initialResult }: { initialResult: FetchLogsResult }
         {/* Empty state */}
         {!error && !loading && rows.length === 0 && (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <p className="font-medium">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-light text-primary-blue">
+              <Search className="h-5 w-5" />
+            </div>
+            <p className="font-medium text-heading">
               {hasFilters ? "No logs match your filters" : "No evaluations yet"}
             </p>
             <p className="max-w-sm text-sm text-muted">

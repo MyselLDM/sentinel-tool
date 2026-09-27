@@ -1,3 +1,4 @@
+import { Info } from "lucide-react";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Section } from "@/components/ui/section";
 
@@ -20,7 +21,7 @@ export function ConsolePlaceholder({
     <div className="flex flex-col gap-6 md:gap-8">
       <div>
         <Eyebrow>{eyebrow}</Eyebrow>
-        <h1 className="mt-5 font-serif text-4xl leading-tight tracking-[-0.01em] md:text-5xl">
+        <h1 className="mt-5 text-2xl font-semibold tracking-tight text-heading md:text-3xl">
           {title}
         </h1>
         {description && (
@@ -29,7 +30,8 @@ export function ConsolePlaceholder({
       </div>
 
       <Section className="p-6 md:p-8">
-        <div role="alert" className="alert alert-info alert-outline">
+        <div className="flex items-center gap-3 rounded-lg border border-primary-blue/20 bg-primary-light p-4 text-sm text-body">
+          <Info className="h-4 w-4 shrink-0 text-primary-blue" />
           <span>{note}</span>
         </div>
       </Section>

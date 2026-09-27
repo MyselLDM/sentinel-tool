@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Shield } from "lucide-react";
 
 const COLUMNS = [
   {
@@ -29,13 +30,13 @@ const COLUMNS = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto border-t border-line">
+    <footer className="mt-auto border-t border-border bg-surface">
       <div className="mx-auto w-full max-w-6xl px-6 py-14">
         <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div className="max-w-xs">
             <div className="flex items-center gap-2.5">
-              <span aria-hidden className="block h-3 w-3 border border-ink" />
-              <span className="font-serif text-[22px] leading-none tracking-tight">
+              <Shield className="h-5 w-5 text-primary-blue" />
+              <span className="text-lg font-semibold tracking-tight text-heading">
                 Sentinel
               </span>
             </div>
@@ -47,13 +48,13 @@ export function SiteFooter() {
 
           {COLUMNS.map((column) => (
             <div key={column.title}>
-              <p className="label-mono">{column.title}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">{column.title}</p>
               <ul className="mt-4 space-y-2.5">
                 {column.links.map((link) => (
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-sm text-ink-soft transition-colors hover:text-ink"
+                      className="text-sm text-body transition-colors hover:text-primary-blue"
                     >
                       {link.label}
                     </Link>
@@ -64,12 +65,12 @@ export function SiteFooter() {
           ))}
         </div>
 
-        <div className="mt-14 flex flex-col gap-3 border-t border-line pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="font-mono text-[11px] tracking-wider text-muted">
-            © {new Date().getFullYear()} SENTINEL · NLI SECURITY GATEWAY
+        <div className="mt-14 flex flex-col gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted">
+            © {new Date().getFullYear()} Sentinel · NLI Security Gateway
           </p>
-          <p className="font-mono text-[11px] tracking-wider text-muted">
-            NLI + CONTRASTIVE · MINILM
+          <p className="text-xs text-muted">
+            NLI + Contrastive · MiniLM
           </p>
         </div>
       </div>
