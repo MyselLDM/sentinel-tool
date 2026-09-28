@@ -112,10 +112,24 @@ $PY check_gpu.py           # prints device/arch and runs a real matmul + backwar
 Prerequisites: Python 3.12 and **AMD HIP SDK for Windows 7.2** —
 <https://www.amd.com/en/developer/resources/rocm-hub/hip-sdk.html>.
 
+One-time setup — **Git Bash only** (`.sh` scripts don't execute in PowerShell/cmd):
+
 ```bash
 ./setup_gpu_amd.sh              # creates C:\sentinel-gpu and gets GPU compute working
-./run_gpu.sh check_gpu.py       # sanity check (matmul + backward)
-./run_gpu.sh train_nli.py       # full run on the GPU
+```
+
+Then launch from whichever shell you use:
+
+```powershell
+# PowerShell (Windows default)
+.\run_gpu.ps1 check_gpu.py      # sanity check (matmul + backward)
+.\run_gpu.ps1 train_nli.py
+```
+
+```bash
+# Git Bash
+./run_gpu.sh check_gpu.py
+./run_gpu.sh train_nli.py
 ```
 
 `setup_gpu_amd.sh` creates a **space-free** venv, installs AMD's Windows ROCm
