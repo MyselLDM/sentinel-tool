@@ -19,6 +19,11 @@ Design notes
 * **Threshold.** Per fold, the F1-optimal cut-off on that fold's test set; the
   deployment threshold is the mean across folds (mirrors ``Thesis.md`` §System
   Architecture and ``old-training/sentinelagent_nli_finetune.py``).
+* **Matched budget.** Defaults to the **4-epoch** budget shared with
+  ``train_contrastive.py`` (see README "Training configuration"): identical outer
+  protocol, per-model loss/LR. The 15 epochs used by ``old-training/`` were tuned
+  on a 200-example set (~150 steps); on 9,900 rows that is ~100x more
+  optimization.
 * **Baseline.** The off-the-shelf cross-encoder is also evaluated on the same
   folds, so RQ1 (baseline NLI) and the fine-tuned model are directly comparable.
 
@@ -426,8 +431,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--folds", type=int, default=5)
     parser.add_argument("--fold-strategy", choices=("group", "stratified"),
                         default="group")
-    parser.add_argument("--epochs", type=int, default=15)
-    parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument("--epochs", type=int, default=4,
+                        help="matched epoch budget, shared with train_contrastive.py")
+    parser.add_argument("--batch-size", type=int, default=32)
     parser.add_argument("--eval-batch-size", type=int, default=64)
     parser.add_argument("--lr", type=float, default=2e-5)
     parser.add_argument("--weight-decay", type=float, default=0.01)
@@ -440,7 +446,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--gpu", type=int, default=0,
                         help="GPU index to pin (single-GPU; avoids DataParallel)")
     parser.add_argument("--precision", choices=("fp32", "fp16", "bf16"),
-                        default="fp32", help="mixed precision for training")
+                        default="bf16", help="mixed precision for training")
     parser.add_argument("--save-folds", action="store_true",
                         help="also persist per-fold checkpoints (large)")
     parser.add_argument("--train-final", dest="train_final", action="store_true",

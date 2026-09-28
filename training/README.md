@@ -48,6 +48,29 @@ F1-optimal cut-offs** (5-fold CV), exactly as `Thesis.md` specifies.
 goal and stratified by policy, so no goal leaks across the split and both models
 see the *same* folds — a precondition for the paired t-test.
 
+## Training configuration (the thesis' matched-budget control)
+
+The two models are compared as *architectures*, so the **outer protocol is
+identical for both** — dataset, the 5-fold group-stratified split (same seed),
+the binary malicious/positive class, the metric definitions, the adversarial-
+paraphrase / explicit subsets, the threshold-selection rule (per-fold F1-optimal
+→ mean), and the **matched epoch budget of 4**.
+
+**Matched budget means matched *opportunity*, not identical numbers.** The two
+losses are different by construction (3-class cross-entropy vs
+`TripletLoss(cosine, margin)`), and an "epoch" is not a common unit — one NLI
+epoch is ~15,840 pairs, one contrastive epoch is ~23,000 triplets. Forcing the
+same learning rate or step count across them would handicap one model, so per-
+model learning rate / margin stay as each architecture requires. Report it as:
+
+> *identical outer protocol (data, folds, seed, batch size, optimizer,
+> selection); per-model loss and learning rate; matched 4-epoch budget.*
+
+Defaults: `--epochs 4 --batch-size 32`, NLI `--precision bf16`, contrastive
+`--use-amp --max-triplets-per-anchor 64`. (15 epochs — as in `old-training/` —
+was tuned on 200 examples (~150 steps); on 9,900 rows it is ~100x more
+optimization and mostly buys memorization.)
+
 ## Running
 
 Use the FastAPI virtualenv (it already has the ML stack; add `accelerate` if
@@ -69,8 +92,10 @@ $PY compare_models.py
 ```
 
 Common flags: `--limit-anchors N`, `--folds K`, `--fold-strategy {group,stratified}`,
-`--epochs`, `--batch-size`, `--lr`, `--seed`, `--no-train-final`, `--save-folds`.
-`train_contrastive.py` also has `--max-triplets-per-anchor` / `--margin`.
+`--epochs` (default 4), `--batch-size` (32), `--lr`, `--seed`, `--device auto`,
+`--gpu N`, `--no-train-final`, `--save-folds`. `train_nli.py` adds
+`--precision {fp32,fp16,bf16}` (default bf16); `train_contrastive.py` adds
+`--max-triplets-per-anchor` (64), `--margin`, and `--use-amp` / `--no-use-amp`.
 
 ## GPU acceleration (AMD Radeon on Windows / ROCm)
 
