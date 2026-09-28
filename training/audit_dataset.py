@@ -36,12 +36,30 @@ import common as C  # noqa: E402
 # *definition* mandates that dimension be explicit.
 DIMENSIONS: dict[str, tuple[str, ...]] = {
     "obvious": ("exfiltrate", "steal", "hack", "leak", "surveil", "discriminate"),
-    "vague_quantifier": ("all ", "any ", "relevant", "applicable", "related", "various", "every ", "multiple", "other"),
-    "system_set": ("all ", "every ", "multiple", "other databases", "other systems", "additional databases", "across all", "nationwide", "its affiliated", "and its", "associated s"),
+    "vague_quantifier": ("all ", "any ", "every ", "each ", "relevant", "applicable", "related", "various", "multiple", "comprehensive"),
+    "system_set": ("other database", "other system", "other registrar", "additional database", "additional system", "across all", "nationwide", "its affiliated", "and its", "associated", "affiliated"),
     "safeguard": ("without", "skip", "bypass", "ignore", "omit", "disregard", "no longer", "not required"),
-    "duration": ("indefinit", "permanent", "ongoing", "retain", "unlimited", "continu", "standing", "persist", "future", "retention", "thereafter"),
-    "destination": ("email", "send", "forward", "transmit", "export", "external", "personal", "third party", "outside", "upload"),
-    "disclosure": ("share", "disclose", "notify", "inform", "provide to", "send to", "forward to", "employer", "vendor", "third party", "external"),
+    "duration": ("indefinit", "permanent", "ongoing", "retain", "unlimited", "continu", "persist", "future", "retention", "thereafter", "perpetual"),
+    "destination": ("personal", "external", "third party", "third-party", "outside", "private", "unapproved", "commercial", "my own", "unvetted"),
+    "disclosure": ("share", "disclose", "notify", "inform", "convey", "communicat", "distribut", "furnish", "employer", "vendor", "contractor", "partner", "stakeholder"),
+    "different_subject": ("another", "different", "additional", "other account", "other student", "other patient", "other applicant", "other citizen", "other taxpayer", "previously approved", "re-use", "reuse"),
+}
+
+# Markers for the COMPOUND check only. Kept disjoint across dimensions: if one
+# dimension's markers also matched another's, a subtask showing a single violation
+# twice would look like a two-dimension compound and never be flagged.
+# ("all " is deliberately absent from system_set here - it belongs to
+# vague_quantifier; "standing" is absent from duration because it matches
+# "understanding".)
+COMPOUND_DIMENSIONS: dict[str, tuple[str, ...]] = {
+    "obvious": DIMENSIONS["obvious"],
+    "vague_quantifier": ("all ", "any ", "every ", "each ", "relevant", "applicable", "related", "various", "multiple", "comprehensive"),
+    "system_set": ("other database", "other system", "additional database", "additional system", "across all", "nationwide", "its affiliated", "and its", "associated", "affiliated", "partner system"),
+    "safeguard": DIMENSIONS["safeguard"],
+    "duration": ("indefinit", "permanent", "ongoing", "retain", "unlimited", "continu", "persist", "retention", "thereafter", "perpetual"),
+    "destination": DIMENSIONS["destination"],
+    "disclosure": ("disclose", "notify", "convey", "communicat", "distribut", "furnish", "employer", "vendor", "contractor", "stakeholder"),
+    "different_subject": ("another", "different", "other student", "other patient", "other applicant", "other citizen", "other taxpayer"),
 }
 
 # Policies whose definition demands an explicit lexical element.
@@ -107,9 +125,9 @@ def audit_compound(by_name: dict[str, list[dict]]) -> None:
     if not sub:
         print("  (no Compound Violation rows in this dataset)")
         return
-    dims = list(DIMENSIONS)
+    dims = list(COMPOUND_DIMENSIONS)
     counts = collections.Counter(
-        sum(1 for d in dims if has_any(r["negative"], DIMENSIONS[d])) for r in sub
+        sum(1 for d in dims if has_any(r["negative"], COMPOUND_DIMENSIONS[d])) for r in sub
     )
     for k in sorted(counts, reverse=True):
         print(f"  {counts[k]:>4}/{len(sub)} = {counts[k] / len(sub) * 100:5.1f}%  show {k} violation dimension(s)")
