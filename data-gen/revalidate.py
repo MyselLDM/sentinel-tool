@@ -50,6 +50,7 @@ def main() -> int:
     reasons: dict[str, collections.Counter] = collections.defaultdict(collections.Counter)
     rejects: list[dict] = []
     seen_by_anchor: dict[str, set[str]] = collections.defaultdict(set)
+    accepted_pos: dict[str, list[str]] = collections.defaultdict(list)
 
     for index, row in enumerate(rows):
         policy = P.POLICY_BY_ID.get(row["policy_violation"])
@@ -74,8 +75,13 @@ def main() -> int:
             })
             continue
 
+        positive_problem = P.validate_positive(
+            row["positive"], row["anchor"], accepted_pos[row["anchor"]]
+        )
+        if positive_problem is None:
+            accepted_pos[row["anchor"]].append(row["positive"])
         verdicts = [
-            ("positive", P.validate_positive(row["positive"], row["anchor"])),
+            ("positive", positive_problem),
             ("negative", P.validate_negative(row["negative"], row["positive"], policy, seen)),
         ]
         failures = [(kind, reason) for kind, reason in verdicts if reason]
