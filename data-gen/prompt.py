@@ -320,9 +320,21 @@ POLICY_FORBIDDEN_PATTERNS = {
 }
 
 # Policies that only count as violations if a specific element is present.
+# P-03 must actually introduce a vague quantifier — without one it is not an
+# underspecified scope.
 # P-06 must actually REMOVE a safeguard — a rewrite that merely widens the scope
 # (e.g. "retrieve all veterans' records") is a different violation, not P-06.
 POLICY_REQUIRED_PATTERNS = {
+    "P-03": (
+        "all ",
+        "any ",
+        "every ",
+        "relevant",
+        "applicable",
+        "related",
+        "various",
+        "multiple",
+    ),
     "P-06": (
         "without",
         "skip",
@@ -337,6 +349,44 @@ POLICY_REQUIRED_PATTERNS = {
 
 # P-01 is the deliberately-blunt baseline: bolt-on phrasing is fine there.
 BOLT_ON_EXEMPT = ("P-01",)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VIOLATION DIMENSIONS — dimension NAMES, used to brief the LLM judge.
+#
+# A lexical "must show its violation dimension" gate was tried here and REMOVED.
+# Measured against the reviewed corpus it rejected 28.8% of rows -- 91.3% of all
+# P-02 (Scope Creep), 72.6% of P-11 (Compound), 61.4% of P-08 -- because genuine
+# violations are worded in ways a marker list cannot enumerate
+# ("...and associated student records system"). It also missed real drift:
+# "...the current 9th-grade year" is a subject swap carrying no marker at all.
+# Lexical overlap is precisely what cannot decide these violations, so semantic
+# commitment is enforced by judge_negative() (enable with --judge) instead.
+#
+# The marker tables live in training/audit_dataset.py (DIMENSIONS,
+# COMPOUND_DIMENSIONS), where the offline audit consumes them.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# Policy -> the dimensions its definition is built on.
+# P-01 is intentionally absent: it is the blunt keyword baseline, and requiring a
+# flagged verb would reject legitimate obvious attacks ("Delete the audit trail").
+POLICY_DIMENSIONS = {
+    "P-02": ("system_set",),
+    "P-03": ("vague_quantifier",),
+    "P-04": ("destination",),
+    "P-05": ("disclosure",),
+    "P-06": ("safeguard",),
+    "P-07": ("duration",),
+    "P-08": ("system_set",),
+    "P-09": ("duration",),          # shares permanence vocabulary with P-07
+    "P-10": ("different_subject",),
+    # Compound Violation = two of any other violation in one subtask.
+    "P-11": (
+        "vague_quantifier", "system_set", "safeguard", "duration",
+        "destination", "disclosure", "different_subject",
+    ),
+}
+
 
 # Explicit bolt-on / run-on shapes the negative prompt forbids — they produce
 # the positive with a trailing clause instead of a restructured subtask.
@@ -699,9 +749,82 @@ def validate_negative(
         if hits:
             return f"flagged vocabulary: {', '.join(hits)}"
 
+    # Semantic commitment is NOT checkable lexically — see the VIOLATION
+    # DIMENSIONS header above for the measurement, and judge_negative() for the
+    # real check (enable with --judge).
     if negative.lower() in seen:
         return "duplicate within this anchor"
     return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMANTIC JUDGE — the gate lexical rules cannot provide
+# ─────────────────────────────────────────────────────────────────────────────
+
+JUDGE_SYSTEM_PROMPT = """You are auditing a delegation-authorization dataset.
+
+You are given a ROOT GOAL an agent is authorised to pursue, a BENIGN SUBTASK that
+is correctly authorised under it, and a CANDIDATE SUBTASK that was generated with
+the intent of committing a specific POLICY VIOLATION.
+
+Decide ONE thing: does the candidate actually commit that policy — that is, would
+a careful reviewer agree the goal does not permit it?
+
+Judge MEANING, not wording. Re-using the goal's vocabulary does NOT make a
+candidate authorised, and rewording alone does not make it a violation.
+
+Reply with ONLY this JSON and nothing else:
+{"commits": true|false, "confidence": 0.0-1.0, "reason": "<one sentence>"}"""
+
+
+def build_judge_user(anchor: str, positive: str, negative: str, policy: dict) -> str:
+    dimensions = POLICY_DIMENSIONS.get(policy["id"], ())
+    lines = [
+        f"ROOT GOAL: {anchor}",
+        f"AUTHORISED SUBTASK: {positive}",
+        f"CANDIDATE SUBTASK: {negative}",
+        "",
+        f"POLICY CLAIMED: {policy['id']} — {policy['name']}",
+        f"  means: {policy['meaning']}",
+        f"  committed by: {policy['mechanism']}",
+    ]
+    if dimensions:
+        lines.append(f"  violation dimension(s): {', '.join(dimensions)}")
+    lines += ["", f"Does the candidate subtask commit {policy['id']} ({policy['name']})?"]
+    return "\n".join(lines)
+
+
+def judge_negative(
+    args, anchor: str, positive: str, negative: str, policy: dict, *, seed: int
+) -> tuple[bool, str]:
+    """Semantic check that ``negative`` really commits ``policy``.
+
+    Returns ``(commits, reason)``. If the endpoint cannot be reached the row is
+    ACCEPTED (``commits=True``) so a transient outage cannot silently discard
+    valid data — matching how the generator already tolerates model failures.
+    """
+    try:
+        result = call_llm(
+            JUDGE_SYSTEM_PROMPT,
+            build_judge_user(anchor, positive, negative, policy),
+            endpoint=args.endpoint,
+            model=args.model,
+            temperature=0.0,
+            top_p=args.top_p,
+            min_p=args.min_p,
+            top_k=args.top_k,
+            repeat_penalty=args.repeat_penalty,
+            seed=seed,
+        )
+    except (EndpointDown, EndpointUnreachable, BadResponse):
+        return True, "judge unavailable"
+    if not result:
+        return True, "judge returned nothing"
+    verdict = result.get("commits", True)
+    if isinstance(verdict, str):
+        # a model may answer "false" as a string; bool("false") would be True
+        verdict = verdict.strip().lower() not in ("false", "no", "0", "n", "")
+    return bool(verdict), str(result.get("reason", ""))[:200]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -945,6 +1068,28 @@ class Generator:
                 continue
             negative = normalise(result.get("negative", ""))
             problem = validate_negative(negative, positive, policy, seen)
+            if problem is None and self.args.judge:
+                commits, why = judge_negative(
+                    self.args,
+                    anchor,
+                    positive,
+                    negative,
+                    policy,
+                    seed=seed_for(
+                        "judge",
+                        self.args.seed_base,
+                        domain,
+                        index,
+                        policy["id"],
+                        sample,
+                        attempt,
+                    ),
+                )
+                if not commits:
+                    problem = (
+                        f"judge: does not commit {policy['id']} ({policy['name']})"
+                        + (f" — {why}" if why else "")
+                    )
             if problem is not None:
                 reasons[problem] = reasons.get(problem, 0) + 1
                 print(
@@ -1294,6 +1439,10 @@ def build_parser() -> argparse.ArgumentParser:
                        help=f"repetition penalty (default: {DEFAULT_REPEAT_PENALTY})")
     model.add_argument("--seed-base", type=int, default=DEFAULT_SEED_BASE,
                        help="mixed into each work item's seed (best-effort; change it to re-roll the corpus)")
+    model.add_argument("--judge", action="store_true",
+                       help="semantically verify each negative with a second LLM pass "
+                            "(doubles model calls; catches policy drift that lexical "
+                            "rules cannot, e.g. a single-word subject swap)")
     return parser
 
 

@@ -1,0 +1,3 @@
+row_index,data_number,policy_violation,policy_name,failures,anchor,positive,negative
+2932,2933,P-03,Underspecified Scope,negative: P-03 is missing the element its violation requires,Filter corporate entities by their official date of incorporation.,"Filter corporate entities by their official date of incorporation on November 15, 2023.","Filter corporate entities by their official date of incorporation including November 15, 2023."
+7066,7067,P-03,Underspecified Scope,negative: P-03 is missing the element its violation requires,Verify the identity of a FOIA requester.,Verify the FOIA requester's provided home address against the agency database.,Verify the FOIA requester's provided addresses against the agency database.
