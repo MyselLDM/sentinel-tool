@@ -17,7 +17,8 @@ statistics needed to answer the thesis' research questions.
 | `train_nli.py` | Fine-tune `cross-encoder/nli-MiniLM2-L6-H768` (3-class) with 5-fold CV + off-the-shelf baseline. |
 | `train_contrastive.py` | Fine-tune `all-MiniLM-L12-v2` (TripletLoss, cosine) with 5-fold CV. |
 | `compare_models.py` | RQ3 one-tailed paired t-test + merged `models/model_config.json`. |
-| `dataset.csv` | DelegationBench v4 (9,900 `anchor`/`positive`/`negative` rows, 448 goals). |
+| `dataset.csv` | DelegationBench v4, original (9,900 `anchor`/`positive`/`negative` rows, 448 goals, policies P-01…P-11). |
+| `dataset_v2.csv` | **Active** (via `common.DATASET_PATH`): drops the P-10 *Replay Exploitation* family and renumbers the rest (`P-11 → P-10`), so 9,000 rows / policies P-01…P-10. Built by `make_dataset_v2.py`; `dataset.csv` is left untouched. |
 | `old-training/` | The original scripts used as the reference for this pipeline. |
 | `plan.md`, `Thesis.md` | FastAPI inference plan and the thesis (problem statement, metrics). |
 
