@@ -72,6 +72,49 @@ Common flags: `--limit-anchors N`, `--folds K`, `--fold-strategy {group,stratifi
 `--epochs`, `--batch-size`, `--lr`, `--seed`, `--no-train-final`, `--save-folds`.
 `train_contrastive.py` also has `--max-triplets-per-anchor` / `--margin`.
 
+## GPU acceleration (AMD Radeon on Windows / ROCm)
+
+`--device` defaults to `auto`: it uses the GPU when PyTorch can see one, else CPU.
+On ROCm builds the GPU is exposed through the **CUDA** API (HIP), so it appears as
+`torch.cuda` — no special device string is needed. Verify with:
+
+```bash
+$PY check_gpu.py           # prints device/arch and runs a real matmul + backward
+```
+
+### Setup on this machine (verified working)
+
+Prerequisites: Python 3.12 and **AMD HIP SDK for Windows 7.2** —
+<https://www.amd.com/en/developer/resources/rocm-hub/hip-sdk.html>.
+
+```bash
+./setup_gpu_amd.sh              # creates C:\sentinel-gpu and gets GPU compute working
+./run_gpu.sh check_gpu.py       # sanity check (matmul + backward)
+./run_gpu.sh train_nli.py       # full run on the GPU
+```
+
+`setup_gpu_amd.sh` creates a **space-free** venv, installs AMD's Windows ROCm
+PyTorch wheel (`torch==2.9.1+rocm7.2.1` from
+`repo.radeon.com/rocm/windows/rocm-rel-7.2.1/` — a plain file listing, hence
+`--find-links`), **overlays the HIP SDK's runtime DLLs + device bitcode over the
+pip wheel's**, installs the training stack, and runs the check.
+
+That overlay is the critical fix: the `rocm-sdk-core` pip wheel ships an
+`amdhip64_7.dll` that cannot JIT-link its device library
+(`ld.lld: error: undefined hidden symbol: __amd_fillBufferAligned2D` → kernel
+launch access-violation). The SDK's own runtime links correctly.
+
+Three AMD/Windows quirks are handled automatically:
+
+| Quirk | Symptom | Handled by |
+| --- | --- | --- |
+| Space in the working directory | `0xC0000005` segfault on the first GPU op | `run_gpu.sh` (launches from the space-free venv dir); `common.guard_rocm_windows_cwd` raises a clear error instead |
+| dGPU **and** iGPU both exposed as `cuda` | `'DataParallel' object has no attribute 'device'` | `common.pin_visible_gpus` (`--gpu N`, default pins device 0) |
+| ROCm wheel lacks `torch._C._distributed_c10d` | `accelerate` import failure in `prepare_model` | `common.patch_rocm_windows_torch` (stubs `torch.distributed.tensor`) |
+
+Verified on this box: `torch 2.9.1+rocm7.2.1`, `hip 7.2.53211`, device
+`AMD Radeon RX 9060 XT` (`gfx1200`), materially faster than CPU per epoch.
+
 ## Outputs (relative to `training/`)
 
 ```

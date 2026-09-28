@@ -102,6 +102,7 @@ def train_cross_encoder(
     device: str,
     max_length: int | None,
     output_dir: str,
+    precision: str = "fp32",
 ) -> tuple[Any, list[dict[str, Any]]]:
     """Fine-tune the cross-encoder on ``pairs``; return ``(model, log_history)``."""
     from datasets import Dataset
@@ -137,6 +138,8 @@ def train_cross_encoder(
         save_strategy="no",
         report_to="none",
         seed=seed,
+        fp16=precision == "fp16",
+        bf16=precision == "bf16",
     )
     trainer = CrossEncoderTrainer(model=model, args=args, train_dataset=dataset)
     trainer.train()
@@ -151,8 +154,13 @@ def train_cross_encoder(
 def run(args: argparse.Namespace) -> dict[str, Any]:
     from sentence_transformers import CrossEncoder
 
+    args.dataset = str(Path(args.dataset).resolve())
+    C.pin_visible_gpus(args.gpu)
     C.ensure_dirs()
     C.seed_everything(args.seed)
+    device = C.resolve_device(args.device)
+    C.guard_rocm_windows_cwd(device)
+    C.patch_rocm_windows_torch()
 
     scenarios = C.load_scenarios(args.dataset, limit_anchors=args.limit_anchors)
     if not scenarios:
@@ -167,6 +175,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     print(f"  scenarios={len(scenarios)}  anchors={len({s.anchor for s in scenarios})}"
           f"  folds={args.folds}  strategy={args.fold_strategy}")
     print(f"  epochs={args.epochs}  batch={args.batch_size}  lr={args.lr}  seed={args.seed}")
+    print(f"  device={device}  precision={args.precision}")
     print("=" * 74)
 
     config = {
@@ -182,7 +191,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "folds": args.folds,
         "fold_strategy": args.fold_strategy,
         "seed": args.seed,
-        "device": args.device,
+        "device": device,
+        "precision": args.precision,
         "max_length": args.max_length,
         "num_train_pairs_per_fold": None,  # filled below
     }
@@ -192,7 +202,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     baseline_model = None
     if args.eval_baseline:
         print("\n[baseline] loading off-the-shelf cross-encoder (no fine-tuning)...")
-        baseline_model = CrossEncoder(C.NLI_BASE, num_labels=3, device=args.device)
+        baseline_model = CrossEncoder(C.NLI_BASE, num_labels=3, device=device)
         for fold_idx, (_, test_idx) in enumerate(folds):
             test_examples = C.build_eval_examples([scenarios[i] for i in test_idx])
             score_examples(baseline_model, test_examples, batch_size=args.eval_batch_size)
@@ -237,9 +247,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             weight_decay=args.weight_decay,
             warmup_ratio=args.warmup,
             seed=args.seed + fold_idx,
-            device=args.device,
+            device=device,
             max_length=args.max_length,
             output_dir=str(C.MODELS_DIR / f"_tmp_{MODEL_DIRNAME}_fold{fold_idx}"),
+            precision=args.precision,
         )
         train_time = time.time() - t0
 
@@ -312,9 +323,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             weight_decay=args.weight_decay,
             warmup_ratio=args.warmup,
             seed=args.seed,
-            device=args.device,
+            device=device,
             max_length=args.max_length,
             output_dir=str(C.MODELS_DIR / f"_tmp_{MODEL_DIRNAME}_final"),
+            precision=args.precision,
         )
         model_dir = C.MODELS_DIR / MODEL_DIRNAME
         final_model.save(str(model_dir))
@@ -348,6 +360,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "labels": list(C.NLI_LABELS),
         "decision": "p_contradiction > threshold",
         "higher_score_means_malicious": HIGHER_IS_MALICIOUS,
+        "compute": C.device_summary(),
         "dataset": {
             **C.dataset_stats(scenarios),
             "path": str(Path(args.dataset).name),
@@ -422,7 +435,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
                         help="warmup ratio of total steps")
     parser.add_argument("--max-length", type=int, default=None)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--device", default="cpu")
+    parser.add_argument("--device", default="auto",
+                        help="auto | cpu | cuda (AMD ROCm exposes the GPU as cuda)")
+    parser.add_argument("--gpu", type=int, default=0,
+                        help="GPU index to pin (single-GPU; avoids DataParallel)")
+    parser.add_argument("--precision", choices=("fp32", "fp16", "bf16"),
+                        default="fp32", help="mixed precision for training")
     parser.add_argument("--save-folds", action="store_true",
                         help="also persist per-fold checkpoints (large)")
     parser.add_argument("--train-final", dest="train_final", action="store_true",

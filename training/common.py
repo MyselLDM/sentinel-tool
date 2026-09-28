@@ -574,6 +574,109 @@ def dataset_stats(scenarios: Sequence[Scenario]) -> dict[str, Any]:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+def resolve_device(requested: str = "auto") -> str:
+    """Resolve a requested device into one PyTorch can actually use.
+
+    * ``"auto"`` -> ``"cuda"`` when an accelerator is visible, else ``"cpu"``.
+    * ``"cpu"``/``"cuda"`` are passed through.
+
+    Note for AMD on Windows: the ROCm build of PyTorch exposes the Radeon GPU
+    through the *CUDA* API (HIP), so ``torch.cuda.is_available()`` is ``True`` and
+    the GPU is reached with ``device="cuda"`` — no special string needed.
+    """
+    requested = (requested or "auto").lower()
+    if requested != "auto":
+        return requested
+    try:
+        import torch
+    except ImportError:  # pragma: no cover
+        return "cpu"
+    return "cuda" if torch.cuda.is_available() else "cpu"
+
+
+def guard_rocm_windows_cwd(device: str) -> None:
+    """Fail fast instead of segfaulting when ROCm runs from a spaced path.
+
+    AMD's ROCm toolchain on Windows crashes with an access violation if the
+    process *starts* in a directory whose path contains a space (e.g.
+    ``D:\\My Code\\sentinel``). An in-process ``chdir`` does not help — the HIP
+    runtime latches the startup directory — so this raises a clear, actionable
+    error rather than dying with a native crash. Launch from a space-free
+    directory, e.g. via ``training/run_gpu.sh``.
+    """
+    if os.name != "nt" or device != "cuda":
+        return
+    cwd = os.getcwd()
+    if " " not in cwd:
+        return
+    raise SystemExit(
+        "AMD ROCm on Windows cannot run from a path containing spaces:\n"
+        f"    {cwd}\n"
+        "Launch from a space-free working directory instead, e.g.:\n"
+        '    cd C:\\sentinel-gpu && .\\Scripts\\python.exe "<script>" ...\n'
+        "or use training/run_gpu.sh, which does this for you."
+    )
+
+
+def pin_visible_gpus(index: int = 0) -> None:
+    """Restrict GPU visibility to a single device *before* CUDA initialises.
+
+    ROCm on Windows can expose both the discrete GPU and the integrated APU as
+    separate ``cuda`` devices. When more than one is visible, the HF Trainer
+    wraps the model in ``DataParallel``, which breaks sentence-transformers
+    (``'DataParallel' object has no attribute 'device'``) and can spill work onto
+    the slow iGPU. Pinning to one device fixes both. Must run before the first
+    CUDA call; existing ``HIP_/CUDA_VISIBLE_DEVICES`` values are respected.
+    """
+    for var in ("HIP_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES"):
+        os.environ.setdefault(var, str(index))
+
+
+def patch_rocm_windows_torch() -> None:
+    """Work around the AMD ROCm Windows torch wheel lacking ``torch.distributed``.
+
+    The ROCm Windows wheel does not build ``torch._C._distributed_c10d``, so
+    ``import torch.distributed.tensor`` (DTensor) blows up. ``accelerate``
+    imports it inside ``Accelerator.prepare_model`` -> ``model_has_dtensor``,
+    which aborts single-GPU training. Registering a minimal stub makes the check
+    degrade to "no DTensor" — correct for our single-process, single-GPU runs.
+    """
+    import sys
+    import types
+
+    try:
+        import torch.distributed.tensor  # noqa: F401
+        return
+    except Exception:  # noqa: BLE001 - any failure means the wheel lacks it
+        pass
+
+    tensor_mod = types.ModuleType("torch.distributed.tensor")
+
+    class DTensor:  # pragma: no cover - placeholder for isinstance() checks
+        """Stand-in so ``from torch.distributed.tensor import DTensor`` works."""
+
+    tensor_mod.DTensor = DTensor
+    sys.modules["torch.distributed.tensor"] = tensor_mod
+
+
+def device_summary() -> dict[str, Any]:
+    """Describe the compute device for logging (used in the run JSON)."""
+    try:
+        import torch
+    except ImportError:  # pragma: no cover
+        return {"device": "cpu", "accelerator": None}
+    info: dict[str, Any] = {
+        "device": "cuda" if torch.cuda.is_available() else "cpu",
+        "torch": torch.__version__,
+        "hip": getattr(torch.version, "hip", None),
+        "cuda": getattr(torch.version, "cuda", None),
+    }
+    if torch.cuda.is_available():
+        info["accelerator"] = torch.cuda.get_device_name(0)
+        info["accelerator_count"] = torch.cuda.device_count()
+    return info
+
+
 def seed_everything(seed: int) -> None:
     """Seed python / numpy / torch (torch imported lazily)."""
     random.seed(seed)
