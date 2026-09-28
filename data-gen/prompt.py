@@ -105,7 +105,22 @@ DEFAULT_TEMPERATURE = 0.7
 DEFAULT_SLEEP = 0.3          # seconds between calls
 DEFAULT_RETRIES = 50         # regenerate on every rejection; this is the cap
 DEFAULT_SAMPLES = 2         # negatives per (domain, anchor, policy) cell - uniform
-POSITIVE_AVOID_LIMIT = 10   # recent positives shown back to the model, to force variety
+POSITIVE_AVOID_LIMIT = 30   # positives shown back to the model (all of an anchor's so far)
+
+# Measured on the shipped corpus: intra-anchor positives averaged Jaccard 0.685 —
+# 2.6x the negatives' 0.263, and 1.9x their own similarity to the very negatives
+# they must be separated from — with only ~3.6 distinct leading verbs per 22 rows.
+# The 'avoid' list alone was not enough, so a positive that reuses an accepted
+# positive's wording is now rejected outright.
+POSITIVE_DUPLICATE_JACCARD = 0.85
+
+# The positive prompt already forbids invented identifiers and placeholder
+# personal data; this enforces it (the shipped corpus contains "account 123456789").
+INVENTED_IDENTIFIER_PATTERNS = (
+    re.compile(r"\b\d{5,}\b"),
+    re.compile(r"\b(?:john|jane)\s+doe\b", re.IGNORECASE),
+    re.compile(r"\b\d+\s+[A-Z][a-z]+\s+(?:St|Street|Ave|Avenue|Rd|Road)\b"),
+)
 REQUEST_TIMEOUT = 120        # seconds
 CONNECTION_FAILURE_TOLERANCE = 3  # consecutive connection errors before aborting
 
@@ -473,8 +488,7 @@ _PUNCTUATION_MAP = str.maketrans(
 )
 
 
-def word_count(text: str) -> int:
-    return len(text.split())
+def word_count(text: str) -> int:    return len(text.split())
 
 
 def seed_for(*parts: object) -> int:
@@ -690,8 +704,25 @@ def normalise(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def validate_positive(positive: str, anchor: str) -> str | None:
-    """Return a reason string when the positive is unusable, else None."""
+def tokens(text: str) -> set[str]:
+    """Lower-cased word tokens, for surface-similarity checks."""
+    return set(re.findall(r"[a-z]+", text.lower()))
+
+
+def jaccard(a: str, b: str) -> float:
+    """Token-set Jaccard similarity (0 = disjoint wording, 1 = identical wording)."""
+    ta, tb = tokens(a), tokens(b)
+    return len(ta & tb) / max(1, len(ta | tb))
+
+
+def validate_positive(
+    positive: str, anchor: str, seen_positives: tuple[str, ...] | list[str] = ()
+) -> str | None:
+    """Return a reason string when the positive is unusable, else None.
+
+    ``seen_positives`` are the positives already accepted for this anchor; a new
+    one must not reuse their wording.
+    """
     if not positive:
         return "empty"
     if not positive.isascii():
@@ -702,6 +733,17 @@ def validate_positive(positive: str, anchor: str) -> str | None:
         return "too short"
     if positive.lower() == anchor.lower():
         return "identical to the anchor"
+    for pattern in INVENTED_IDENTIFIER_PATTERNS:
+        found = pattern.search(positive)
+        if found:
+            return f"invented identifier/placeholder data ({found.group(0)!r})"
+    for previous in seen_positives:
+        score = jaccard(positive, previous)
+        if score >= POSITIVE_DUPLICATE_JACCARD:
+            return (
+                f"too similar to an accepted positive for this anchor "
+                f"(Jaccard {score:.2f}) — vary the action, not just the wording"
+            )
     return None
 
 
@@ -1017,7 +1059,7 @@ class Generator:
             if result is None:
                 continue
             positive = normalise(result.get("positive", ""))
-            problem = validate_positive(positive, anchor)
+            problem = validate_positive(positive, anchor, avoid or ())
             if problem is None:
                 return positive
             reasons[problem] = reasons.get(problem, 0) + 1
