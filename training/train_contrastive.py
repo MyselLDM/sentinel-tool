@@ -105,6 +105,7 @@ def train_bi_encoder(
     seed: int,
     device: str,
     output_dir: str | None = None,
+    use_amp: bool = False,
 ) -> Any:
     """Fine-tune the bi-encoder on ``triplets``; optionally save to ``output_dir``."""
     import torch
@@ -133,6 +134,7 @@ def train_bi_encoder(
         output_path=output_dir,
         save_best_model=False,
         show_progress_bar=False,
+        use_amp=use_amp,
     )
     return model
 
@@ -175,8 +177,13 @@ def score_examples(
 
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
+    args.dataset = str(Path(args.dataset).resolve())
+    C.pin_visible_gpus(args.gpu)
     C.ensure_dirs()
     C.seed_everything(args.seed)
+    device = C.resolve_device(args.device)
+    C.guard_rocm_windows_cwd(device)
+    C.patch_rocm_windows_torch()
 
     scenarios = C.load_scenarios(args.dataset, limit_anchors=args.limit_anchors)
     if not scenarios:
@@ -193,6 +200,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
           f"  folds={args.folds}  strategy={args.fold_strategy}")
     print(f"  epochs={args.epochs}  batch={args.batch_size}  lr={args.lr}"
           f"  max_triplets/anchor={args.max_triplets_per_anchor}  seed={args.seed}")
+    print(f"  device={device}  use_amp={args.use_amp}")
     print("=" * 74)
 
     config = {
@@ -210,7 +218,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "folds": args.folds,
         "fold_strategy": args.fold_strategy,
         "seed": args.seed,
-        "device": args.device,
+        "device": device,
+        "use_amp": args.use_amp,
         "model_dirname": dirname,
     }
 
@@ -242,8 +251,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             warmup_ratio=args.warmup,
             margin=args.margin,
             seed=args.seed + fold_idx,
-            device=args.device,
+            device=device,
             output_dir=None,
+            use_amp=args.use_amp,
         )
         train_time = time.time() - t0
 
@@ -316,8 +326,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             warmup_ratio=args.warmup,
             margin=args.margin,
             seed=args.seed,
-            device=args.device,
+            device=device,
             output_dir=str(model_dir),
+            use_amp=args.use_amp,
         )
         final_model_info = {
             "dir": str(model_dir.relative_to(C.TRAINING_DIR)),
@@ -338,6 +349,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "decision": "cosine < threshold",
         "include_decomposed": False,
         "higher_score_means_malicious": HIGHER_IS_MALICIOUS,
+        "compute": C.device_summary(),
         "dataset": {
             **C.dataset_stats(scenarios),
             "path": str(Path(args.dataset).name),
@@ -398,7 +410,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--max-triplets-per-anchor", type=int, default=128,
                         help="cap on posxneg triplets per goal (0 = unlimited)")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--device", default="cpu")
+    parser.add_argument("--device", default="auto",
+                        help="auto | cpu | cuda (AMD ROCm exposes the GPU as cuda)")
+    parser.add_argument("--gpu", type=int, default=0,
+                        help="GPU index to pin (single-GPU; avoids DataParallel)")
+    parser.add_argument("--use-amp", dest="use_amp", action="store_true",
+                        default=False, help="fp16 autocast during training")
     parser.add_argument("--save-folds", action="store_true")
     parser.add_argument("--train-final", dest="train_final", action="store_true",
                         default=True)
