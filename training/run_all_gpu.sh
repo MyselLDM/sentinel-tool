@@ -33,7 +33,8 @@ cd "$VENV" || exit 1
 
 : > "$LOG"
 echo "running" > "$STATUS"
-echo "started $(date -Is)  venv=$VENV" | tee -a "$LOG"
+DATASET="$(cd "$HERE" && "$PY" -c 'import common; print(common.DATASET_PATH.name)' 2>/dev/null || echo '?')"
+echo "started $(date -Is)  venv=$VENV  dataset=$DATASET" | tee -a "$LOG"
 
 run_step() {
   local name="$1"; shift
