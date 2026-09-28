@@ -54,7 +54,10 @@ import numpy as np
 # ─────────────────────────────────────────────────────────────────────────────
 
 TRAINING_DIR = Path(__file__).resolve().parent
-DATASET_PATH = TRAINING_DIR / "dataset.csv"
+# v2 = dataset.csv minus the P-10 (Replay Exploitation) family, with the policy
+# codes renumbered so they stay contiguous (see ``make_dataset_v2.py``). The
+# original ``dataset.csv`` is kept untouched for reference.
+DATASET_PATH = TRAINING_DIR / "dataset_v2.csv"
 MODELS_DIR = TRAINING_DIR / "models"
 LOGS_DIR = TRAINING_DIR / "logs"
 
@@ -72,6 +75,11 @@ NLI_CONTRADICTION, NLI_ENTAILMENT, NLI_NEUTRAL = 0, 1, 2
 # ─────────────────────────────────────────────────────────────────────────────
 
 # P-01 Obvious Malicious Intent, P-04 Data Exfiltration -> blunt, obvious attacks.
+# Keyed on the *name* so the split survives policy renumbering between dataset
+# versions; the codes are kept as a fallback.
+EXPLICIT_POLICY_NAMES: frozenset[str] = frozenset(
+    {"Obvious Malicious Intent", "Data Exfiltration"}
+)
 EXPLICIT_POLICIES: frozenset[str] = frozenset({"P-01", "P-04"})
 # Everything else is a subtle, surface-similar scope expansion = "adversarial
 # paraphrase" in the sense of the thesis.
@@ -129,14 +137,17 @@ class Scenario:
     data_number: int = -1
 
     @property
-    def is_paraphrase(self) -> bool:
-        """True when the malicious side is a subtle adversarial paraphrase."""
-        return self.policy_violation in PARAPHRASE_POLICIES
-
-    @property
     def is_explicit(self) -> bool:
         """True when the malicious side is a blunt / obvious attack."""
-        return self.policy_violation in EXPLICIT_POLICIES
+        return (
+            self.policy_name in EXPLICIT_POLICY_NAMES
+            or self.policy_violation in EXPLICIT_POLICIES
+        )
+
+    @property
+    def is_paraphrase(self) -> bool:
+        """True when the malicious side is a subtle adversarial paraphrase."""
+        return not self.is_explicit
 
 
 def _to_int(value: str) -> int:
@@ -429,10 +440,20 @@ def summarize(
     paraphrases = _recall_subset(lambda r: r["subset"] == SUBSET_PARAPHRASES)
     explicit = _recall_subset(lambda r: r["subset"] == SUBSET_EXPLICIT)
 
+    # Policy display names come from the data, so renumbered dataset versions
+    # label their policies correctly (POLICY_NAMES is only a fallback).
+    policy_names = {
+        r["policy_violation"]: (
+            r.get("policy_name")
+            or POLICY_NAMES.get(r["policy_violation"], r["policy_violation"])
+        )
+        for r in records
+        if r["label"] == MALICIOUS
+    }
     by_policy: dict[str, Any] = {}
-    for policy in sorted({r["policy_violation"] for r in records if r["label"] == MALICIOUS}):
+    for policy in sorted(policy_names):
         block = _recall_subset(lambda r, pol=policy: r["policy_violation"] == pol)
-        block["policy_name"] = POLICY_NAMES.get(policy, policy)
+        block["policy_name"] = policy_names[policy]
         by_policy[policy] = block
 
     return {
@@ -529,7 +550,7 @@ def aggregate_summaries(summaries: Sequence[dict[str, Any]]) -> dict[str, Any]:
     )
     by_policy = {
         p: {
-            "policy_name": POLICY_NAMES.get(p, p),
+            "policy_name": summaries[0]["subsets"]["by_policy"][p].get("policy_name", p),
             "tpr": _mean_std([s["subsets"]["by_policy"][p]["tpr"] for s in summaries]),
         }
         for p in policies
