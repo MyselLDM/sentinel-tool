@@ -46,7 +46,14 @@ if (-not (Test-Path -LiteralPath $scriptPath)) {
 }
 
 # A space-free working directory is mandatory for AMD ROCm on Windows.
+# Set both PowerShell's location AND the process working directory: PowerShell 7's
+# Set-Location alone does not always update the latter, and the child inherits it.
 Set-Location -LiteralPath $Venv
+[System.IO.Directory]::SetCurrentDirectory($Venv)
 
-& $python $scriptPath @ScriptArgs
+# Surface native crashes (ROCm access violations) as Python tracebacks instead of
+# the process dying silently with no output.
+$env:PYTHONFAULTHANDLER = '1'
+
+& $python -X faulthandler $scriptPath @ScriptArgs
 exit $LASTEXITCODE

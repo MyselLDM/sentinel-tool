@@ -53,6 +53,12 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import common as C  # noqa: E402
 
+# Print a Python traceback on native crashes (e.g. ROCm access violations)
+# instead of the process dying silently with no output.
+import faulthandler  # noqa: E402
+
+faulthandler.enable()
+
 MODEL_DIRNAME = "sentinelagent-nli-finetuned"
 HIGHER_IS_MALICIOUS = True  # NLI: p(contradiction) high => malicious
 
@@ -182,6 +188,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
     args.dataset = str(Path(args.dataset).resolve())
     C.pin_visible_gpus(args.gpu)
+    moved_temp = C.ensure_space_free_temp()
     C.ensure_dirs()
     C.seed_everything(args.seed)
     device = C.resolve_device(args.device)
@@ -202,6 +209,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
           f"  folds={args.folds}  strategy={args.fold_strategy}")
     print(f"  epochs={args.epochs}  batch={args.batch_size}  lr={args.lr}  seed={args.seed}")
     print(f"  device={device}  precision={args.precision}")
+    _diag = C.device_summary()
+    print(f"  cwd={_diag.get('cwd')}  vram_free={_diag.get('vram_free_gb', 'n/a')}GB")
+    if moved_temp:
+        print(f"  note: TEMP/TMP moved to {moved_temp} (a space in the old path crashes ROCm)")
     print("=" * 74)
 
     config = {

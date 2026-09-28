@@ -41,6 +41,8 @@ import csv
 import json
 import os
 import random
+import sys
+import tempfile
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
@@ -669,6 +671,71 @@ def guard_rocm_windows_cwd(device: str) -> None:
     )
 
 
+def _space_free_temp_candidates() -> list[str]:
+    """Space-free directories we could use for COMGR's JIT scratch files."""
+    candidates: list[str] = []
+    system_root = os.environ.get("SystemRoot")
+    if system_root:
+        candidates.append(os.path.join(system_root, "Temp"))
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if local_app_data:
+        candidates.append(os.path.join(local_app_data, "Temp"))
+    try:
+        candidates.append(tempfile.gettempdir())
+    except Exception:  # noqa: BLE001
+        pass
+    if sys.executable:
+        # <venv>/Scripts/python.exe -> <venv>/tmp (the venv must be space-free)
+        venv_root = os.path.dirname(os.path.dirname(sys.executable))
+        candidates.append(os.path.join(venv_root, "tmp"))
+    return candidates
+
+
+def ensure_space_free_temp() -> str | None:
+    """Point TEMP/TMP at the standard per-user temp directory.
+
+    AMD's ROCm JIT (COMGR) writes scratch into ``%TEMP%`` and crashes with an
+    access violation on the first device operation when that path is anything
+    other than the standard ``%LOCALAPPDATA%\\Temp`` - confirmed on this machine
+    for paths with a space, ``C:\\Windows\\Temp``, and even freshly created
+    writable directories. Returns the directory it switched to, or ``None``.
+    """
+    if os.name != "nt":
+        return None
+
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    preferred = os.path.join(local_app_data, "Temp") if local_app_data else ""
+
+    def _normalise(path: str) -> str:
+        return os.path.normcase(os.path.normpath(path))
+
+    if preferred and " " not in preferred and os.path.isdir(preferred):
+        current = os.environ.get("TEMP") or os.environ.get("TMP") or ""
+        if current and _normalise(current) == _normalise(preferred):
+            return None  # already the known-good default
+        os.environ["TEMP"] = preferred
+        os.environ["TMP"] = preferred
+        return preferred
+
+    # LOCALAPPDATA is unusable (e.g. a space in the username): fall back to any
+    # other space-free writable directory.
+    current = os.environ.get("TEMP") or os.environ.get("TMP") or ""
+    if current and " " not in current and os.path.isdir(current):
+        return None
+    for candidate in _space_free_temp_candidates():
+        if not candidate or " " in candidate:
+            continue
+        try:
+            os.makedirs(candidate, exist_ok=True)
+        except OSError:
+            continue
+        if os.access(candidate, os.W_OK):
+            os.environ["TEMP"] = candidate
+            os.environ["TMP"] = candidate
+            return candidate
+    return None
+
+
 def pin_visible_gpus(index: int = 0) -> None:
     """Restrict GPU visibility to a single device *before* CUDA initialises.
 
@@ -725,6 +792,13 @@ def device_summary() -> dict[str, Any]:
     if torch.cuda.is_available():
         info["accelerator"] = torch.cuda.get_device_name(0)
         info["accelerator_count"] = torch.cuda.device_count()
+        try:
+            free, total = torch.cuda.mem_get_info()
+            info["vram_free_gb"] = round(free / 1e9, 2)
+            info["vram_total_gb"] = round(total / 1e9, 2)
+        except Exception:  # noqa: BLE001 - diagnostics only
+            pass
+    info["cwd"] = os.getcwd()
     return info
 
 
