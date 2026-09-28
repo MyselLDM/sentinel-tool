@@ -1,0 +1,125 @@
+{
+  "generated_at": "2026-09-28T10:26:39+0800",
+  "notes": [
+    "Produced by training/compare_models.py from the fine-tuned artifacts.",
+    "model_dir is relative to MODELS_DIR (default: fastapi/.models).",
+    "Copy the training/models/* directories into fastapi/.models to deploy.",
+    "Thresholds are the mean of the per-fold F1-optimal cut-offs (5-fold CV)."
+  ],
+  "nli": {
+    "base": "cross-encoder/nli-MiniLM2-L6-H768",
+    "model_dir": "sentinelagent-nli-finetuned",
+    "version": "sentinelagent-nli-finetuned",
+    "labels": [
+      "contradiction",
+      "entailment",
+      "neutral"
+    ],
+    "activation": "softmax",
+    "decision": "p_contradiction > threshold",
+    "threshold": 0.828,
+    "threshold_source": "cross_validation_mean",
+    "metrics": {
+      "accuracy": 97.8333,
+      "tpr": 98.0404,
+      "fpr": 2.3737,
+      "precision": 97.6648,
+      "f1": 97.844
+    }
+  },
+  "contrastive": {
+    "base": "all-MiniLM-L12-v2",
+    "model_dir": "contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
+    "version": "contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
+    "decision": "cosine < threshold",
+    "include_decomposed": false,
+    "threshold": 0.001,
+    "threshold_source": "cross_validation_mean",
+    "metrics": {
+      "accuracy": 96.0354,
+      "tpr": 98.2121,
+      "fpr": 6.1414,
+      "precision": 94.1498,
+      "f1": 96.1288
+    }
+  },
+  "thesis_comparison": {
+    "comparison": "contrastive_vs_baseline_nli",
+    "model_a": "contrastive (proposed)",
+    "model_b": "NLI baseline (off-the-shelf)",
+    "tests": {
+      "tpr": {
+        "n_pairs": 5,
+        "mean_a": 98.2121212121212,
+        "mean_b": 85.21212121212122,
+        "mean_diff": 12.999999999999996,
+        "std_diff": 11.62903327261673,
+        "t_statistic": 2.499681876046113,
+        "p_value": 0.033394623878490216,
+        "alternative": "greater",
+        "d_z": 1.1178917193926623,
+        "significant_at_0_05": true
+      },
+      "precision": {
+        "n_pairs": 5,
+        "mean_a": 94.14977750032932,
+        "mean_b": 57.751221701486955,
+        "mean_diff": 36.398555798842345,
+        "std_diff": 7.362843569145652,
+        "t_statistic": 11.054104882806127,
+        "p_value": 0.0001904129193214496,
+        "alternative": "greater",
+        "d_z": 4.943545989673369,
+        "significant_at_0_05": true
+      },
+      "f1": {
+        "n_pairs": 5,
+        "mean_a": 96.12880061125118,
+        "mean_b": 68.01014591384555,
+        "mean_diff": 28.118654697405635,
+        "std_diff": 1.6316238702458419,
+        "t_statistic": 38.535366199177496,
+        "p_value": 1.3543661068404477e-06,
+        "alternative": "greater",
+        "d_z": 17.233539671841715,
+        "significant_at_0_05": true
+      },
+      "fpr": {
+        "n_pairs": 5,
+        "mean_a": 6.141414141414143,
+        "mean_b": 65.72727272727272,
+        "mean_diff": -59.58585858585858,
+        "std_diff": 25.866707807502173,
+        "t_statistic": -5.150946586910685,
+        "p_value": 0.003370021958609053,
+        "alternative": "less",
+        "d_z": -2.3035733433605636,
+        "significant_at_0_05": true
+      },
+      "adversarial_paraphrases_tpr": {
+        "n_pairs": 5,
+        "mean_a": 97.81481481481481,
+        "mean_b": 85.19753086419755,
+        "mean_diff": 12.617283950617281,
+        "std_diff": 11.316399167059073,
+        "t_statistic": 2.4931167757958663,
+        "p_value": 0.0336298694763841,
+        "alternative": "greater",
+        "d_z": 1.1149557173049318,
+        "significant_at_0_05": true
+      },
+      "explicit_attacks_tpr": {
+        "n_pairs": 5,
+        "mean_a": 100.0,
+        "mean_b": 85.27777777777779,
+        "mean_diff": 14.722222222222223,
+        "std_diff": 13.098334169835919,
+        "t_statistic": 2.513288273294931,
+        "p_value": 0.03291302399374754,
+        "alternative": "greater",
+        "d_z": 1.1239766852281068,
+        "significant_at_0_05": true
+      }
+    }
+  }
+}

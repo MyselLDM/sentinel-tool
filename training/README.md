@@ -148,9 +148,14 @@ Three AMD/Windows quirks are handled automatically:
 
 | Quirk | Symptom | Handled by |
 | --- | --- | --- |
-| Space in the working directory | `0xC0000005` segfault on the first GPU op | `run_gpu.sh` (launches from the space-free venv dir); `common.guard_rocm_windows_cwd` raises a clear error instead |
+| **Non-default `%TEMP%`/`%TMP%`** | `0xC0000005` on the **first GPU op** (device enumeration still works); e.g. a `TEMP` with a space, `C:\Windows\Temp`, or any freshly created writable dir | `common.ensure_space_free_temp` — repoints `TEMP`/`TMP` at `%LOCALAPPDATA%\Temp` before `import torch` (COMGR latches `%TEMP%` at load) |
+| Space in the working directory | `0xC0000005` segfault on the first GPU op | `run_gpu.sh` / `run_gpu.ps1` (launch from the space-free venv dir); `common.guard_rocm_windows_cwd` raises a clear error instead |
 | dGPU **and** iGPU both exposed as `cuda` | `'DataParallel' object has no attribute 'device'` | `common.pin_visible_gpus` (`--gpu N`, default pins device 0) |
 | ROCm wheel lacks `torch._C._distributed_c10d` | `accelerate` import failure in `prepare_model` | `common.patch_rocm_windows_torch` (stubs `torch.distributed.tensor`) |
+
+Run `check_gpu.py` first — it dumps the relevant env vars, the full `PATH`, the
+`cwd`, and free VRAM, so a crash is diagnosable instead of silent (both launchers
+and every script enable `faulthandler`).
 
 Verified on this box: `torch 2.9.1+rocm7.2.1`, `hip 7.2.53211`, device
 `AMD Radeon RX 9060 XT` (`gfx1200`), materially faster than CPU per epoch.

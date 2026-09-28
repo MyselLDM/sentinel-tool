@@ -20,12 +20,60 @@ Notes for AMD Radeon on Windows (ROCm build):
 
 from __future__ import annotations
 
+import os
 import sys
 
-import torch
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import common as C  # noqa: E402
+
+# MUST run before `import torch`: the ROCm build loads amdhip64/COMGR at import
+# time, and COMGR latches %TEMP% then. A space in that path crashes the first
+# device op.
+_moved_temp = C.ensure_space_free_temp()
+
+import torch  # noqa: E402
+
+
+def _env_report() -> None:
+    """Print what decides *which* ROCm runtime/DLLs get loaded.
+
+    A mismatched HIP/COMGR (e.g. a stale TheRock install earlier on PATH than the
+    HIP SDK) lets the device enumerate but crashes on the first real device op.
+    """
+    interesting = (
+        "HIP",
+        "ROCM",
+        "AMD",
+        "CUDA",
+        "HSA",
+        "OMP",
+        "MKL",
+        "OPENCL",
+        "TORCH",
+        "ROCR",
+        "MIOPEN",
+        "GPU",
+        "PYTORCH",
+        "DEVICE",
+        "TEMP",
+        "TMP",
+        "HOME",
+        "USERPROFILE",
+    )
+    for key in sorted(os.environ):
+        if any(token in key.upper() for token in interesting):
+            print(f"env {key:<20}: {os.environ[key]}")
+    print("PATH (full, in order):")
+    for index, entry in enumerate(os.environ.get("PATH", "").split(os.pathsep)):
+        print(f"    [{index:02d}] {entry}")
+    print("cwd                 :", os.getcwd())
+    print()
 
 
 def main() -> int:
+    _env_report()
+    if _moved_temp:
+        print(f"NOTE: TEMP/TMP moved to {_moved_temp} (a space in the old path crashes ROCm)\n")
     print("torch        :", torch.__version__)
     print("hip          :", getattr(torch.version, "hip", None))
     print("cuda         :", getattr(torch.version, "cuda", None))
@@ -38,7 +86,13 @@ def main() -> int:
     for index in range(torch.cuda.device_count()):
         props = torch.cuda.get_device_properties(index)
         arch = getattr(props, "gcnArchName", None)
-        print(f"  [{index}] {props.name}  arch={arch}  vram={props.total_memory / 1e9:.1f} GB")
+        extra = ""
+        try:
+            free, _total = torch.cuda.mem_get_info(index)
+            extra = f"  free={free / 1e9:.1f} GB"
+        except Exception:  # noqa: BLE001 - diagnostics only
+            pass
+        print(f"  [{index}] {props.name}  arch={arch}  vram={props.total_memory / 1e9:.1f} GB{extra}")
 
     try:
         x = torch.randn(2048, 2048, device="cuda", dtype=torch.float32)

@@ -32,4 +32,6 @@ fi
 
 script="$1"; shift
 cd "$VENV"   # space-free working directory (AMD ROCm requirement)
-exec "$VENV/Scripts/python.exe" "$SCRIPT_DIR/$script" "$@"
+# -X faulthandler: surface native crashes (ROCm access violations) as a Python
+# traceback instead of dying silently.
+exec "$VENV/Scripts/python.exe" -X faulthandler "$SCRIPT_DIR/$script" "$@"
