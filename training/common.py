@@ -476,25 +476,59 @@ def summarize(
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+PROTOCOL_LABELS = {
+    "group": "anchor-grouped cross-validation (unseen goals) - PRIMARY",
+    "stratified": "stratified k-fold on policy (goals may cross folds)",
+    "sample": "paraphrase-holdout (unseen wording, SHARED goals) - secondary",
+}
+
+
+def protocol_label(strategy: str) -> str:
+    """Human-readable name of a fold strategy, for logs and reports."""
+    return PROTOCOL_LABELS.get(strategy, strategy)
+
+
 def make_folds(
     scenarios: Sequence[Scenario],
     n_splits: int = 5,
     seed: int = 42,
     strategy: str = "group",
 ) -> list[tuple[list[int], list[int]]]:
-    """Build the shared k-fold split (``(train_idx, test_idx)`` per fold).
+    """Build the shared split (``(train_idx, test_idx)`` per fold).
 
     Both training scripts call this with identical arguments so the two models
     are evaluated on the **same** folds - a precondition for the paired t-test.
+    ``compare_models.py`` refuses to pair logs that used different strategies.
 
     * ``strategy="group"`` (default) - ``StratifiedGroupKFold`` grouped by
       ``anchor`` and stratified by ``policy_violation``: no goal ever appears in
-      both train and test (avoids lexical leakage), and every fold keeps all 11
-      attack types proportionally.
+      both train and test, and every fold keeps all attack types proportionally.
+      This is the **primary, real-world** protocol (unseen-goal detection).
     * ``strategy="stratified"`` - plain ``StratifiedKFold`` on
       ``policy_violation`` (goals may cross folds; matches the thesis' literal
       "stratified" wording).
+    * ``strategy="sample"`` - the **paraphrase-holdout** protocol. Folds over the
+      paraphrase variant (``sample_index``) instead of the goal: train on one
+      wording of each violation, test on another. Anchors are SHARED between
+      train and test, so this measures *paraphrase-form generalisation*, not
+      unseen-goal detection - report it as a second, clearly-labelled protocol,
+      never as the headline number. Returns one fold per distinct
+      ``sample_index`` (2 for the shipped corpus), so ``n_splits`` is ignored.
     """
+    if strategy == "sample":
+        variants = sorted({int(s.sample_index) for s in scenarios if s.sample_index >= 0})
+        if len(variants) < 2:
+            raise SystemExit(
+                f"fold-strategy 'sample' needs >=2 sample_index values, found {variants}. "
+                "Both training scripts write the split, so they need the same dataset."
+            )
+        splits = []
+        for held_out in variants:
+            train_idx = [i for i, s in enumerate(scenarios) if int(s.sample_index) != held_out]
+            test_idx = [i for i, s in enumerate(scenarios) if int(s.sample_index) == held_out]
+            splits.append((train_idx, test_idx))
+        return splits
+
     from sklearn.model_selection import StratifiedGroupKFold, StratifiedKFold
 
     strata = [s.policy_violation or s.domain_key or "unknown" for s in scenarios]

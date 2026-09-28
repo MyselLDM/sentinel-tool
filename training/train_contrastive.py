@@ -271,6 +271,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "max_triplets_per_anchor": args.max_triplets_per_anchor,
         "folds": args.folds,
         "fold_strategy": args.fold_strategy,
+        "protocol": C.protocol_label(args.fold_strategy),
         "seed": args.seed,
         "device": device,
         "use_amp": args.use_amp,
@@ -314,7 +315,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         num_train_triplets = len(train_triplets)
 
         print(
-            f"\n--- Fold {fold_idx + 1}/{args.folds}: "
+            f"\n--- Fold {fold_idx + 1}/{len(folds)}: "
             f"train={len(train_scenarios)} scenarios ({len(train_triplets)} triplets), "
             f"test={len(test_scenarios)} scenarios ---"
         )
@@ -521,8 +522,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--dataset", default=str(C.DATASET_PATH))
     parser.add_argument("--limit-anchors", type=int, default=None)
     parser.add_argument("--folds", type=int, default=5)
-    parser.add_argument("--fold-strategy", choices=("group", "stratified"),
-                        default="group")
+    parser.add_argument("--fold-strategy", choices=("group", "stratified", "sample"),
+                        default="group",
+                        help="group = anchor-grouped CV, unseen goals (primary); "
+                             "sample = paraphrase-holdout, unseen wording with shared goals")
     parser.add_argument("--epochs", type=int, default=4,
                         help="matched epoch budget, shared with train_nli.py")
     parser.add_argument("--batch-size", type=int, default=32)

@@ -221,6 +221,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
     nli_folds = nli["folds"]
     con_folds = contrastive["folds"]
+    nli_strategy = (nli.get("config") or {}).get("fold_strategy", "group")
+    con_strategy = (contrastive.get("config") or {}).get("fold_strategy", "group")
+    if nli_strategy != con_strategy:
+        raise SystemExit(
+            f"fold_strategy mismatch: NLI={nli_strategy!r} vs contrastive={con_strategy!r}. "
+            "The paired t-test needs both models evaluated on the SAME folds -- "
+            "re-run the other model with the matching --fold-strategy."
+        )
     if len(nli_folds) != len(con_folds):
         raise SystemExit(
             f"Fold count mismatch: NLI={len(nli_folds)} vs contrastive={len(con_folds)}. "
@@ -229,8 +237,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
     print("=" * 78)
     print("MODEL COMPARISON - contrastive (proposed) vs NLI")
-    print(f"  folds per model: {len(con_folds)}"
-          f"   (paired; identical splits)")
+    print(f"  protocol       : {C.protocol_label(nli_strategy)}")
+    print(f"  folds per model: {len(con_folds)}   (paired; identical splits)")
     print("=" * 78)
 
     comparisons: dict[str, Any] = {}
