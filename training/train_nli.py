@@ -227,6 +227,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "warmup_ratio": args.warmup,
         "folds": args.folds,
         "fold_strategy": args.fold_strategy,
+        "protocol": C.protocol_label(args.fold_strategy),
         "seed": args.seed,
         "device": device,
         "precision": args.precision,
@@ -271,7 +272,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         config["num_train_pairs_per_fold"] = len(train_pairs)
 
         print(
-            f"\n--- Fold {fold_idx + 1}/{args.folds}: "
+            f"\n--- Fold {fold_idx + 1}/{len(folds)}: "
             f"train={len(train_scenarios)} scenarios ({len(train_pairs)} pairs), "
             f"test={len(test_scenarios)} scenarios ---"
         )
@@ -502,8 +503,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--limit-anchors", type=int, default=None,
                         help="keep only the first N goals (smoke tests)")
     parser.add_argument("--folds", type=int, default=5)
-    parser.add_argument("--fold-strategy", choices=("group", "stratified"),
-                        default="group")
+    parser.add_argument("--fold-strategy", choices=("group", "stratified", "sample"),
+                        default="group",
+                        help="group = anchor-grouped CV, unseen goals (primary); "
+                             "sample = paraphrase-holdout, unseen wording with shared goals")
     parser.add_argument("--epochs", type=int, default=4,
                         help="matched epoch budget, shared with train_contrastive.py")
     parser.add_argument("--batch-size", type=int, default=32)
