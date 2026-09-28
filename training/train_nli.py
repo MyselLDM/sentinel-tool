@@ -46,7 +46,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 import numpy as np
 
@@ -108,8 +108,14 @@ def train_cross_encoder(
     max_length: int | None,
     output_dir: str,
     precision: str = "fp32",
-) -> tuple[Any, list[dict[str, Any]]]:
-    """Fine-tune the cross-encoder on ``pairs``; return ``(model, log_history)``."""
+    epoch_eval: Callable[[Any, int], dict[str, Any]] | None = None,
+) -> tuple[Any, list[dict[str, Any]], list[dict[str, Any]]]:
+    """Fine-tune the cross-encoder; return ``(model, log_history, epoch_records)``.
+
+    When ``epoch_eval`` is given it is called as ``epoch_eval(model, epoch)`` at the
+    end of every epoch and its return value is collected into ``epoch_records``
+    (the per-epoch training curve).
+    """
     from datasets import Dataset
     from sentence_transformers import CrossEncoder
     from sentence_transformers.cross_encoder.trainer import CrossEncoderTrainer
@@ -146,9 +152,24 @@ def train_cross_encoder(
         fp16=precision == "fp16",
         bf16=precision == "bf16",
     )
-    trainer = CrossEncoderTrainer(model=model, args=args, train_dataset=dataset)
+
+    # Per-epoch evaluation (diagnostic training curve), if requested.
+    epoch_records: list[dict[str, Any]] = []
+    callbacks: list[Any] = []
+    if epoch_eval is not None:
+        from transformers import TrainerCallback
+
+        class _EpochEvalCallback(TrainerCallback):
+            def on_epoch_end(self, args, state, control, **kwargs):  # noqa: ARG002
+                epoch = int(round(float(getattr(state, "epoch", 0) or 0)))
+                epoch_records.append(epoch_eval(model, epoch))
+
+        callbacks.append(_EpochEvalCallback())
+    trainer = CrossEncoderTrainer(
+        model=model, args=args, train_dataset=dataset, callbacks=callbacks or None
+    )
     trainer.train()
-    return model, list(getattr(trainer.state, "log_history", []) or [])
+    return model, list(getattr(trainer.state, "log_history", []) or []), epoch_records
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -244,7 +265,23 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             f"test={len(test_scenarios)} scenarios ---"
         )
         t0 = time.time()
-        model, log_history = train_cross_encoder(
+        test_examples = C.build_eval_examples(test_scenarios)
+
+        def epoch_eval(
+            trained_model: Any, epoch: int, examples_ref=test_examples
+        ) -> dict[str, Any]:
+            """Score this fold's test set mid-training (per-epoch curve row)."""
+            examples = [dict(e) for e in examples_ref]
+            score_examples(trained_model, examples, batch_size=args.eval_batch_size)
+            fold_labels = [e["label"] for e in examples]
+            fold_scores_list = [e["score"] for e in examples]
+            fold_threshold, _ = C.find_best_threshold(
+                fold_labels, fold_scores_list, HIGHER_IS_MALICIOUS
+            )
+            fold_summary = C.summarize(examples, fold_threshold, HIGHER_IS_MALICIOUS)
+            return C.curve_point(epoch, fold_threshold, fold_summary)
+
+        model, log_history, epoch_records = train_cross_encoder(
             train_pairs,
             epochs=args.epochs,
             batch_size=args.batch_size,
@@ -256,15 +293,22 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             max_length=args.max_length,
             output_dir=str(C.MODELS_DIR / f"_tmp_{MODEL_DIRNAME}_fold{fold_idx}"),
             precision=args.precision,
+            epoch_eval=epoch_eval if args.eval_per_epoch else None,
         )
         train_time = time.time() - t0
 
-        test_examples = C.build_eval_examples(test_scenarios)
         score_examples(model, test_examples, batch_size=args.eval_batch_size)
         labels = [e["label"] for e in test_examples]
         scores = [e["score"] for e in test_examples]
         threshold, thr_f1 = C.find_best_threshold(labels, scores, HIGHER_IS_MALICIOUS)
         summary = C.summarize(test_examples, threshold, HIGHER_IS_MALICIOUS)
+
+        # Per-epoch curve, seeded with epoch 0 = the untrained model on this fold.
+        curve: list[dict[str, Any]] = []
+        if baseline_folds and fold_idx < len(baseline_folds):
+            base = baseline_folds[fold_idx]
+            curve.append(C.curve_point(0, base["threshold"], base["summary"]))
+        curve.extend(epoch_records)
 
         fold_records.append(
             {
@@ -277,6 +321,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "threshold_f1": thr_f1,
                 "train_time_sec": round(train_time, 1),
                 "summary": summary,
+                "training_curve": curve,
                 "train_log_history": log_history,
             }
         )
@@ -320,7 +365,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         print(f"\n[final] training on all {len(scenarios)} scenarios...")
         all_pairs = build_nli_pairs(scenarios)
         t0 = time.time()
-        final_model, final_history = train_cross_encoder(
+        final_model, final_history, _ = train_cross_encoder(
             all_pairs,
             epochs=args.epochs,
             batch_size=args.batch_size,
@@ -375,6 +420,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "folds": fold_records,
         "aggregate": aggregate,
         "aggregate_fixed_threshold": aggregate_fixed,
+        "aggregate_curve": C.aggregate_curve([f["training_curve"] for f in fold_records]),
         "final_threshold": final_threshold,
         "baseline": baseline_block,
         "final_model": final_model_info,
@@ -411,6 +457,7 @@ def _print_summary(results: dict[str, Any]) -> None:
     for metric in ("tpr", "fpr", "precision", "f1", "accuracy"):
         print(f"  {metric:>10}: {agg[metric]['mean']:6.2f}% +/- {agg[metric]['std']:.2f}%")
     print(f"  {'threshold':>10}: {results['final_threshold']:.4f}")
+    _print_curve(results)
     print(
         f"  adversarial paraphrases TPR: "
         f"{subs[C.SUBSET_PARAPHRASES]['tpr']['mean']:.2f}% "
@@ -421,6 +468,21 @@ def _print_summary(results: dict[str, Any]) -> None:
         print("\n  Baseline (off-the-shelf) for reference:")
         print(f"    TPR={base['tpr']['mean']:.2f}%  Precision={base['precision']['mean']:.2f}%"
               f"  F1={base['f1']['mean']:.2f}%")
+
+
+def _print_curve(results: dict[str, Any]) -> None:
+    """Print the mean-across-folds per-epoch curve (epoch 0 = untrained)."""
+    curve = results.get("aggregate_curve") or []
+    if not curve:
+        return
+    print("\n  Per-epoch curve (mean across folds; epoch 0 = untrained):")
+    print(f"    {'epoch':>5}  {'TPR':>7}  {'FPR':>7}  {'Prec':>7}  {'F1':>7}")
+    for point in curve:
+        print(
+            f"    {point['epoch']:>5}  {point['tpr']['mean']:>7.2f}  "
+            f"{point['fpr']['mean']:>7.2f}  {point['precision']['mean']:>7.2f}  "
+            f"{point['f1']['mean']:>7.2f}"
+        )
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -455,6 +517,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--eval-baseline", dest="eval_baseline", action="store_true",
                         default=True)
     parser.add_argument("--no-eval-baseline", dest="eval_baseline",
+                        action="store_false")
+    parser.add_argument("--eval-per-epoch", dest="eval_per_epoch",
+                        action="store_true", default=True,
+                        help="log test-fold metrics after every epoch")
+    parser.add_argument("--no-eval-per-epoch", dest="eval_per_epoch",
                         action="store_false")
     return parser.parse_args(argv)
 
