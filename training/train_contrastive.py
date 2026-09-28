@@ -109,8 +109,13 @@ def train_bi_encoder(
     device: str,
     output_dir: str | None = None,
     use_amp: bool = False,
+    evaluator: Any | None = None,
 ) -> Any:
-    """Fine-tune the bi-encoder on ``triplets``; optionally save to ``output_dir``."""
+    """Fine-tune the bi-encoder on ``triplets``; optionally save to ``output_dir``.
+
+    ``evaluator`` is a ``SentenceEvaluator`` invoked once per epoch (the
+    per-epoch training curve).
+    """
     import torch
     from sentence_transformers import InputExample, SentenceTransformer, losses
     from torch.utils.data import DataLoader
@@ -138,6 +143,7 @@ def train_bi_encoder(
         save_best_model=False,
         show_progress_bar=False,
         use_amp=use_amp,
+        evaluator=evaluator,
     )
     return model
 
@@ -172,6 +178,40 @@ def score_examples(
         goal_emb = goal_embs[C.format_document(example["goal"], example["goal"])]
         example["score"] = float(np.dot(goal_emb, subtask_embs[text]))
     return examples
+
+
+def make_epoch_evaluator(
+    test_examples: Sequence[dict[str, Any]], fold_idx: int, batch_size: int
+) -> Any:
+    """Build a ``SentenceEvaluator`` that records the per-epoch training curve.
+
+    ``model.fit`` (legacy DataLoader path) calls it once per epoch as
+    ``evaluator(model, output_path=..., epoch=..., steps=...)`` with a **0-based**
+    epoch; we store ``epoch + 1`` so row 1 is the first trained epoch.
+    """
+    from sentence_transformers.sentence_transformer.evaluation import SentenceEvaluator
+
+    class _EpochEvaluator(SentenceEvaluator):
+        def __init__(self) -> None:
+            super().__init__()
+            self.fold = fold_idx
+            self.history: list[dict[str, Any]] = []
+
+        def __call__(self, model, output_path=None, epoch=-1, steps=-1):  # noqa: ARG002
+            examples = [dict(e) for e in test_examples]
+            score_examples(model, examples, batch_size=batch_size)
+            labels = [e["label"] for e in examples]
+            scores = [e["score"] for e in examples]
+            threshold, _ = C.find_best_threshold(labels, scores, HIGHER_IS_MALICIOUS)
+            summary = C.summarize(examples, threshold, HIGHER_IS_MALICIOUS)
+            display_epoch = (epoch + 1) if isinstance(epoch, int) and epoch >= 0 else len(self.history) + 1
+            self.history.append(C.curve_point(display_epoch, threshold, summary))
+            return summary["f1"] / 100.0  # scalar ST uses for best-model tracking
+
+        def __str__(self) -> str:
+            return f"epoch-eval(fold={self.fold})"
+
+    return _EpochEvaluator()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -226,6 +266,29 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "model_dirname": dirname,
     }
 
+    # ── Baseline: the UNTRAINED bi-encoder on the shared folds ("before training") ──
+    baseline_folds: list[dict[str, Any]] = []
+    if args.eval_baseline:
+        from sentence_transformers import SentenceTransformer
+
+        print("\n[baseline] loading untrained bi-encoder (no fine-tuning)...")
+        baseline_model = SentenceTransformer(C.CONTRASTIVE_BASE, device=device)
+        for fold_idx, (_, test_idx) in enumerate(folds):
+            test_examples = C.build_eval_examples([scenarios[i] for i in test_idx])
+            score_examples(baseline_model, test_examples, batch_size=args.eval_batch_size)
+            labels = [e["label"] for e in test_examples]
+            scores = [e["score"] for e in test_examples]
+            threshold, thr_f1 = C.find_best_threshold(labels, scores, HIGHER_IS_MALICIOUS)
+            summary = C.summarize(test_examples, threshold, HIGHER_IS_MALICIOUS)
+            baseline_folds.append(
+                {"fold": fold_idx, "threshold": threshold,
+                 "threshold_f1": thr_f1, "summary": summary}
+            )
+            print(
+                f"[baseline] fold {fold_idx}: TPR={summary['tpr']:.1f}%  "
+                f"FPR={summary['fpr']:.1f}%  F1={summary['f1']:.1f}%  thr={threshold:.3f}"
+            )
+
     fold_records: list[dict[str, Any]] = []
     fold_scores: list[list[dict[str, Any]]] = []
     t_all = time.time()
@@ -245,6 +308,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             f"test={len(test_scenarios)} scenarios ---"
         )
         t0 = time.time()
+        test_examples = C.build_eval_examples(test_scenarios)
+        evaluator = (
+            make_epoch_evaluator(test_examples, fold_idx, args.eval_batch_size)
+            if args.eval_per_epoch
+            else None
+        )
         model = train_bi_encoder(
             train_triplets,
             epochs=args.epochs,
@@ -257,15 +326,23 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             device=device,
             output_dir=None,
             use_amp=args.use_amp,
+            evaluator=evaluator,
         )
         train_time = time.time() - t0
 
-        test_examples = C.build_eval_examples(test_scenarios)
         score_examples(model, test_examples, batch_size=args.eval_batch_size)
         labels = [e["label"] for e in test_examples]
         scores = [e["score"] for e in test_examples]
         threshold, thr_f1 = C.find_best_threshold(labels, scores, HIGHER_IS_MALICIOUS)
         summary = C.summarize(test_examples, threshold, HIGHER_IS_MALICIOUS)
+
+        # Per-epoch curve, seeded with epoch 0 = the untrained model on this fold.
+        curve: list[dict[str, Any]] = []
+        if baseline_folds and fold_idx < len(baseline_folds):
+            base = baseline_folds[fold_idx]
+            curve.append(C.curve_point(0, base["threshold"], base["summary"]))
+        if evaluator is not None:
+            curve.extend(evaluator.history)
 
         fold_records.append(
             {
@@ -278,6 +355,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 "threshold_f1": thr_f1,
                 "train_time_sec": round(train_time, 1),
                 "summary": summary,
+                "training_curve": curve,
             }
         )
         fold_scores.append(test_examples)
@@ -362,7 +440,22 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "folds": fold_records,
         "aggregate": aggregate,
         "aggregate_fixed_threshold": aggregate_fixed,
+        "aggregate_curve": C.aggregate_curve([f["training_curve"] for f in fold_records]),
         "final_threshold": final_threshold,
+        "baseline": (
+            {
+                "description": "untrained all-MiniLM-L12-v2 baseline (before training)",
+                "folds": baseline_folds,
+                "aggregate": C.aggregate_summaries(
+                    [f["summary"] for f in baseline_folds]
+                ),
+                "final_threshold": float(
+                    np.mean([f["threshold"] for f in baseline_folds])
+                ),
+            }
+            if baseline_folds
+            else {}
+        ),
         "final_model": final_model_info,
         "total_runtime_sec": round(time.time() - t_all, 1),
     }
@@ -389,11 +482,27 @@ def _print_summary(results: dict[str, Any]) -> None:
     for metric in ("tpr", "fpr", "precision", "f1", "accuracy"):
         print(f"  {metric:>10}: {agg[metric]['mean']:6.2f}% +/- {agg[metric]['std']:.2f}%")
     print(f"  {'threshold':>10}: {results['final_threshold']:.4f}")
+    _print_curve(results)
     print(
         f"  adversarial paraphrases TPR: "
         f"{subs[C.SUBSET_PARAPHRASES]['tpr']['mean']:.2f}% "
         f"(explicit: {subs[C.SUBSET_EXPLICIT]['tpr']['mean']:.2f}%)"
     )
+
+
+def _print_curve(results: dict[str, Any]) -> None:
+    """Print the mean-across-folds per-epoch curve (epoch 0 = untrained)."""
+    curve = results.get("aggregate_curve") or []
+    if not curve:
+        return
+    print("\n  Per-epoch curve (mean across folds; epoch 0 = untrained):")
+    print(f"    {'epoch':>5}  {'TPR':>7}  {'FPR':>7}  {'Prec':>7}  {'F1':>7}")
+    for point in curve:
+        print(
+            f"    {point['epoch']:>5}  {point['tpr']['mean']:>7.2f}  "
+            f"{point['fpr']['mean']:>7.2f}  {point['precision']['mean']:>7.2f}  "
+            f"{point['f1']['mean']:>7.2f}"
+        )
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -420,6 +529,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
                         help="GPU index to pin (single-GPU; avoids DataParallel)")
     parser.add_argument("--use-amp", action=argparse.BooleanOptionalAction,
                         default=True, help="fp16 autocast during training")
+    parser.add_argument("--eval-baseline", dest="eval_baseline", action="store_true",
+                        default=True,
+                        help="evaluate the untrained bi-encoder before training")
+    parser.add_argument("--no-eval-baseline", dest="eval_baseline",
+                        action="store_false")
+    parser.add_argument("--eval-per-epoch", dest="eval_per_epoch",
+                        action="store_true", default=True,
+                        help="log test-fold metrics after every epoch")
+    parser.add_argument("--no-eval-per-epoch", dest="eval_per_epoch",
+                        action="store_false")
     parser.add_argument("--save-folds", action="store_true")
     parser.add_argument("--train-final", dest="train_final", action="store_true",
                         default=True)

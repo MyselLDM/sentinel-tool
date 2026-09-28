@@ -544,6 +544,57 @@ def aggregate_summaries(summaries: Sequence[dict[str, Any]]) -> dict[str, Any]:
     return {"metrics": core, "subsets": subsets, "pooled_confusion": pooled}
 
 
+def curve_point(
+    epoch: int, threshold: float, summary: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Flatten one evaluation into a row of the per-epoch training curve."""
+    subsets = summary["subsets"]
+    return {
+        "epoch": int(epoch),
+        "threshold": float(threshold),
+        "accuracy": summary["accuracy"],
+        "tpr": summary["tpr"],
+        "fpr": summary["fpr"],
+        "precision": summary["precision"],
+        "f1": summary["f1"],
+        "adversarial_paraphrases_tpr": subsets[SUBSET_PARAPHRASES]["tpr"],
+        "explicit_attacks_tpr": subsets[SUBSET_EXPLICIT]["tpr"],
+    }
+
+
+_CURVE_FIELDS = (
+    "threshold",
+    "accuracy",
+    "tpr",
+    "fpr",
+    "precision",
+    "f1",
+    "adversarial_paraphrases_tpr",
+    "explicit_attacks_tpr",
+)
+
+
+def aggregate_curve(
+    curves: Sequence[Sequence[Mapping[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Mean +/- std of each curve row across folds, aligned by epoch index."""
+    if not curves:
+        return []
+    length = min(len(c) for c in curves)
+    aggregated: list[dict[str, Any]] = []
+    for index in range(length):
+        rows = [curve[index] for curve in curves]
+        point: dict[str, Any] = {"epoch": int(rows[0]["epoch"])}
+        for key in _CURVE_FIELDS:
+            values = [float(row[key]) for row in rows]
+            point[key] = {
+                "mean": float(np.mean(values)),
+                "std": float(np.std(values)),
+            }
+        aggregated.append(point)
+    return aggregated
+
+
 def dataset_stats(scenarios: Sequence[Scenario]) -> dict[str, Any]:
     """Descriptive statistics of the data actually used for training."""
     malicious = len(scenarios)

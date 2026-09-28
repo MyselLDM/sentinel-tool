@@ -93,9 +93,10 @@ $PY compare_models.py
 
 Common flags: `--limit-anchors N`, `--folds K`, `--fold-strategy {group,stratified}`,
 `--epochs` (default 4), `--batch-size` (32), `--lr`, `--seed`, `--device auto`,
-`--gpu N`, `--no-train-final`, `--save-folds`. `train_nli.py` adds
-`--precision {fp32,fp16,bf16}` (default bf16); `train_contrastive.py` adds
-`--max-triplets-per-anchor` (64), `--margin`, and `--use-amp` / `--no-use-amp`.
+`--gpu N`, `--no-train-final`, `--save-folds`, `--no-eval-baseline`,
+`--no-eval-per-epoch`. `train_nli.py` adds `--precision {fp32,fp16,bf16}`
+(default bf16); `train_contrastive.py` adds `--max-triplets-per-anchor` (64),
+`--margin`, and `--use-amp` / `--no-use-amp`.
 
 ## GPU acceleration (AMD Radeon on Windows / ROCm)
 
@@ -166,10 +167,25 @@ models/*/training_stats.json                   the training statistics for that 
 models/model_config.json                       merged, FastAPI-compatible config
 ```
 
-Every run logs: overall Accuracy / TPR / FPR / Precision / F1, the same metrics
-for the adversarial-paraphrase and explicit-attack subsets, per-policy TPR, the
-confusion matrix (per fold + pooled), and the per-fold thresholds — for both the
-deployment (mean) threshold and each fold's own F1-optimal threshold.
+Every run logs three levels of metrics, so you can see the model **before, during
+and after** training:
+
+- **Before training** — `baseline`: the *untrained* model evaluated on each
+  fold's test set under the same protocol (per-fold F1-optimal threshold), plus
+  the aggregate. Disable with `--no-eval-baseline`.
+- **During training** — `folds[i].training_curve` and the mean-across-folds
+  `aggregate_curve`: one row per epoch with Accuracy / TPR / FPR / Precision /
+  F1 / adversarial-paraphrase TPR / explicit-attack TPR. **Epoch 0 is the
+  untrained model**, then 1..N. Disable with `--no-eval-per-epoch`.
+- **After training** — `folds[i].summary` (per fold) and `aggregate` /
+  `aggregate_fixed_threshold` (mean ± std), plus the pooled confusion matrix and
+  per-policy TPR.
+
+The per-epoch rows evaluate the fold's **test** set and are **diagnostic only** —
+the epoch budget stays fixed at 4 (never chosen from the curve), so the reported
+post-training numbers are not selected on the test fold. Full metric list:
+Accuracy, TPR, FPR, Precision, F1, per-subset TPR (malicious / adversarial
+paraphrases / explicit attacks), per-policy TPR, and confusion matrices.
 
 ## Deploying the artifacts
 
