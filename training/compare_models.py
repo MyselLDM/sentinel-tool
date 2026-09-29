@@ -216,8 +216,18 @@ def _print_table(comparison: dict[str, Any]) -> None:
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
     C.ensure_dirs()
-    nli = _load(C.LOGS_DIR / "nli_cv_results.json")
-    contrastive = _load(C.LOGS_DIR / "contrastive_cv_results.json")
+    # Read the top-level logs by default, or a protocol-specific archive. Use
+    # --protocol group for the deployment config: its thresholds are calibrated on
+    # unseen GOALS, which is what a live gateway actually faces.
+    proto = getattr(args, "protocol", None)
+    source = C.LOGS_DIR / proto if proto else C.LOGS_DIR
+    if proto and not source.is_dir():
+        raise SystemExit(
+            f"no archived logs for protocol {proto!r} ({source}). "
+            "Run run_all_gpu.sh with that protocol first."
+        )
+    nli = _load(source / "nli_cv_results.json")
+    contrastive = _load(source / "contrastive_cv_results.json")
 
     nli_folds = nli["folds"]
     con_folds = contrastive["folds"]
@@ -277,9 +287,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "contrastive_log": "logs/contrastive_cv_results.json",
         "comparisons": comparisons,
     }
-    log_path = C.write_json(C.LOGS_DIR / "comparison_results.json", results)
+    log_path = C.write_json(source / "comparison_results.json", results)
 
     config = build_model_config(nli, contrastive, primary)
+    config["protocol"] = nli.get("config", {}).get("protocol", "unknown")
+    config["protocol_key"] = proto or "current"
     config_path = C.write_json(C.MODELS_DIR / "model_config.json", config)
 
     print("\n  comparison log -> " + str(log_path))
@@ -306,6 +318,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument(
+        "--protocol",
+        choices=("group", "stratified", "sample"),
+        default=None,
+        help="read logs/<protocol>/*.json instead of the top-level logs. Use "
+             "'group' for the deployment config: its thresholds are calibrated on "
+             "unseen goals, which is what a live gateway faces.",
+    )
     return parser.parse_args(argv)
 
 

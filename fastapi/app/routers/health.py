@@ -14,18 +14,24 @@ router = APIRouter(tags=["ops"])
 def health(request: Request):
     state = request.app.state
     models = getattr(state, "models", None)
-    ready = models is not None
+    on_base = bool(models is not None and models.on_base_models)
+    # "Ready" means *trained* models are loaded. Running on the base models (only
+    # reachable via ALLOW_BASE_FALLBACK=1) is degraded, not ready: report it so
+    # downstream checks — express /readyz pings this endpoint — catch it.
+    ready = models is not None and not on_base
+    status = "ok" if ready else "degraded"
 
     payload = HealthResponse(
-        status="ok" if ready else "degraded",
+        status=status,
         ready=ready,
-        nli_loaded=ready,
-        contrastive_loaded=ready,
-        on_base_models=models.on_base_models if ready else None,
+        nli_loaded=models is not None,
+        contrastive_loaded=models is not None,
+        on_base_models=models.on_base_models if models is not None else None,
         device=getattr(state.settings, "inference_device", "cpu"),
-        nli_version=models.nli_version if ready else None,
-        contrastive_version=models.contrastive_version if ready else None,
-        model_error=getattr(state, "model_error", None),
+        nli_version=models.nli_version if models is not None else None,
+        contrastive_version=models.contrastive_version if models is not None else None,
+        model_error=getattr(state, "model_error", None)
+        or ("running on untrained base models" if on_base else None),
     )
 
     if not ready:
