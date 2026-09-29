@@ -17,6 +17,7 @@ browser). Copy `.env.example` to `.env.local` and set:
 | --- | --- |
 | `SENTINEL_API_URL` | Base URL of the Express gateway (default `http://localhost:4000`). |
 | `SENTINEL_API_KEY` | API key issued by the gateway — server-side only. |
+| `DEEPSEEK_API_KEY` | DeepSeek API key for the landing-page chatbot — server-side only. Optional `DEEPSEEK_BASE_URL` overrides the default `https://api.deepseek.com`. |
 
 > Tip: run Express with `SEED_DEMO_API_KEY` set so its seeded key stays stable
 > across restarts.

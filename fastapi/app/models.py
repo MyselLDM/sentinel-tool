@@ -36,11 +36,22 @@ class LoadedModels:
 
 
 def _resolve(
-    model_dir: str | None, base: str | None, models_dir: Path
+    model_dir: str | None,
+    base: str | None,
+    models_dir: Path,
+    *,
+    allow_fallback: bool = False,
+    role: str = "model",
 ) -> tuple[str, bool]:
     """Resolve a configured ``model_dir`` to an existing path or the base id.
 
     Returns ``(path_or_hf_id, used_base_fallback)``.
+
+    A gateway that silently gates on an *untrained* base model is worse than one
+    that refuses to start, so falling back raises unless ``allow_fallback`` is set
+    (env ``ALLOW_BASE_FALLBACK=1``). The shipped placeholder config caused exactly
+    that: ``model_dir`` names that did not exist, a WARNING nobody read, and a
+    service reporting healthy while serving meaningless scores.
     """
     if model_dir:
         candidate = Path(model_dir)
@@ -50,6 +61,14 @@ def _resolve(
             return str(candidate), False
         logger.warning("model_dir %r not found under %s", model_dir, models_dir)
     if base:
+        if not allow_fallback:
+            raise FileNotFoundError(
+                f"{role}: no fine-tuned model available — configured "
+                f"model_dir={model_dir!r} does not exist under {models_dir}. "
+                "Deploy one with training/deploy_to_fastapi.sh (or .ps1), or set "
+                "ALLOW_BASE_FALLBACK=1 to run on the untrained base model "
+                f"{base!r} — its scores would be meaningless for production."
+            )
         logger.warning("Falling back to base model %r", base)
         return base, True
     raise FileNotFoundError("Neither model_dir nor base is configured")
@@ -68,12 +87,18 @@ def load_models(settings: Any, model_config: dict[str, Any]) -> LoadedModels:
     con_cfg = model_config.get("contrastive") or {}
 
     nli_path, nli_on_base = _resolve(
-        nli_cfg.get("model_dir"), nli_cfg.get("base", DEFAULT_NLI_BASE), models_dir
+        nli_cfg.get("model_dir"),
+        nli_cfg.get("base", DEFAULT_NLI_BASE),
+        models_dir,
+        allow_fallback=bool(getattr(settings, "allow_base_fallback", False)),
+        role="nli model",
     )
     con_path, con_on_base = _resolve(
         con_cfg.get("model_dir"),
         con_cfg.get("base", DEFAULT_CONTRASTIVE_BASE),
         models_dir,
+        allow_fallback=bool(getattr(settings, "allow_base_fallback", False)),
+        role="contrastive model",
     )
 
     logger.info("Loading NLI cross-encoder from %s", nli_path)

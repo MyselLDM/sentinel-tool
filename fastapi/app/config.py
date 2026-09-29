@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     models_dir: str = str(BASE_DIR / ".models")
     model_config_path: str = str(BASE_DIR / "model_config.json")
     inference_device: str = "cpu"
+    # Serving on the untrained base models must be an explicit choice: a gateway
+    # that silently gates on a base model looks healthy and decides at random.
+    # Set ALLOW_BASE_FALLBACK=1 to opt in (development only).
+    allow_base_fallback: bool = False
     inference_max_concurrency: int = max(1, os.cpu_count() or 2)
     cache_size: int = 1024
 

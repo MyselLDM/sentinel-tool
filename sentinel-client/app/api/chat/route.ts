@@ -3,16 +3,15 @@ import { NextResponse } from "next/server";
 /**
  * Server-side proxy for the landing-page chatbot.
  *
- * The browser posts the conversation history here; this handler calls Google's
- * Gemini API using a server-held API key, so no credential is ever
- * exposed to the client.
+ * The browser posts the conversation history here; this handler calls
+ * DeepSeek's OpenAI-compatible chat API using a server-held API key, so no
+ * credential is ever exposed to the client.
  *
  * Performance notes:
  * - Per-model timeout is 20 s; total wall-clock cap is 60 s.
  * - Models are tried in order; first success wins.
- * - The 30 s UPSTREAM_TIMEOUT_MS that previously caused "timed out" errors
- *   has been raised to 60 s and individual fetches now each get their own
- *   AbortController so a slow model doesn't eat the whole budget.
+ * - Each fetch gets its own AbortController so a slow model doesn't eat the
+ *   whole budget.
  */
 
 export const runtime = "nodejs";
@@ -88,7 +87,7 @@ type ChatRequestBody = {
 async function tryModel(
   model: string,
   apiKey: string,
-  contents: { role: string; parts: { text: string }[] }[],
+  messages: { role: string; content: string }[],
   parentSignal: AbortSignal,
 ): Promise<{ message: string; goals: string[] } | null> {
   const ctl = new AbortController();
@@ -97,26 +96,23 @@ async function tryModel(
   parentSignal.addEventListener("abort", () => ctl.abort(), { once: true });
 
   try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    const res = await fetch(endpoint, {
+    const baseUrl = process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com";
+    const res = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 800,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: "OBJECT",
-            properties: {
-              message: { type: "STRING" },
-              goals: { type: "ARRAY", items: { type: "STRING" } },
-            },
-            required: ["message", "goals"],
-          },
-        },
+        model,
+        messages,
+        response_format: { type: "json_object" },
+        // Non-thinking mode: this is a short conversational task, and
+        // temperature only takes effect when thinking is disabled.
+        thinking: { type: "disabled" },
+        temperature: 0.7,
+        max_tokens: 1500,
+        stream: false,
       }),
       signal: ctl.signal,
     });
@@ -124,13 +120,18 @@ async function tryModel(
     if (!res.ok) return null;
 
     const payload = (await res.json().catch(() => null)) as {
-      candidates?: { content?: { parts?: { text?: string }[] } }[];
+      choices?: { message?: { content?: string } }[];
     } | null;
 
-    const raw = payload?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+    const raw = payload?.choices?.[0]?.message?.content ?? "{}";
+    // JSON mode should return bare JSON, but strip fences defensively.
+    const text = raw
+      .trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/, "");
     let parsed: { message?: string; goals?: string[] };
     try {
-      parsed = JSON.parse(raw) as typeof parsed;
+      parsed = JSON.parse(text) as typeof parsed;
     } catch {
       parsed = { message: raw, goals: [] };
     }
@@ -146,12 +147,12 @@ async function tryModel(
 }
 
 export async function POST(request: Request) {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.DEEPSEEK_API_KEY;
 
   if (!apiKey) {
     return fail(
       "CHAT_NOT_CONFIGURED",
-      "The chat assistant is not configured. Set GEMINI_API_KEY in the environment.",
+      "The chat assistant is not configured. Set DEEPSEEK_API_KEY in the environment.",
       503,
     );
   }
@@ -172,20 +173,15 @@ export async function POST(request: Request) {
     return fail("VALIDATION_ERROR", "At least one message is required.", 400);
   }
 
-  const contents = messages
+  const chatMessages = messages
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({
-      role: m.role === "assistant" ? "model" : "user",
-      parts: [{ text: String(m.content).slice(0, 4000) }],
+      role: m.role,
+      content: String(m.content).slice(0, 4000),
     }));
 
   // Models ordered by speed/reliability for this API key.
-  const candidateModels = [
-    "gemini-3.5-flash",
-    "gemini-3.5-flash-lite",
-    "gemini-flash-latest",
-    "gemini-pro-latest",
-  ];
+  const candidateModels = ["deepseek-flash", "deepseek-v4-pro"];
 
   // Overall budget — aborts whichever model is currently running
   const budgetCtl = new AbortController();
@@ -194,7 +190,12 @@ export async function POST(request: Request) {
   try {
     for (const model of candidateModels) {
       if (budgetCtl.signal.aborted) break;
-      const result = await tryModel(model, apiKey, contents, budgetCtl.signal);
+      const result = await tryModel(
+        model,
+        apiKey,
+        [{ role: "system", content: SYSTEM_INSTRUCTION }, ...chatMessages],
+        budgetCtl.signal,
+      );
       if (result) return NextResponse.json(result);
     }
     return fail("UPSTREAM_UNAVAILABLE", "The Sentinel Assistant is busy right now. Please try again in a moment.", 503);

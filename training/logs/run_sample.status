@@ -1,0 +1,5 @@
+running
+train_nli.py=0
+train_contrastive.py=0
+compare_models.py=0
+done 2026-09-28T14:35:46+08:00

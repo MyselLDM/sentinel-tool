@@ -595,6 +595,7 @@ erDiagram
 | --- | --- |
 | `SENTINEL_API_URL` | Express gateway base URL (default `http://localhost:4000`) |
 | `SENTINEL_API_KEY` | Gateway API key — **server-side only**, used by `/api/playground` |
+| `DEEPSEEK_API_KEY` | DeepSeek API key for the chatbot goal generator — **server-side only**, used by `/api/chat` |
 
 ---
 

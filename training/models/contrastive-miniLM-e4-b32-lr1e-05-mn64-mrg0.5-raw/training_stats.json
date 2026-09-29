@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-28T11:51:04+0800",
+  "generated_at": "2026-09-28T14:35:42+0800",
   "model": "contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
   "role": "contrastive bi-encoder (proposed solution)",
   "base": "all-MiniLM-L12-v2",
@@ -14,7 +14,7 @@
     "cuda": null,
     "accelerator": "AMD Radeon RX 9060 XT",
     "accelerator_count": 1,
-    "vram_free_gb": 13.07,
+    "vram_free_gb": 13.08,
     "vram_total_gb": 17.1,
     "cwd": "C:\\sentinel-gpu"
   },
@@ -62,722 +62,133 @@
     "warmup_ratio": 0.1,
     "max_triplets_per_anchor": 64,
     "folds": 5,
-    "fold_strategy": "group",
+    "fold_strategy": "sample",
+    "protocol": "paraphrase-holdout (unseen wording, SHARED goals) - secondary",
     "seed": 42,
     "device": "cuda",
     "use_amp": true,
     "model_dirname": "contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
-    "num_train_triplets_per_fold": 22912
+    "num_train_triplets_per_fold": 28672
   },
   "folds": [
     {
       "fold": 0,
-      "train_scenarios": 7200,
-      "train_triplets": 22912,
-      "test_scenarios": 1800,
-      "test_examples": 3600,
+      "train_scenarios": 4500,
+      "train_triplets": 28672,
+      "test_scenarios": 4500,
+      "test_examples": 9000,
       "threshold": 0.0,
-      "threshold_f1": 98.23691460055096,
-      "train_time_sec": 361.8,
+      "threshold_f1": 98.90547263681592,
+      "train_time_sec": 669.8,
       "summary": {
         "threshold": 0.0,
-        "n": 3600,
+        "n": 9000,
         "confusion": {
-          "tp": 1783,
-          "fp": 47,
-          "tn": 1753,
-          "fn": 17,
-          "total": 3600
+          "tp": 4473,
+          "fp": 72,
+          "tn": 4428,
+          "fn": 27,
+          "total": 9000
         },
-        "tpr": 99.05555555555556,
-        "fpr": 2.611111111111111,
-        "precision": 97.43169398907104,
-        "f1": 98.23691460055096,
-        "accuracy": 98.22222222222223,
+        "tpr": 99.4,
+        "fpr": 1.6,
+        "precision": 98.41584158415841,
+        "f1": 98.90547263681592,
+        "accuracy": 98.9,
         "subsets": {
           "malicious": {
-            "n": 1800,
-            "tp": 1783,
-            "fn": 17,
-            "tpr": 99.05555555555556
+            "n": 4500,
+            "tp": 4473,
+            "fn": 27,
+            "tpr": 99.4
           },
           "benign": {
-            "n": 1800,
-            "fp": 47,
-            "tn": 1753,
-            "fpr": 2.611111111111111
+            "n": 4500,
+            "fp": 72,
+            "tn": 4428,
+            "fpr": 1.6
           },
           "adversarial_paraphrases": {
-            "n": 1440,
-            "tp": 1425,
-            "fn": 15,
-            "tpr": 98.95833333333334
-          },
-          "explicit_attacks": {
-            "n": 360,
-            "tp": 358,
-            "fn": 2,
-            "tpr": 99.44444444444444
-          },
-          "by_policy": {
-            "P-01": {
-              "n": 180,
-              "tp": 178,
-              "fn": 2,
-              "tpr": 98.88888888888889,
-              "policy_name": "Obvious Malicious Intent"
-            },
-            "P-02": {
-              "n": 180,
-              "tp": 174,
-              "fn": 6,
-              "tpr": 96.66666666666667,
-              "policy_name": "Scope Creep"
-            },
-            "P-03": {
-              "n": 180,
-              "tp": 176,
-              "fn": 4,
-              "tpr": 97.77777777777777,
-              "policy_name": "Underspecified Scope"
-            },
-            "P-04": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Data Exfiltration"
-            },
-            "P-05": {
-              "n": 180,
-              "tp": 178,
-              "fn": 2,
-              "tpr": 98.88888888888889,
-              "policy_name": "Unauthorized Sharing"
-            },
-            "P-06": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Constraint Removal"
-            },
-            "P-07": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Temporal Expansion"
-            },
-            "P-08": {
-              "n": 180,
-              "tp": 177,
-              "fn": 3,
-              "tpr": 98.33333333333333,
-              "policy_name": "Resource Expansion"
-            },
-            "P-09": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Privilege Escalation"
-            },
-            "P-10": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Compound Violation"
-            }
-          }
-        }
-      },
-      "training_curve": [
-        {
-          "epoch": 0,
-          "threshold": 0.995,
-          "accuracy": 50.0,
-          "tpr": 100.0,
-          "fpr": 100.0,
-          "precision": 50.0,
-          "f1": 66.66666666666666,
-          "adversarial_paraphrases_tpr": 100.0,
-          "explicit_attacks_tpr": 100.0
-        },
-        {
-          "epoch": 1,
-          "threshold": 0.0,
-          "accuracy": 97.86111111111111,
-          "tpr": 98.77777777777777,
-          "fpr": 3.0555555555555554,
-          "precision": 96.99945444626296,
-          "f1": 97.88053949903662,
-          "adversarial_paraphrases_tpr": 98.68055555555556,
-          "explicit_attacks_tpr": 99.16666666666667
-        },
-        {
-          "epoch": 2,
-          "threshold": 0.015,
-          "accuracy": 98.52777777777779,
-          "tpr": 98.61111111111111,
-          "fpr": 1.5555555555555556,
-          "precision": 98.44703272323905,
-          "f1": 98.52900360810436,
-          "adversarial_paraphrases_tpr": 98.40277777777777,
-          "explicit_attacks_tpr": 99.44444444444444
-        },
-        {
-          "epoch": 3,
-          "threshold": 0.01,
-          "accuracy": 98.88888888888889,
-          "tpr": 98.72222222222223,
-          "fpr": 0.9444444444444444,
-          "precision": 99.05239687848383,
-          "f1": 98.88703394546467,
-          "adversarial_paraphrases_tpr": 98.54166666666667,
-          "explicit_attacks_tpr": 99.44444444444444
-        },
-        {
-          "epoch": 4,
-          "threshold": 0.0,
-          "accuracy": 98.22222222222223,
-          "tpr": 99.05555555555556,
-          "fpr": 2.611111111111111,
-          "precision": 97.43169398907104,
-          "f1": 98.23691460055096,
-          "adversarial_paraphrases_tpr": 98.95833333333334,
-          "explicit_attacks_tpr": 99.44444444444444
-        }
-      ],
-      "fixed_threshold_summary": {
-        "threshold": 0.01,
-        "n": 3600,
-        "confusion": {
-          "tp": 1784,
-          "fp": 49,
-          "tn": 1751,
-          "fn": 16,
-          "total": 3600
-        },
-        "tpr": 99.11111111111111,
-        "fpr": 2.722222222222222,
-        "precision": 97.32678668848882,
-        "f1": 98.21084503165429,
-        "accuracy": 98.19444444444444,
-        "subsets": {
-          "malicious": {
-            "n": 1800,
-            "tp": 1784,
-            "fn": 16,
-            "tpr": 99.11111111111111
-          },
-          "benign": {
-            "n": 1800,
-            "fp": 49,
-            "tn": 1751,
-            "fpr": 2.722222222222222
-          },
-          "adversarial_paraphrases": {
-            "n": 1440,
-            "tp": 1426,
-            "fn": 14,
-            "tpr": 99.02777777777779
-          },
-          "explicit_attacks": {
-            "n": 360,
-            "tp": 358,
-            "fn": 2,
-            "tpr": 99.44444444444444
-          },
-          "by_policy": {
-            "P-01": {
-              "n": 180,
-              "tp": 178,
-              "fn": 2,
-              "tpr": 98.88888888888889,
-              "policy_name": "Obvious Malicious Intent"
-            },
-            "P-02": {
-              "n": 180,
-              "tp": 175,
-              "fn": 5,
-              "tpr": 97.22222222222221,
-              "policy_name": "Scope Creep"
-            },
-            "P-03": {
-              "n": 180,
-              "tp": 176,
-              "fn": 4,
-              "tpr": 97.77777777777777,
-              "policy_name": "Underspecified Scope"
-            },
-            "P-04": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Data Exfiltration"
-            },
-            "P-05": {
-              "n": 180,
-              "tp": 178,
-              "fn": 2,
-              "tpr": 98.88888888888889,
-              "policy_name": "Unauthorized Sharing"
-            },
-            "P-06": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Constraint Removal"
-            },
-            "P-07": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Temporal Expansion"
-            },
-            "P-08": {
-              "n": 180,
-              "tp": 177,
-              "fn": 3,
-              "tpr": 98.33333333333333,
-              "policy_name": "Resource Expansion"
-            },
-            "P-09": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Privilege Escalation"
-            },
-            "P-10": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Compound Violation"
-            }
-          }
-        }
-      }
-    },
-    {
-      "fold": 1,
-      "train_scenarios": 7200,
-      "train_triplets": 22976,
-      "test_scenarios": 1800,
-      "test_examples": 3600,
-      "threshold": 0.05,
-      "threshold_f1": 99.11259012756517,
-      "train_time_sec": 369.8,
-      "summary": {
-        "threshold": 0.05,
-        "n": 3600,
-        "confusion": {
-          "tp": 1787,
-          "fp": 19,
-          "tn": 1781,
-          "fn": 13,
-          "total": 3600
-        },
-        "tpr": 99.27777777777777,
-        "fpr": 1.0555555555555556,
-        "precision": 98.94795127353267,
-        "f1": 99.11259012756517,
-        "accuracy": 99.11111111111111,
-        "subsets": {
-          "malicious": {
-            "n": 1800,
-            "tp": 1787,
-            "fn": 13,
+            "n": 3600,
+            "tp": 3574,
+            "fn": 26,
             "tpr": 99.27777777777777
           },
-          "benign": {
-            "n": 1800,
-            "fp": 19,
-            "tn": 1781,
-            "fpr": 1.0555555555555556
-          },
-          "adversarial_paraphrases": {
-            "n": 1440,
-            "tp": 1427,
-            "fn": 13,
-            "tpr": 99.09722222222223
-          },
           "explicit_attacks": {
-            "n": 360,
-            "tp": 360,
-            "fn": 0,
-            "tpr": 100.0
-          },
-          "by_policy": {
-            "P-01": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Obvious Malicious Intent"
-            },
-            "P-02": {
-              "n": 180,
-              "tp": 175,
-              "fn": 5,
-              "tpr": 97.22222222222221,
-              "policy_name": "Scope Creep"
-            },
-            "P-03": {
-              "n": 180,
-              "tp": 177,
-              "fn": 3,
-              "tpr": 98.33333333333333,
-              "policy_name": "Underspecified Scope"
-            },
-            "P-04": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Data Exfiltration"
-            },
-            "P-05": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Unauthorized Sharing"
-            },
-            "P-06": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Constraint Removal"
-            },
-            "P-07": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
-              "policy_name": "Temporal Expansion"
-            },
-            "P-08": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
-              "policy_name": "Resource Expansion"
-            },
-            "P-09": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
-              "policy_name": "Privilege Escalation"
-            },
-            "P-10": {
-              "n": 180,
-              "tp": 178,
-              "fn": 2,
-              "tpr": 98.88888888888889,
-              "policy_name": "Compound Violation"
-            }
-          }
-        }
-      },
-      "training_curve": [
-        {
-          "epoch": 0,
-          "threshold": 0.97,
-          "accuracy": 51.66666666666667,
-          "tpr": 98.22222222222223,
-          "fpr": 94.88888888888889,
-          "precision": 50.86306098964327,
-          "f1": 67.02047005307051,
-          "adversarial_paraphrases_tpr": 97.77777777777777,
-          "explicit_attacks_tpr": 100.0
-        },
-        {
-          "epoch": 1,
-          "threshold": 0.015,
-          "accuracy": 98.38888888888889,
-          "tpr": 98.33333333333333,
-          "fpr": 1.5555555555555556,
-          "precision": 98.44271412680756,
-          "f1": 98.38799332962756,
-          "adversarial_paraphrases_tpr": 98.19444444444444,
-          "explicit_attacks_tpr": 98.88888888888889
-        },
-        {
-          "epoch": 2,
-          "threshold": 0.015,
-          "accuracy": 98.94444444444444,
-          "tpr": 99.33333333333333,
-          "fpr": 1.4444444444444444,
-          "precision": 98.56670341786108,
-          "f1": 98.94853348090759,
-          "adversarial_paraphrases_tpr": 99.16666666666667,
-          "explicit_attacks_tpr": 100.0
-        },
-        {
-          "epoch": 3,
-          "threshold": 0.0,
-          "accuracy": 99.13888888888889,
-          "tpr": 98.94444444444444,
-          "fpr": 0.6666666666666667,
-          "precision": 99.33073061907419,
-          "f1": 99.13721124408572,
-          "adversarial_paraphrases_tpr": 98.75,
-          "explicit_attacks_tpr": 99.72222222222223
-        },
-        {
-          "epoch": 4,
-          "threshold": 0.05,
-          "accuracy": 99.11111111111111,
-          "tpr": 99.27777777777777,
-          "fpr": 1.0555555555555556,
-          "precision": 98.94795127353267,
-          "f1": 99.11259012756517,
-          "adversarial_paraphrases_tpr": 99.09722222222223,
-          "explicit_attacks_tpr": 100.0
-        }
-      ],
-      "fixed_threshold_summary": {
-        "threshold": 0.01,
-        "n": 3600,
-        "confusion": {
-          "tp": 1784,
-          "fp": 18,
-          "tn": 1782,
-          "fn": 16,
-          "total": 3600
-        },
-        "tpr": 99.11111111111111,
-        "fpr": 1.0,
-        "precision": 99.00110987791344,
-        "f1": 99.05607995558023,
-        "accuracy": 99.05555555555556,
-        "subsets": {
-          "malicious": {
-            "n": 1800,
-            "tp": 1784,
-            "fn": 16,
-            "tpr": 99.11111111111111
-          },
-          "benign": {
-            "n": 1800,
-            "fp": 18,
-            "tn": 1782,
-            "fpr": 1.0
-          },
-          "adversarial_paraphrases": {
-            "n": 1440,
-            "tp": 1425,
-            "fn": 15,
-            "tpr": 98.95833333333334
-          },
-          "explicit_attacks": {
-            "n": 360,
-            "tp": 359,
+            "n": 900,
+            "tp": 899,
             "fn": 1,
-            "tpr": 99.72222222222223
+            "tpr": 99.8888888888889
           },
           "by_policy": {
             "P-01": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
+              "n": 450,
+              "tp": 449,
+              "fn": 1,
+              "tpr": 99.77777777777777,
               "policy_name": "Obvious Malicious Intent"
             },
             "P-02": {
-              "n": 180,
-              "tp": 174,
-              "fn": 6,
-              "tpr": 96.66666666666667,
+              "n": 450,
+              "tp": 436,
+              "fn": 14,
+              "tpr": 96.88888888888889,
               "policy_name": "Scope Creep"
             },
             "P-03": {
-              "n": 180,
-              "tp": 176,
-              "fn": 4,
-              "tpr": 97.77777777777777,
+              "n": 450,
+              "tp": 447,
+              "fn": 3,
+              "tpr": 99.33333333333333,
               "policy_name": "Underspecified Scope"
             },
             "P-04": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
-              "policy_name": "Data Exfiltration"
-            },
-            "P-05": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Unauthorized Sharing"
-            },
-            "P-06": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Constraint Removal"
-            },
-            "P-07": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
-              "policy_name": "Temporal Expansion"
-            },
-            "P-08": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
-              "policy_name": "Resource Expansion"
-            },
-            "P-09": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
-              "policy_name": "Privilege Escalation"
-            },
-            "P-10": {
-              "n": 180,
-              "tp": 178,
-              "fn": 2,
-              "tpr": 98.88888888888889,
-              "policy_name": "Compound Violation"
-            }
-          }
-        }
-      }
-    },
-    {
-      "fold": 2,
-      "train_scenarios": 7200,
-      "train_triplets": 22976,
-      "test_scenarios": 1800,
-      "test_examples": 3600,
-      "threshold": 0.0,
-      "threshold_f1": 97.22675367047309,
-      "train_time_sec": 362.8,
-      "summary": {
-        "threshold": 0.0,
-        "n": 3600,
-        "confusion": {
-          "tp": 1788,
-          "fp": 90,
-          "tn": 1710,
-          "fn": 12,
-          "total": 3600
-        },
-        "tpr": 99.33333333333333,
-        "fpr": 5.0,
-        "precision": 95.2076677316294,
-        "f1": 97.22675367047309,
-        "accuracy": 97.16666666666667,
-        "subsets": {
-          "malicious": {
-            "n": 1800,
-            "tp": 1788,
-            "fn": 12,
-            "tpr": 99.33333333333333
-          },
-          "benign": {
-            "n": 1800,
-            "fp": 90,
-            "tn": 1710,
-            "fpr": 5.0
-          },
-          "adversarial_paraphrases": {
-            "n": 1440,
-            "tp": 1430,
-            "fn": 10,
-            "tpr": 99.30555555555556
-          },
-          "explicit_attacks": {
-            "n": 360,
-            "tp": 358,
-            "fn": 2,
-            "tpr": 99.44444444444444
-          },
-          "by_policy": {
-            "P-01": {
-              "n": 180,
-              "tp": 178,
-              "fn": 2,
-              "tpr": 98.88888888888889,
-              "policy_name": "Obvious Malicious Intent"
-            },
-            "P-02": {
-              "n": 180,
-              "tp": 176,
-              "fn": 4,
-              "tpr": 97.77777777777777,
-              "policy_name": "Scope Creep"
-            },
-            "P-03": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
-              "policy_name": "Underspecified Scope"
-            },
-            "P-04": {
-              "n": 180,
-              "tp": 180,
+              "n": 450,
+              "tp": 450,
               "fn": 0,
               "tpr": 100.0,
               "policy_name": "Data Exfiltration"
             },
             "P-05": {
-              "n": 180,
-              "tp": 176,
+              "n": 450,
+              "tp": 446,
               "fn": 4,
-              "tpr": 97.77777777777777,
+              "tpr": 99.11111111111111,
               "policy_name": "Unauthorized Sharing"
             },
             "P-06": {
-              "n": 180,
-              "tp": 180,
+              "n": 450,
+              "tp": 450,
               "fn": 0,
               "tpr": 100.0,
               "policy_name": "Constraint Removal"
             },
             "P-07": {
-              "n": 180,
-              "tp": 180,
+              "n": 450,
+              "tp": 450,
               "fn": 0,
               "tpr": 100.0,
               "policy_name": "Temporal Expansion"
             },
             "P-08": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
+              "n": 450,
+              "tp": 449,
+              "fn": 1,
+              "tpr": 99.77777777777777,
               "policy_name": "Resource Expansion"
             },
             "P-09": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
+              "n": 450,
+              "tp": 448,
+              "fn": 2,
+              "tpr": 99.55555555555556,
               "policy_name": "Privilege Escalation"
             },
             "P-10": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
+              "n": 450,
+              "tp": 448,
+              "fn": 2,
+              "tpr": 99.55555555555556,
               "policy_name": "Compound Violation"
             }
           }
@@ -787,587 +198,292 @@
         {
           "epoch": 0,
           "threshold": 0.975,
-          "accuracy": 52.30555555555556,
-          "tpr": 97.22222222222221,
-          "fpr": 92.61111111111111,
-          "precision": 51.21451565700907,
-          "f1": 67.08836496070538,
-          "adversarial_paraphrases_tpr": 96.52777777777779,
+          "accuracy": 51.46666666666667,
+          "tpr": 98.24444444444444,
+          "fpr": 95.31111111111112,
+          "precision": 50.7577497129736,
+          "f1": 66.9341408024224,
+          "adversarial_paraphrases_tpr": 97.80555555555556,
           "explicit_attacks_tpr": 100.0
         },
         {
           "epoch": 1,
-          "threshold": 0.01,
-          "accuracy": 97.27777777777777,
-          "tpr": 99.16666666666667,
-          "fpr": 4.611111111111111,
-          "precision": 95.55674518201285,
-          "f1": 97.32824427480917,
-          "adversarial_paraphrases_tpr": 99.23611111111111,
-          "explicit_attacks_tpr": 98.88888888888889
+          "threshold": 0.07,
+          "accuracy": 98.75555555555555,
+          "tpr": 99.0,
+          "fpr": 1.488888888888889,
+          "precision": 98.51835471030518,
+          "f1": 98.75859011305698,
+          "adversarial_paraphrases_tpr": 98.77777777777777,
+          "explicit_attacks_tpr": 99.8888888888889
         },
         {
           "epoch": 2,
-          "threshold": 0.025,
-          "accuracy": 97.55555555555556,
-          "tpr": 98.72222222222223,
-          "fpr": 3.6111111111111107,
-          "precision": 96.47122692725299,
-          "f1": 97.58374519494784,
-          "adversarial_paraphrases_tpr": 98.95833333333334,
-          "explicit_attacks_tpr": 97.77777777777777
+          "threshold": 0.02,
+          "accuracy": 99.05555555555556,
+          "tpr": 99.13333333333333,
+          "fpr": 1.0222222222222224,
+          "precision": 98.97936543155093,
+          "f1": 99.05628955257022,
+          "adversarial_paraphrases_tpr": 98.97222222222221,
+          "explicit_attacks_tpr": 99.77777777777777
         },
         {
           "epoch": 3,
-          "threshold": 0.0,
-          "accuracy": 97.22222222222221,
-          "tpr": 99.44444444444444,
-          "fpr": 5.0,
-          "precision": 95.2127659574468,
-          "f1": 97.28260869565217,
-          "adversarial_paraphrases_tpr": 99.44444444444444,
-          "explicit_attacks_tpr": 99.44444444444444
+          "threshold": 0.05,
+          "accuracy": 98.94444444444444,
+          "tpr": 99.4,
+          "fpr": 1.511111111111111,
+          "precision": 98.50253248183219,
+          "f1": 98.9492312797257,
+          "adversarial_paraphrases_tpr": 99.27777777777777,
+          "explicit_attacks_tpr": 99.8888888888889
         },
         {
           "epoch": 4,
           "threshold": 0.0,
-          "accuracy": 97.16666666666667,
-          "tpr": 99.33333333333333,
-          "fpr": 5.0,
-          "precision": 95.2076677316294,
-          "f1": 97.22675367047309,
-          "adversarial_paraphrases_tpr": 99.30555555555556,
-          "explicit_attacks_tpr": 99.44444444444444
+          "accuracy": 98.9,
+          "tpr": 99.4,
+          "fpr": 1.6,
+          "precision": 98.41584158415841,
+          "f1": 98.90547263681592,
+          "adversarial_paraphrases_tpr": 99.27777777777777,
+          "explicit_attacks_tpr": 99.8888888888889
         }
       ],
       "fixed_threshold_summary": {
-        "threshold": 0.01,
-        "n": 3600,
+        "threshold": 0.0025,
+        "n": 9000,
         "confusion": {
-          "tp": 1788,
-          "fp": 92,
-          "tn": 1708,
-          "fn": 12,
-          "total": 3600
+          "tp": 4473,
+          "fp": 73,
+          "tn": 4427,
+          "fn": 27,
+          "total": 9000
         },
-        "tpr": 99.33333333333333,
-        "fpr": 5.111111111111112,
-        "precision": 95.1063829787234,
-        "f1": 97.17391304347827,
-        "accuracy": 97.11111111111111,
+        "tpr": 99.4,
+        "fpr": 1.6222222222222222,
+        "precision": 98.39419269687637,
+        "f1": 98.8945390227725,
+        "accuracy": 98.88888888888889,
         "subsets": {
           "malicious": {
-            "n": 1800,
-            "tp": 1788,
-            "fn": 12,
-            "tpr": 99.33333333333333
+            "n": 4500,
+            "tp": 4473,
+            "fn": 27,
+            "tpr": 99.4
           },
           "benign": {
-            "n": 1800,
-            "fp": 92,
-            "tn": 1708,
-            "fpr": 5.111111111111112
+            "n": 4500,
+            "fp": 73,
+            "tn": 4427,
+            "fpr": 1.6222222222222222
           },
           "adversarial_paraphrases": {
-            "n": 1440,
-            "tp": 1430,
-            "fn": 10,
-            "tpr": 99.30555555555556
+            "n": 3600,
+            "tp": 3574,
+            "fn": 26,
+            "tpr": 99.27777777777777
           },
           "explicit_attacks": {
-            "n": 360,
-            "tp": 358,
+            "n": 900,
+            "tp": 899,
+            "fn": 1,
+            "tpr": 99.8888888888889
+          },
+          "by_policy": {
+            "P-01": {
+              "n": 450,
+              "tp": 449,
+              "fn": 1,
+              "tpr": 99.77777777777777,
+              "policy_name": "Obvious Malicious Intent"
+            },
+            "P-02": {
+              "n": 450,
+              "tp": 436,
+              "fn": 14,
+              "tpr": 96.88888888888889,
+              "policy_name": "Scope Creep"
+            },
+            "P-03": {
+              "n": 450,
+              "tp": 447,
+              "fn": 3,
+              "tpr": 99.33333333333333,
+              "policy_name": "Underspecified Scope"
+            },
+            "P-04": {
+              "n": 450,
+              "tp": 450,
+              "fn": 0,
+              "tpr": 100.0,
+              "policy_name": "Data Exfiltration"
+            },
+            "P-05": {
+              "n": 450,
+              "tp": 446,
+              "fn": 4,
+              "tpr": 99.11111111111111,
+              "policy_name": "Unauthorized Sharing"
+            },
+            "P-06": {
+              "n": 450,
+              "tp": 450,
+              "fn": 0,
+              "tpr": 100.0,
+              "policy_name": "Constraint Removal"
+            },
+            "P-07": {
+              "n": 450,
+              "tp": 450,
+              "fn": 0,
+              "tpr": 100.0,
+              "policy_name": "Temporal Expansion"
+            },
+            "P-08": {
+              "n": 450,
+              "tp": 449,
+              "fn": 1,
+              "tpr": 99.77777777777777,
+              "policy_name": "Resource Expansion"
+            },
+            "P-09": {
+              "n": 450,
+              "tp": 448,
+              "fn": 2,
+              "tpr": 99.55555555555556,
+              "policy_name": "Privilege Escalation"
+            },
+            "P-10": {
+              "n": 450,
+              "tp": 448,
+              "fn": 2,
+              "tpr": 99.55555555555556,
+              "policy_name": "Compound Violation"
+            }
+          }
+        }
+      }
+    },
+    {
+      "fold": 1,
+      "train_scenarios": 4500,
+      "train_triplets": 28672,
+      "test_scenarios": 4500,
+      "test_examples": 9000,
+      "threshold": 0.005,
+      "threshold_f1": 99.26454201025184,
+      "train_time_sec": 427.8,
+      "summary": {
+        "threshold": 0.005,
+        "n": 9000,
+        "confusion": {
+          "tp": 4454,
+          "fp": 20,
+          "tn": 4480,
+          "fn": 46,
+          "total": 9000
+        },
+        "tpr": 98.97777777777777,
+        "fpr": 0.4444444444444444,
+        "precision": 99.55297273133661,
+        "f1": 99.26454201025184,
+        "accuracy": 99.26666666666667,
+        "subsets": {
+          "malicious": {
+            "n": 4500,
+            "tp": 4454,
+            "fn": 46,
+            "tpr": 98.97777777777777
+          },
+          "benign": {
+            "n": 4500,
+            "fp": 20,
+            "tn": 4480,
+            "fpr": 0.4444444444444444
+          },
+          "adversarial_paraphrases": {
+            "n": 3600,
+            "tp": 3556,
+            "fn": 44,
+            "tpr": 98.77777777777777
+          },
+          "explicit_attacks": {
+            "n": 900,
+            "tp": 898,
             "fn": 2,
-            "tpr": 99.44444444444444
+            "tpr": 99.77777777777777
           },
           "by_policy": {
             "P-01": {
-              "n": 180,
-              "tp": 178,
+              "n": 450,
+              "tp": 448,
               "fn": 2,
-              "tpr": 98.88888888888889,
+              "tpr": 99.55555555555556,
               "policy_name": "Obvious Malicious Intent"
             },
             "P-02": {
-              "n": 180,
-              "tp": 176,
-              "fn": 4,
-              "tpr": 97.77777777777777,
+              "n": 450,
+              "tp": 432,
+              "fn": 18,
+              "tpr": 96.0,
               "policy_name": "Scope Creep"
             },
             "P-03": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
-              "policy_name": "Underspecified Scope"
-            },
-            "P-04": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Data Exfiltration"
-            },
-            "P-05": {
-              "n": 180,
-              "tp": 176,
-              "fn": 4,
-              "tpr": 97.77777777777777,
-              "policy_name": "Unauthorized Sharing"
-            },
-            "P-06": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Constraint Removal"
-            },
-            "P-07": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Temporal Expansion"
-            },
-            "P-08": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Resource Expansion"
-            },
-            "P-09": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Privilege Escalation"
-            },
-            "P-10": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
-              "policy_name": "Compound Violation"
-            }
-          }
-        }
-      }
-    },
-    {
-      "fold": 3,
-      "train_scenarios": 7200,
-      "train_triplets": 22912,
-      "test_scenarios": 1800,
-      "test_examples": 3600,
-      "threshold": 0.0,
-      "threshold_f1": 97.97592997811816,
-      "train_time_sec": 363.7,
-      "summary": {
-        "threshold": 0.0,
-        "n": 3600,
-        "confusion": {
-          "tp": 1791,
-          "fp": 65,
-          "tn": 1735,
-          "fn": 9,
-          "total": 3600
-        },
-        "tpr": 99.5,
-        "fpr": 3.6111111111111107,
-        "precision": 96.4978448275862,
-        "f1": 97.97592997811816,
-        "accuracy": 97.94444444444444,
-        "subsets": {
-          "malicious": {
-            "n": 1800,
-            "tp": 1791,
-            "fn": 9,
-            "tpr": 99.5
-          },
-          "benign": {
-            "n": 1800,
-            "fp": 65,
-            "tn": 1735,
-            "fpr": 3.6111111111111107
-          },
-          "adversarial_paraphrases": {
-            "n": 1440,
-            "tp": 1431,
-            "fn": 9,
-            "tpr": 99.375
-          },
-          "explicit_attacks": {
-            "n": 360,
-            "tp": 360,
-            "fn": 0,
-            "tpr": 100.0
-          },
-          "by_policy": {
-            "P-01": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Obvious Malicious Intent"
-            },
-            "P-02": {
-              "n": 180,
-              "tp": 177,
-              "fn": 3,
-              "tpr": 98.33333333333333,
-              "policy_name": "Scope Creep"
-            },
-            "P-03": {
-              "n": 180,
-              "tp": 178,
-              "fn": 2,
-              "tpr": 98.88888888888889,
-              "policy_name": "Underspecified Scope"
-            },
-            "P-04": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Data Exfiltration"
-            },
-            "P-05": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Unauthorized Sharing"
-            },
-            "P-06": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Constraint Removal"
-            },
-            "P-07": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
-              "policy_name": "Temporal Expansion"
-            },
-            "P-08": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Resource Expansion"
-            },
-            "P-09": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Privilege Escalation"
-            },
-            "P-10": {
-              "n": 180,
-              "tp": 177,
-              "fn": 3,
-              "tpr": 98.33333333333333,
-              "policy_name": "Compound Violation"
-            }
-          }
-        }
-      },
-      "training_curve": [
-        {
-          "epoch": 0,
-          "threshold": 0.97,
-          "accuracy": 52.27777777777778,
-          "tpr": 97.44444444444444,
-          "fpr": 92.88888888888889,
-          "precision": 51.19673088149446,
-          "f1": 67.12590891695369,
-          "adversarial_paraphrases_tpr": 96.80555555555556,
-          "explicit_attacks_tpr": 100.0
-        },
-        {
-          "epoch": 1,
-          "threshold": 0.03,
-          "accuracy": 96.63888888888889,
-          "tpr": 99.5,
-          "fpr": 6.222222222222222,
-          "precision": 94.11455596426694,
-          "f1": 96.73237915203889,
-          "adversarial_paraphrases_tpr": 99.375,
-          "explicit_attacks_tpr": 100.0
-        },
-        {
-          "epoch": 2,
-          "threshold": 0.0,
-          "accuracy": 97.80555555555556,
-          "tpr": 99.3888888888889,
-          "fpr": 3.7777777777777777,
-          "precision": 96.33817985998922,
-          "f1": 97.83975936560022,
-          "adversarial_paraphrases_tpr": 99.30555555555556,
-          "explicit_attacks_tpr": 99.72222222222223
-        },
-        {
-          "epoch": 3,
-          "threshold": 0.0,
-          "accuracy": 98.22222222222223,
-          "tpr": 99.5,
-          "fpr": 3.0555555555555554,
-          "precision": 97.02058504875406,
-          "f1": 98.24465167306637,
-          "adversarial_paraphrases_tpr": 99.375,
-          "explicit_attacks_tpr": 100.0
-        },
-        {
-          "epoch": 4,
-          "threshold": 0.0,
-          "accuracy": 97.94444444444444,
-          "tpr": 99.5,
-          "fpr": 3.6111111111111107,
-          "precision": 96.4978448275862,
-          "f1": 97.97592997811816,
-          "adversarial_paraphrases_tpr": 99.375,
-          "explicit_attacks_tpr": 100.0
-        }
-      ],
-      "fixed_threshold_summary": {
-        "threshold": 0.01,
-        "n": 3600,
-        "confusion": {
-          "tp": 1791,
-          "fp": 67,
-          "tn": 1733,
-          "fn": 9,
-          "total": 3600
-        },
-        "tpr": 99.5,
-        "fpr": 3.722222222222222,
-        "precision": 96.39397201291712,
-        "f1": 97.92236194641882,
-        "accuracy": 97.88888888888889,
-        "subsets": {
-          "malicious": {
-            "n": 1800,
-            "tp": 1791,
-            "fn": 9,
-            "tpr": 99.5
-          },
-          "benign": {
-            "n": 1800,
-            "fp": 67,
-            "tn": 1733,
-            "fpr": 3.722222222222222
-          },
-          "adversarial_paraphrases": {
-            "n": 1440,
-            "tp": 1431,
-            "fn": 9,
-            "tpr": 99.375
-          },
-          "explicit_attacks": {
-            "n": 360,
-            "tp": 360,
-            "fn": 0,
-            "tpr": 100.0
-          },
-          "by_policy": {
-            "P-01": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Obvious Malicious Intent"
-            },
-            "P-02": {
-              "n": 180,
-              "tp": 177,
-              "fn": 3,
-              "tpr": 98.33333333333333,
-              "policy_name": "Scope Creep"
-            },
-            "P-03": {
-              "n": 180,
-              "tp": 178,
-              "fn": 2,
-              "tpr": 98.88888888888889,
-              "policy_name": "Underspecified Scope"
-            },
-            "P-04": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Data Exfiltration"
-            },
-            "P-05": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Unauthorized Sharing"
-            },
-            "P-06": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Constraint Removal"
-            },
-            "P-07": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
-              "policy_name": "Temporal Expansion"
-            },
-            "P-08": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Resource Expansion"
-            },
-            "P-09": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Privilege Escalation"
-            },
-            "P-10": {
-              "n": 180,
-              "tp": 177,
-              "fn": 3,
-              "tpr": 98.33333333333333,
-              "policy_name": "Compound Violation"
-            }
-          }
-        }
-      }
-    },
-    {
-      "fold": 4,
-      "train_scenarios": 7200,
-      "train_triplets": 22912,
-      "test_scenarios": 1800,
-      "test_examples": 3600,
-      "threshold": 0.0,
-      "threshold_f1": 97.17544812601847,
-      "train_time_sec": 361.0,
-      "summary": {
-        "threshold": 0.0,
-        "n": 3600,
-        "confusion": {
-          "tp": 1789,
-          "fp": 93,
-          "tn": 1707,
-          "fn": 11,
-          "total": 3600
-        },
-        "tpr": 99.3888888888889,
-        "fpr": 5.166666666666667,
-        "precision": 95.05844845908608,
-        "f1": 97.17544812601847,
-        "accuracy": 97.11111111111111,
-        "subsets": {
-          "malicious": {
-            "n": 1800,
-            "tp": 1789,
-            "fn": 11,
-            "tpr": 99.3888888888889
-          },
-          "benign": {
-            "n": 1800,
-            "fp": 93,
-            "tn": 1707,
-            "fpr": 5.166666666666667
-          },
-          "adversarial_paraphrases": {
-            "n": 1440,
-            "tp": 1429,
-            "fn": 11,
-            "tpr": 99.23611111111111
-          },
-          "explicit_attacks": {
-            "n": 360,
-            "tp": 360,
-            "fn": 0,
-            "tpr": 100.0
-          },
-          "by_policy": {
-            "P-01": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Obvious Malicious Intent"
-            },
-            "P-02": {
-              "n": 180,
-              "tp": 173,
+              "n": 450,
+              "tp": 443,
               "fn": 7,
-              "tpr": 96.11111111111111,
-              "policy_name": "Scope Creep"
-            },
-            "P-03": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
+              "tpr": 98.44444444444444,
               "policy_name": "Underspecified Scope"
             },
             "P-04": {
-              "n": 180,
-              "tp": 180,
+              "n": 450,
+              "tp": 450,
               "fn": 0,
               "tpr": 100.0,
               "policy_name": "Data Exfiltration"
             },
             "P-05": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
+              "n": 450,
+              "tp": 446,
+              "fn": 4,
+              "tpr": 99.11111111111111,
               "policy_name": "Unauthorized Sharing"
             },
             "P-06": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
+              "n": 450,
+              "tp": 449,
+              "fn": 1,
+              "tpr": 99.77777777777777,
               "policy_name": "Constraint Removal"
             },
             "P-07": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
+              "n": 450,
+              "tp": 449,
+              "fn": 1,
+              "tpr": 99.77777777777777,
               "policy_name": "Temporal Expansion"
             },
             "P-08": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
+              "n": 450,
+              "tp": 446,
+              "fn": 4,
+              "tpr": 99.11111111111111,
               "policy_name": "Resource Expansion"
             },
             "P-09": {
-              "n": 180,
-              "tp": 178,
-              "fn": 2,
-              "tpr": 98.88888888888889,
+              "n": 450,
+              "tp": 449,
+              "fn": 1,
+              "tpr": 99.77777777777777,
               "policy_name": "Privilege Escalation"
             },
             "P-10": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
+              "n": 450,
+              "tp": 442,
+              "fn": 8,
+              "tpr": 98.22222222222223,
               "policy_name": "Compound Violation"
             }
           }
@@ -1377,168 +493,168 @@
         {
           "epoch": 0,
           "threshold": 0.98,
-          "accuracy": 51.52777777777777,
-          "tpr": 98.77777777777777,
-          "fpr": 95.72222222222221,
-          "precision": 50.78548986003999,
-          "f1": 67.0816827013771,
-          "adversarial_paraphrases_tpr": 98.47222222222223,
+          "accuracy": 50.73333333333333,
+          "tpr": 99.44444444444444,
+          "fpr": 97.97777777777777,
+          "precision": 50.37145429986493,
+          "f1": 66.8708906156605,
+          "adversarial_paraphrases_tpr": 99.30555555555556,
           "explicit_attacks_tpr": 100.0
         },
         {
           "epoch": 1,
-          "threshold": 0.015,
-          "accuracy": 97.36111111111111,
-          "tpr": 98.77777777777777,
-          "fpr": 4.055555555555555,
-          "precision": 96.05618584548893,
-          "f1": 97.3979731580389,
-          "adversarial_paraphrases_tpr": 98.75,
-          "explicit_attacks_tpr": 98.88888888888889
+          "threshold": 0.01,
+          "accuracy": 98.7,
+          "tpr": 99.26666666666667,
+          "fpr": 1.866666666666667,
+          "precision": 98.1542518127884,
+          "f1": 98.70732515744116,
+          "adversarial_paraphrases_tpr": 99.25,
+          "explicit_attacks_tpr": 99.33333333333333
         },
         {
           "epoch": 2,
-          "threshold": 0.0,
-          "accuracy": 98.25,
-          "tpr": 99.27777777777777,
-          "fpr": 2.7777777777777777,
-          "precision": 97.27817093086554,
-          "f1": 98.26780313445147,
-          "adversarial_paraphrases_tpr": 99.09722222222223,
-          "explicit_attacks_tpr": 100.0
+          "threshold": 0.095,
+          "accuracy": 99.15555555555555,
+          "tpr": 98.95555555555555,
+          "fpr": 0.6444444444444445,
+          "precision": 99.35296742525658,
+          "f1": 99.15386328211979,
+          "adversarial_paraphrases_tpr": 98.77777777777777,
+          "explicit_attacks_tpr": 99.66666666666667
         },
         {
           "epoch": 3,
-          "threshold": 0.0,
-          "accuracy": 97.58333333333333,
-          "tpr": 99.33333333333333,
-          "fpr": 4.166666666666666,
-          "precision": 95.97423510466989,
-          "f1": 97.62489762489763,
-          "adversarial_paraphrases_tpr": 99.16666666666667,
-          "explicit_attacks_tpr": 100.0
+          "threshold": 0.015,
+          "accuracy": 99.13333333333333,
+          "tpr": 98.93333333333332,
+          "fpr": 0.6666666666666667,
+          "precision": 99.33065595716198,
+          "f1": 99.1315965263861,
+          "adversarial_paraphrases_tpr": 98.75,
+          "explicit_attacks_tpr": 99.66666666666667
         },
         {
           "epoch": 4,
-          "threshold": 0.0,
-          "accuracy": 97.11111111111111,
-          "tpr": 99.3888888888889,
-          "fpr": 5.166666666666667,
-          "precision": 95.05844845908608,
-          "f1": 97.17544812601847,
-          "adversarial_paraphrases_tpr": 99.23611111111111,
-          "explicit_attacks_tpr": 100.0
+          "threshold": 0.005,
+          "accuracy": 99.26666666666667,
+          "tpr": 98.97777777777777,
+          "fpr": 0.4444444444444444,
+          "precision": 99.55297273133661,
+          "f1": 99.26454201025184,
+          "adversarial_paraphrases_tpr": 98.77777777777777,
+          "explicit_attacks_tpr": 99.77777777777777
         }
       ],
       "fixed_threshold_summary": {
-        "threshold": 0.01,
-        "n": 3600,
+        "threshold": 0.0025,
+        "n": 9000,
         "confusion": {
-          "tp": 1789,
-          "fp": 95,
-          "tn": 1705,
-          "fn": 11,
-          "total": 3600
+          "tp": 4453,
+          "fp": 19,
+          "tn": 4481,
+          "fn": 47,
+          "total": 9000
         },
-        "tpr": 99.3888888888889,
-        "fpr": 5.277777777777778,
-        "precision": 94.95753715498938,
-        "f1": 97.12269272529859,
-        "accuracy": 97.05555555555556,
+        "tpr": 98.95555555555555,
+        "fpr": 0.42222222222222217,
+        "precision": 99.57513416815742,
+        "f1": 99.26437806509139,
+        "accuracy": 99.26666666666667,
         "subsets": {
           "malicious": {
-            "n": 1800,
-            "tp": 1789,
-            "fn": 11,
-            "tpr": 99.3888888888889
+            "n": 4500,
+            "tp": 4453,
+            "fn": 47,
+            "tpr": 98.95555555555555
           },
           "benign": {
-            "n": 1800,
-            "fp": 95,
-            "tn": 1705,
-            "fpr": 5.277777777777778
+            "n": 4500,
+            "fp": 19,
+            "tn": 4481,
+            "fpr": 0.42222222222222217
           },
           "adversarial_paraphrases": {
-            "n": 1440,
-            "tp": 1429,
-            "fn": 11,
-            "tpr": 99.23611111111111
+            "n": 3600,
+            "tp": 3555,
+            "fn": 45,
+            "tpr": 98.75
           },
           "explicit_attacks": {
-            "n": 360,
-            "tp": 360,
-            "fn": 0,
-            "tpr": 100.0
+            "n": 900,
+            "tp": 898,
+            "fn": 2,
+            "tpr": 99.77777777777777
           },
           "by_policy": {
             "P-01": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
+              "n": 450,
+              "tp": 448,
+              "fn": 2,
+              "tpr": 99.55555555555556,
               "policy_name": "Obvious Malicious Intent"
             },
             "P-02": {
-              "n": 180,
-              "tp": 173,
-              "fn": 7,
-              "tpr": 96.11111111111111,
+              "n": 450,
+              "tp": 432,
+              "fn": 18,
+              "tpr": 96.0,
               "policy_name": "Scope Creep"
             },
             "P-03": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
+              "n": 450,
+              "tp": 443,
+              "fn": 7,
+              "tpr": 98.44444444444444,
               "policy_name": "Underspecified Scope"
             },
             "P-04": {
-              "n": 180,
-              "tp": 180,
+              "n": 450,
+              "tp": 450,
               "fn": 0,
               "tpr": 100.0,
               "policy_name": "Data Exfiltration"
             },
             "P-05": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
+              "n": 450,
+              "tp": 445,
+              "fn": 5,
+              "tpr": 98.88888888888889,
               "policy_name": "Unauthorized Sharing"
             },
             "P-06": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
+              "n": 450,
+              "tp": 449,
+              "fn": 1,
+              "tpr": 99.77777777777777,
               "policy_name": "Constraint Removal"
             },
             "P-07": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
+              "n": 450,
+              "tp": 449,
+              "fn": 1,
+              "tpr": 99.77777777777777,
               "policy_name": "Temporal Expansion"
             },
             "P-08": {
-              "n": 180,
-              "tp": 180,
-              "fn": 0,
-              "tpr": 100.0,
+              "n": 450,
+              "tp": 446,
+              "fn": 4,
+              "tpr": 99.11111111111111,
               "policy_name": "Resource Expansion"
             },
             "P-09": {
-              "n": 180,
-              "tp": 178,
-              "fn": 2,
-              "tpr": 98.88888888888889,
+              "n": 450,
+              "tp": 449,
+              "fn": 1,
+              "tpr": 99.77777777777777,
               "policy_name": "Privilege Escalation"
             },
             "P-10": {
-              "n": 180,
-              "tp": 179,
-              "fn": 1,
-              "tpr": 99.44444444444444,
+              "n": 450,
+              "tp": 442,
+              "fn": 8,
+              "tpr": 98.22222222222223,
               "policy_name": "Compound Violation"
             }
           }
@@ -1549,75 +665,75 @@
   "aggregate": {
     "metrics": {
       "accuracy": {
-        "mean": 97.91111111111111,
-        "std": 0.7392021057102175
+        "mean": 99.08333333333334,
+        "std": 0.18333333333333002
       },
       "tpr": {
-        "mean": 99.3111111111111,
-        "std": 0.14740554623801852
+        "mean": 99.1888888888889,
+        "std": 0.2111111111111157
       },
       "fpr": {
-        "mean": 3.4888888888888894,
-        "std": 1.5365505700500024
+        "mean": 1.0222222222222221,
+        "std": 0.5777777777777778
       },
       "precision": {
-        "mean": 96.62872125618108,
-        "std": 1.4509218793338574
+        "mean": 98.98440715774751,
+        "std": 0.5685655735890975
       },
       "f1": {
-        "mean": 97.94552730054517,
-        "std": 0.7151956361649469
+        "mean": 99.08500732353389,
+        "std": 0.17953468671796458
       },
       "threshold": {
-        "mean": 0.01,
-        "std": 0.02
+        "mean": 0.0025,
+        "std": 0.0025
       }
     },
     "subsets": {
       "malicious": {
         "tpr": {
-          "mean": 99.3111111111111,
-          "std": 0.14740554623801852
+          "mean": 99.1888888888889,
+          "std": 0.2111111111111157
         }
       },
       "benign": {
         "fpr": {
-          "mean": 3.4888888888888894,
-          "std": 1.5365505700500024
+          "mean": 1.0222222222222221,
+          "std": 0.5777777777777778
         }
       },
       "adversarial_paraphrases": {
         "tpr": {
-          "mean": 99.19444444444446,
-          "std": 0.1495879113092884
+          "mean": 99.02777777777777,
+          "std": 0.25
         }
       },
       "explicit_attacks": {
         "tpr": {
-          "mean": 99.77777777777779,
-          "std": 0.27216552697590946
+          "mean": 99.83333333333334,
+          "std": 0.05555555555556424
         }
       },
       "by_policy": {
         "P-01": {
           "policy_name": "Obvious Malicious Intent",
           "tpr": {
-            "mean": 99.55555555555556,
-            "std": 0.5443310539518189
+            "mean": 99.66666666666666,
+            "std": 0.11111111111110716
           }
         },
         "P-02": {
           "policy_name": "Scope Creep",
           "tpr": {
-            "mean": 97.22222222222221,
-            "std": 0.7856742013183824
+            "mean": 96.44444444444444,
+            "std": 0.44444444444444287
           }
         },
         "P-03": {
           "policy_name": "Underspecified Scope",
           "tpr": {
             "mean": 98.88888888888889,
-            "std": 0.7856742013183884
+            "std": 0.44444444444444287
           }
         },
         "P-04": {
@@ -1630,185 +746,185 @@
         "P-05": {
           "policy_name": "Unauthorized Sharing",
           "tpr": {
-            "mean": 99.22222222222221,
-            "std": 0.8314794192831004
+            "mean": 99.11111111111111,
+            "std": 0.0
           }
         },
         "P-06": {
           "policy_name": "Constraint Removal",
           "tpr": {
-            "mean": 100.0,
-            "std": 0.0
+            "mean": 99.88888888888889,
+            "std": 0.11111111111111427
           }
         },
         "P-07": {
           "policy_name": "Temporal Expansion",
           "tpr": {
-            "mean": 99.77777777777779,
-            "std": 0.27216552697590946
+            "mean": 99.88888888888889,
+            "std": 0.11111111111111427
           }
         },
         "P-08": {
           "policy_name": "Resource Expansion",
           "tpr": {
-            "mean": 99.55555555555556,
-            "std": 0.6478835438717019
+            "mean": 99.44444444444444,
+            "std": 0.3333333333333286
           }
         },
         "P-09": {
           "policy_name": "Privilege Escalation",
           "tpr": {
-            "mean": 99.66666666666667,
-            "std": 0.4444444444444457
+            "mean": 99.66666666666666,
+            "std": 0.11111111111110716
           }
         },
         "P-10": {
           "policy_name": "Compound Violation",
           "tpr": {
-            "mean": 99.22222222222221,
-            "std": 0.5665577237325332
+            "mean": 98.88888888888889,
+            "std": 0.6666666666666643
           }
         }
       }
     },
     "pooled_confusion": {
-      "tp": 8938,
-      "fp": 314,
-      "tn": 8686,
-      "fn": 62,
+      "tp": 8927,
+      "fp": 92,
+      "tn": 8908,
+      "fn": 73,
       "total": 18000
     }
   },
   "aggregate_fixed_threshold": {
     "metrics": {
       "accuracy": {
-        "mean": 97.86111111111111,
-        "std": 0.7416198487095658
+        "mean": 99.07777777777778,
+        "std": 0.18888888888889
       },
       "tpr": {
-        "mean": 99.28888888888889,
-        "std": 0.15475986974648992
+        "mean": 99.17777777777778,
+        "std": 0.22222222222222854
       },
       "fpr": {
-        "mean": 3.5666666666666664,
-        "std": 1.58985984318985
+        "mean": 1.0222222222222221,
+        "std": 0.6000000000000001
       },
       "precision": {
-        "mean": 96.55715774260644,
-        "std": 1.5003595419921263
+        "mean": 98.9846634325169,
+        "std": 0.5904707356405225
       },
       "f1": {
-        "mean": 97.89717854048602,
-        "std": 0.7162422241968093
+        "mean": 99.07945854393195,
+        "std": 0.18491952115944343
       },
       "threshold": {
-        "mean": 0.01,
+        "mean": 0.0025,
         "std": 0.0
       }
     },
     "subsets": {
       "malicious": {
         "tpr": {
-          "mean": 99.28888888888889,
-          "std": 0.15475986974648992
+          "mean": 99.17777777777778,
+          "std": 0.22222222222222854
         }
       },
       "benign": {
         "fpr": {
-          "mean": 3.5666666666666664,
-          "std": 1.58985984318985
+          "mean": 1.0222222222222221,
+          "std": 0.6000000000000001
         }
       },
       "adversarial_paraphrases": {
         "tpr": {
-          "mean": 99.18055555555557,
-          "std": 0.1607755125387495
+          "mean": 99.01388888888889,
+          "std": 0.26388888888888573
         }
       },
       "explicit_attacks": {
         "tpr": {
-          "mean": 99.72222222222223,
-          "std": 0.24845199749997732
+          "mean": 99.83333333333334,
+          "std": 0.05555555555556424
         }
       },
       "by_policy": {
         "P-01": {
           "policy_name": "Obvious Malicious Intent",
           "tpr": {
-            "mean": 99.55555555555556,
-            "std": 0.5443310539518189
+            "mean": 99.66666666666666,
+            "std": 0.11111111111110716
           }
         },
         "P-02": {
           "policy_name": "Scope Creep",
           "tpr": {
-            "mean": 97.22222222222221,
-            "std": 0.7856742013183824
+            "mean": 96.44444444444444,
+            "std": 0.44444444444444287
           }
         },
         "P-03": {
           "policy_name": "Underspecified Scope",
           "tpr": {
-            "mean": 98.77777777777779,
-            "std": 0.8888888888888914
+            "mean": 98.88888888888889,
+            "std": 0.44444444444444287
           }
         },
         "P-04": {
           "policy_name": "Data Exfiltration",
           "tpr": {
-            "mean": 99.88888888888889,
-            "std": 0.22222222222222285
+            "mean": 100.0,
+            "std": 0.0
           }
         },
         "P-05": {
           "policy_name": "Unauthorized Sharing",
           "tpr": {
-            "mean": 99.22222222222221,
-            "std": 0.8314794192831004
+            "mean": 99.0,
+            "std": 0.11111111111111427
           }
         },
         "P-06": {
           "policy_name": "Constraint Removal",
           "tpr": {
-            "mean": 100.0,
-            "std": 0.0
+            "mean": 99.88888888888889,
+            "std": 0.11111111111111427
           }
         },
         "P-07": {
           "policy_name": "Temporal Expansion",
           "tpr": {
-            "mean": 99.77777777777779,
-            "std": 0.27216552697590946
+            "mean": 99.88888888888889,
+            "std": 0.11111111111111427
           }
         },
         "P-08": {
           "policy_name": "Resource Expansion",
           "tpr": {
-            "mean": 99.55555555555556,
-            "std": 0.6478835438717019
+            "mean": 99.44444444444444,
+            "std": 0.3333333333333286
           }
         },
         "P-09": {
           "policy_name": "Privilege Escalation",
           "tpr": {
-            "mean": 99.66666666666667,
-            "std": 0.4444444444444457
+            "mean": 99.66666666666666,
+            "std": 0.11111111111110716
           }
         },
         "P-10": {
           "policy_name": "Compound Violation",
           "tpr": {
-            "mean": 99.22222222222221,
-            "std": 0.5665577237325332
+            "mean": 98.88888888888889,
+            "std": 0.6666666666666643
           }
         }
       }
     },
     "pooled_confusion": {
-      "tp": 8936,
-      "fp": 321,
-      "tn": 8679,
-      "fn": 64,
+      "tp": 8926,
+      "fp": 92,
+      "tn": 8908,
+      "fn": 74,
       "total": 18000
     }
   },
@@ -1816,32 +932,32 @@
     {
       "epoch": 0,
       "threshold": {
-        "mean": 0.9780000000000001,
-        "std": 0.009273618495495711
+        "mean": 0.9775,
+        "std": 0.0025000000000000022
       },
       "accuracy": {
-        "mean": 51.55555555555556,
-        "std": 0.8386865098047042
+        "mean": 51.099999999999994,
+        "std": 0.3666666666666707
       },
       "tpr": {
-        "mean": 98.33333333333334,
-        "std": 1.0012338067616733
+        "mean": 98.84444444444443,
+        "std": 0.6000000000000014
       },
       "fpr": {
-        "mean": 95.22222222222223,
-        "std": 2.662728573623328
+        "mean": 96.64444444444445,
+        "std": 1.3333333333333286
       },
       "precision": {
-        "mean": 50.81195947763736,
-        "std": 0.44106478192816323
+        "mean": 50.564602006419264,
+        "std": 0.19314770655433477
       },
       "f1": {
-        "mean": 66.99661865975467,
-        "std": 0.16840810682845936
+        "mean": 66.90251570904145,
+        "std": 0.03162509338095276
       },
       "adversarial_paraphrases_tpr": {
-        "mean": 97.91666666666666,
-        "std": 1.2515422584520886
+        "mean": 98.55555555555556,
+        "std": 0.75
       },
       "explicit_attacks_tpr": {
         "mean": 100.0,
@@ -1851,261 +967,261 @@
     {
       "epoch": 1,
       "threshold": {
-        "mean": 0.014000000000000002,
-        "std": 0.009695359714832657
+        "mean": 0.04,
+        "std": 0.030000000000000002
       },
       "accuracy": {
-        "mean": 97.50555555555555,
-        "std": 0.5883120864907604
+        "mean": 98.72777777777777,
+        "std": 0.027777777777771462
       },
       "tpr": {
-        "mean": 98.91111111111111,
-        "std": 0.3953432638812739
+        "mean": 99.13333333333333,
+        "std": 0.13333333333333286
       },
       "fpr": {
-        "mean": 3.9,
-        "std": 1.5576969387805897
+        "mean": 1.677777777777778,
+        "std": 0.188888888888889
       },
       "precision": {
-        "mean": 96.23393111296784,
-        "std": 1.4454531166503901
+        "mean": 98.33630326154679,
+        "std": 0.1820514487583864
       },
       "f1": {
-        "mean": 97.54542588271023,
-        "std": 0.5571671529318629
+        "mean": 98.73295763524908,
+        "std": 0.025632477807910448
       },
       "adversarial_paraphrases_tpr": {
-        "mean": 98.84722222222221,
-        "std": 0.42264233485286035
+        "mean": 99.01388888888889,
+        "std": 0.23611111111111427
       },
       "explicit_attacks_tpr": {
-        "mean": 99.16666666666667,
-        "std": 0.4303314829119364
+        "mean": 99.61111111111111,
+        "std": 0.2777777777777857
       }
     },
     {
       "epoch": 2,
       "threshold": {
-        "mean": 0.011,
-        "std": 0.009695359714832659
+        "mean": 0.0575,
+        "std": 0.037500000000000006
       },
       "accuracy": {
-        "mean": 98.21666666666667,
-        "std": 0.49671762105015793
+        "mean": 99.10555555555555,
+        "std": 0.04999999999999716
       },
       "tpr": {
-        "mean": 99.06666666666668,
-        "std": 0.3303570832737429
+        "mean": 99.04444444444444,
+        "std": 0.08888888888888857
       },
       "fpr": {
-        "mean": 2.6333333333333337,
-        "std": 0.9860758992148351
+        "mean": 0.8333333333333335,
+        "std": 0.18888888888888894
       },
       "precision": {
-        "mean": 97.42026277184158,
-        "std": 0.9444940700340241
+        "mean": 99.16616642840376,
+        "std": 0.18680099685282414
       },
       "f1": {
-        "mean": 98.2337689568023,
-        "std": 0.48517720441748285
+        "mean": 99.105076417345,
+        "std": 0.04878686477478311
       },
       "adversarial_paraphrases_tpr": {
-        "mean": 98.98611111111111,
-        "std": 0.31242282997783666
+        "mean": 98.875,
+        "std": 0.09722222222222143
       },
       "explicit_attacks_tpr": {
-        "mean": 99.38888888888889,
-        "std": 0.831479419283101
+        "mean": 99.72222222222223,
+        "std": 0.05555555555555003
       }
     },
     {
       "epoch": 3,
       "threshold": {
-        "mean": 0.002,
-        "std": 0.004
+        "mean": 0.0325,
+        "std": 0.0175
       },
       "accuracy": {
-        "mean": 98.21111111111111,
-        "std": 0.7337961502511846
+        "mean": 99.03888888888889,
+        "std": 0.09444444444444144
       },
       "tpr": {
-        "mean": 99.1888888888889,
-        "std": 0.30347778408327897
+        "mean": 99.16666666666666,
+        "std": 0.2333333333333414
       },
       "fpr": {
-        "mean": 2.7666666666666666,
-        "std": 1.7182391216045412
+        "mean": 1.088888888888889,
+        "std": 0.42222222222222217
       },
       "precision": {
-        "mean": 97.31814272168575,
-        "std": 1.6361776857222368
+        "mean": 98.91659421949709,
+        "std": 0.41406173766489474
       },
       "f1": {
-        "mean": 98.2352806366333,
-        "std": 0.7097182906906392
+        "mean": 99.0404139030559,
+        "std": 0.0911826233302051
       },
       "adversarial_paraphrases_tpr": {
-        "mean": 99.05555555555557,
-        "std": 0.3530073618649662
+        "mean": 99.01388888888889,
+        "std": 0.26388888888888573
       },
       "explicit_attacks_tpr": {
-        "mean": 99.72222222222223,
-        "std": 0.24845199749997732
+        "mean": 99.77777777777779,
+        "std": 0.11111111111111427
       }
     },
     {
       "epoch": 4,
       "threshold": {
-        "mean": 0.01,
-        "std": 0.02
+        "mean": 0.0025,
+        "std": 0.0025
       },
       "accuracy": {
-        "mean": 97.91111111111111,
-        "std": 0.7392021057102175
+        "mean": 99.08333333333334,
+        "std": 0.18333333333333002
       },
       "tpr": {
-        "mean": 99.3111111111111,
-        "std": 0.14740554623801852
+        "mean": 99.1888888888889,
+        "std": 0.2111111111111157
       },
       "fpr": {
-        "mean": 3.4888888888888894,
-        "std": 1.5365505700500024
+        "mean": 1.0222222222222221,
+        "std": 0.5777777777777778
       },
       "precision": {
-        "mean": 96.62872125618108,
-        "std": 1.4509218793338574
+        "mean": 98.98440715774751,
+        "std": 0.5685655735890975
       },
       "f1": {
-        "mean": 97.94552730054517,
-        "std": 0.7151956361649469
+        "mean": 99.08500732353389,
+        "std": 0.17953468671796458
       },
       "adversarial_paraphrases_tpr": {
-        "mean": 99.19444444444446,
-        "std": 0.1495879113092884
+        "mean": 99.02777777777777,
+        "std": 0.25
       },
       "explicit_attacks_tpr": {
-        "mean": 99.77777777777779,
-        "std": 0.27216552697590946
+        "mean": 99.83333333333334,
+        "std": 0.05555555555556424
       }
     }
   ],
-  "final_threshold": 0.01,
+  "final_threshold": 0.0025,
   "baseline": {
     "description": "untrained all-MiniLM-L12-v2 baseline (before training)",
     "folds": [
       {
         "fold": 0,
-        "threshold": 0.995,
-        "threshold_f1": 66.66666666666666,
+        "threshold": 0.975,
+        "threshold_f1": 66.9341408024224,
         "summary": {
-          "threshold": 0.995,
-          "n": 3600,
+          "threshold": 0.975,
+          "n": 9000,
           "confusion": {
-            "tp": 1800,
-            "fp": 1800,
-            "tn": 0,
-            "fn": 0,
-            "total": 3600
+            "tp": 4421,
+            "fp": 4289,
+            "tn": 211,
+            "fn": 79,
+            "total": 9000
           },
-          "tpr": 100.0,
-          "fpr": 100.0,
-          "precision": 50.0,
-          "f1": 66.66666666666666,
-          "accuracy": 50.0,
+          "tpr": 98.24444444444444,
+          "fpr": 95.31111111111112,
+          "precision": 50.7577497129736,
+          "f1": 66.9341408024224,
+          "accuracy": 51.46666666666667,
           "subsets": {
             "malicious": {
-              "n": 1800,
-              "tp": 1800,
-              "fn": 0,
-              "tpr": 100.0
+              "n": 4500,
+              "tp": 4421,
+              "fn": 79,
+              "tpr": 98.24444444444444
             },
             "benign": {
-              "n": 1800,
-              "fp": 1800,
-              "tn": 0,
-              "fpr": 100.0
+              "n": 4500,
+              "fp": 4289,
+              "tn": 211,
+              "fpr": 95.31111111111112
             },
             "adversarial_paraphrases": {
-              "n": 1440,
-              "tp": 1440,
-              "fn": 0,
-              "tpr": 100.0
+              "n": 3600,
+              "tp": 3521,
+              "fn": 79,
+              "tpr": 97.80555555555556
             },
             "explicit_attacks": {
-              "n": 360,
-              "tp": 360,
+              "n": 900,
+              "tp": 900,
               "fn": 0,
               "tpr": 100.0
             },
             "by_policy": {
               "P-01": {
-                "n": 180,
-                "tp": 180,
+                "n": 450,
+                "tp": 450,
                 "fn": 0,
                 "tpr": 100.0,
                 "policy_name": "Obvious Malicious Intent"
               },
               "P-02": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
+                "n": 450,
+                "tp": 436,
+                "fn": 14,
+                "tpr": 96.88888888888889,
                 "policy_name": "Scope Creep"
               },
               "P-03": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
+                "n": 450,
+                "tp": 429,
+                "fn": 21,
+                "tpr": 95.33333333333334,
                 "policy_name": "Underspecified Scope"
               },
               "P-04": {
-                "n": 180,
-                "tp": 180,
+                "n": 450,
+                "tp": 450,
                 "fn": 0,
                 "tpr": 100.0,
                 "policy_name": "Data Exfiltration"
               },
               "P-05": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
+                "n": 450,
+                "tp": 447,
+                "fn": 3,
+                "tpr": 99.33333333333333,
                 "policy_name": "Unauthorized Sharing"
               },
               "P-06": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
+                "n": 450,
+                "tp": 444,
+                "fn": 6,
+                "tpr": 98.66666666666667,
                 "policy_name": "Constraint Removal"
               },
               "P-07": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
+                "n": 450,
+                "tp": 430,
+                "fn": 20,
+                "tpr": 95.55555555555556,
                 "policy_name": "Temporal Expansion"
               },
               "P-08": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
+                "n": 450,
+                "tp": 443,
+                "fn": 7,
+                "tpr": 98.44444444444444,
                 "policy_name": "Resource Expansion"
               },
               "P-09": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
+                "n": 450,
+                "tp": 447,
+                "fn": 3,
+                "tpr": 99.33333333333333,
                 "policy_name": "Privilege Escalation"
               },
               "P-10": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
+                "n": 450,
+                "tp": 445,
+                "fn": 5,
+                "tpr": 98.88888888888889,
                 "policy_name": "Compound Violation"
               }
             }
@@ -2114,474 +1230,117 @@
       },
       {
         "fold": 1,
-        "threshold": 0.97,
-        "threshold_f1": 67.02047005307051,
-        "summary": {
-          "threshold": 0.97,
-          "n": 3600,
-          "confusion": {
-            "tp": 1768,
-            "fp": 1708,
-            "tn": 92,
-            "fn": 32,
-            "total": 3600
-          },
-          "tpr": 98.22222222222223,
-          "fpr": 94.88888888888889,
-          "precision": 50.86306098964327,
-          "f1": 67.02047005307051,
-          "accuracy": 51.66666666666667,
-          "subsets": {
-            "malicious": {
-              "n": 1800,
-              "tp": 1768,
-              "fn": 32,
-              "tpr": 98.22222222222223
-            },
-            "benign": {
-              "n": 1800,
-              "fp": 1708,
-              "tn": 92,
-              "fpr": 94.88888888888889
-            },
-            "adversarial_paraphrases": {
-              "n": 1440,
-              "tp": 1408,
-              "fn": 32,
-              "tpr": 97.77777777777777
-            },
-            "explicit_attacks": {
-              "n": 360,
-              "tp": 360,
-              "fn": 0,
-              "tpr": 100.0
-            },
-            "by_policy": {
-              "P-01": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
-                "policy_name": "Obvious Malicious Intent"
-              },
-              "P-02": {
-                "n": 180,
-                "tp": 174,
-                "fn": 6,
-                "tpr": 96.66666666666667,
-                "policy_name": "Scope Creep"
-              },
-              "P-03": {
-                "n": 180,
-                "tp": 172,
-                "fn": 8,
-                "tpr": 95.55555555555556,
-                "policy_name": "Underspecified Scope"
-              },
-              "P-04": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
-                "policy_name": "Data Exfiltration"
-              },
-              "P-05": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
-                "policy_name": "Unauthorized Sharing"
-              },
-              "P-06": {
-                "n": 180,
-                "tp": 178,
-                "fn": 2,
-                "tpr": 98.88888888888889,
-                "policy_name": "Constraint Removal"
-              },
-              "P-07": {
-                "n": 180,
-                "tp": 170,
-                "fn": 10,
-                "tpr": 94.44444444444444,
-                "policy_name": "Temporal Expansion"
-              },
-              "P-08": {
-                "n": 180,
-                "tp": 179,
-                "fn": 1,
-                "tpr": 99.44444444444444,
-                "policy_name": "Resource Expansion"
-              },
-              "P-09": {
-                "n": 180,
-                "tp": 179,
-                "fn": 1,
-                "tpr": 99.44444444444444,
-                "policy_name": "Privilege Escalation"
-              },
-              "P-10": {
-                "n": 180,
-                "tp": 176,
-                "fn": 4,
-                "tpr": 97.77777777777777,
-                "policy_name": "Compound Violation"
-              }
-            }
-          }
-        }
-      },
-      {
-        "fold": 2,
-        "threshold": 0.975,
-        "threshold_f1": 67.08836496070538,
-        "summary": {
-          "threshold": 0.975,
-          "n": 3600,
-          "confusion": {
-            "tp": 1750,
-            "fp": 1667,
-            "tn": 133,
-            "fn": 50,
-            "total": 3600
-          },
-          "tpr": 97.22222222222221,
-          "fpr": 92.61111111111111,
-          "precision": 51.21451565700907,
-          "f1": 67.08836496070538,
-          "accuracy": 52.30555555555556,
-          "subsets": {
-            "malicious": {
-              "n": 1800,
-              "tp": 1750,
-              "fn": 50,
-              "tpr": 97.22222222222221
-            },
-            "benign": {
-              "n": 1800,
-              "fp": 1667,
-              "tn": 133,
-              "fpr": 92.61111111111111
-            },
-            "adversarial_paraphrases": {
-              "n": 1440,
-              "tp": 1390,
-              "fn": 50,
-              "tpr": 96.52777777777779
-            },
-            "explicit_attacks": {
-              "n": 360,
-              "tp": 360,
-              "fn": 0,
-              "tpr": 100.0
-            },
-            "by_policy": {
-              "P-01": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
-                "policy_name": "Obvious Malicious Intent"
-              },
-              "P-02": {
-                "n": 180,
-                "tp": 175,
-                "fn": 5,
-                "tpr": 97.22222222222221,
-                "policy_name": "Scope Creep"
-              },
-              "P-03": {
-                "n": 180,
-                "tp": 161,
-                "fn": 19,
-                "tpr": 89.44444444444444,
-                "policy_name": "Underspecified Scope"
-              },
-              "P-04": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
-                "policy_name": "Data Exfiltration"
-              },
-              "P-05": {
-                "n": 180,
-                "tp": 177,
-                "fn": 3,
-                "tpr": 98.33333333333333,
-                "policy_name": "Unauthorized Sharing"
-              },
-              "P-06": {
-                "n": 180,
-                "tp": 179,
-                "fn": 1,
-                "tpr": 99.44444444444444,
-                "policy_name": "Constraint Removal"
-              },
-              "P-07": {
-                "n": 180,
-                "tp": 169,
-                "fn": 11,
-                "tpr": 93.88888888888889,
-                "policy_name": "Temporal Expansion"
-              },
-              "P-08": {
-                "n": 180,
-                "tp": 175,
-                "fn": 5,
-                "tpr": 97.22222222222221,
-                "policy_name": "Resource Expansion"
-              },
-              "P-09": {
-                "n": 180,
-                "tp": 178,
-                "fn": 2,
-                "tpr": 98.88888888888889,
-                "policy_name": "Privilege Escalation"
-              },
-              "P-10": {
-                "n": 180,
-                "tp": 176,
-                "fn": 4,
-                "tpr": 97.77777777777777,
-                "policy_name": "Compound Violation"
-              }
-            }
-          }
-        }
-      },
-      {
-        "fold": 3,
-        "threshold": 0.97,
-        "threshold_f1": 67.12590891695369,
-        "summary": {
-          "threshold": 0.97,
-          "n": 3600,
-          "confusion": {
-            "tp": 1754,
-            "fp": 1672,
-            "tn": 128,
-            "fn": 46,
-            "total": 3600
-          },
-          "tpr": 97.44444444444444,
-          "fpr": 92.88888888888889,
-          "precision": 51.19673088149446,
-          "f1": 67.12590891695369,
-          "accuracy": 52.27777777777778,
-          "subsets": {
-            "malicious": {
-              "n": 1800,
-              "tp": 1754,
-              "fn": 46,
-              "tpr": 97.44444444444444
-            },
-            "benign": {
-              "n": 1800,
-              "fp": 1672,
-              "tn": 128,
-              "fpr": 92.88888888888889
-            },
-            "adversarial_paraphrases": {
-              "n": 1440,
-              "tp": 1394,
-              "fn": 46,
-              "tpr": 96.80555555555556
-            },
-            "explicit_attacks": {
-              "n": 360,
-              "tp": 360,
-              "fn": 0,
-              "tpr": 100.0
-            },
-            "by_policy": {
-              "P-01": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
-                "policy_name": "Obvious Malicious Intent"
-              },
-              "P-02": {
-                "n": 180,
-                "tp": 176,
-                "fn": 4,
-                "tpr": 97.77777777777777,
-                "policy_name": "Scope Creep"
-              },
-              "P-03": {
-                "n": 180,
-                "tp": 169,
-                "fn": 11,
-                "tpr": 93.88888888888889,
-                "policy_name": "Underspecified Scope"
-              },
-              "P-04": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
-                "policy_name": "Data Exfiltration"
-              },
-              "P-05": {
-                "n": 180,
-                "tp": 175,
-                "fn": 5,
-                "tpr": 97.22222222222221,
-                "policy_name": "Unauthorized Sharing"
-              },
-              "P-06": {
-                "n": 180,
-                "tp": 174,
-                "fn": 6,
-                "tpr": 96.66666666666667,
-                "policy_name": "Constraint Removal"
-              },
-              "P-07": {
-                "n": 180,
-                "tp": 165,
-                "fn": 15,
-                "tpr": 91.66666666666666,
-                "policy_name": "Temporal Expansion"
-              },
-              "P-08": {
-                "n": 180,
-                "tp": 175,
-                "fn": 5,
-                "tpr": 97.22222222222221,
-                "policy_name": "Resource Expansion"
-              },
-              "P-09": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
-                "policy_name": "Privilege Escalation"
-              },
-              "P-10": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
-                "policy_name": "Compound Violation"
-              }
-            }
-          }
-        }
-      },
-      {
-        "fold": 4,
         "threshold": 0.98,
-        "threshold_f1": 67.0816827013771,
+        "threshold_f1": 66.8708906156605,
         "summary": {
           "threshold": 0.98,
-          "n": 3600,
+          "n": 9000,
           "confusion": {
-            "tp": 1778,
-            "fp": 1723,
-            "tn": 77,
-            "fn": 22,
-            "total": 3600
+            "tp": 4475,
+            "fp": 4409,
+            "tn": 91,
+            "fn": 25,
+            "total": 9000
           },
-          "tpr": 98.77777777777777,
-          "fpr": 95.72222222222221,
-          "precision": 50.78548986003999,
-          "f1": 67.0816827013771,
-          "accuracy": 51.52777777777777,
+          "tpr": 99.44444444444444,
+          "fpr": 97.97777777777777,
+          "precision": 50.37145429986493,
+          "f1": 66.8708906156605,
+          "accuracy": 50.73333333333333,
           "subsets": {
             "malicious": {
-              "n": 1800,
-              "tp": 1778,
-              "fn": 22,
-              "tpr": 98.77777777777777
+              "n": 4500,
+              "tp": 4475,
+              "fn": 25,
+              "tpr": 99.44444444444444
             },
             "benign": {
-              "n": 1800,
-              "fp": 1723,
-              "tn": 77,
-              "fpr": 95.72222222222221
+              "n": 4500,
+              "fp": 4409,
+              "tn": 91,
+              "fpr": 97.97777777777777
             },
             "adversarial_paraphrases": {
-              "n": 1440,
-              "tp": 1418,
-              "fn": 22,
-              "tpr": 98.47222222222223
+              "n": 3600,
+              "tp": 3575,
+              "fn": 25,
+              "tpr": 99.30555555555556
             },
             "explicit_attacks": {
-              "n": 360,
-              "tp": 360,
+              "n": 900,
+              "tp": 900,
               "fn": 0,
               "tpr": 100.0
             },
             "by_policy": {
               "P-01": {
-                "n": 180,
-                "tp": 180,
+                "n": 450,
+                "tp": 450,
                 "fn": 0,
                 "tpr": 100.0,
                 "policy_name": "Obvious Malicious Intent"
               },
               "P-02": {
-                "n": 180,
-                "tp": 174,
-                "fn": 6,
-                "tpr": 96.66666666666667,
+                "n": 450,
+                "tp": 447,
+                "fn": 3,
+                "tpr": 99.33333333333333,
                 "policy_name": "Scope Creep"
               },
               "P-03": {
-                "n": 180,
-                "tp": 173,
-                "fn": 7,
-                "tpr": 96.11111111111111,
+                "n": 450,
+                "tp": 435,
+                "fn": 15,
+                "tpr": 96.66666666666667,
                 "policy_name": "Underspecified Scope"
               },
               "P-04": {
-                "n": 180,
-                "tp": 180,
+                "n": 450,
+                "tp": 450,
                 "fn": 0,
                 "tpr": 100.0,
                 "policy_name": "Data Exfiltration"
               },
               "P-05": {
-                "n": 180,
-                "tp": 180,
+                "n": 450,
+                "tp": 450,
                 "fn": 0,
                 "tpr": 100.0,
                 "policy_name": "Unauthorized Sharing"
               },
               "P-06": {
-                "n": 180,
-                "tp": 180,
+                "n": 450,
+                "tp": 450,
                 "fn": 0,
                 "tpr": 100.0,
                 "policy_name": "Constraint Removal"
               },
               "P-07": {
-                "n": 180,
-                "tp": 173,
-                "fn": 7,
-                "tpr": 96.11111111111111,
+                "n": 450,
+                "tp": 446,
+                "fn": 4,
+                "tpr": 99.11111111111111,
                 "policy_name": "Temporal Expansion"
               },
               "P-08": {
-                "n": 180,
-                "tp": 179,
-                "fn": 1,
-                "tpr": 99.44444444444444,
+                "n": 450,
+                "tp": 450,
+                "fn": 0,
+                "tpr": 100.0,
                 "policy_name": "Resource Expansion"
               },
               "P-09": {
-                "n": 180,
-                "tp": 179,
+                "n": 450,
+                "tp": 449,
                 "fn": 1,
-                "tpr": 99.44444444444444,
+                "tpr": 99.77777777777777,
                 "policy_name": "Privilege Escalation"
               },
               "P-10": {
-                "n": 180,
-                "tp": 180,
-                "fn": 0,
-                "tpr": 100.0,
+                "n": 450,
+                "tp": 448,
+                "fn": 2,
+                "tpr": 99.55555555555556,
                 "policy_name": "Compound Violation"
               }
             }
@@ -2592,47 +1351,47 @@
     "aggregate": {
       "metrics": {
         "accuracy": {
-          "mean": 51.55555555555556,
-          "std": 0.8386865098047042
+          "mean": 51.099999999999994,
+          "std": 0.3666666666666707
         },
         "tpr": {
-          "mean": 98.33333333333334,
-          "std": 1.0012338067616733
+          "mean": 98.84444444444443,
+          "std": 0.6000000000000014
         },
         "fpr": {
-          "mean": 95.22222222222223,
-          "std": 2.662728573623328
+          "mean": 96.64444444444445,
+          "std": 1.3333333333333286
         },
         "precision": {
-          "mean": 50.81195947763736,
-          "std": 0.44106478192816323
+          "mean": 50.564602006419264,
+          "std": 0.19314770655433477
         },
         "f1": {
-          "mean": 66.99661865975467,
-          "std": 0.16840810682845936
+          "mean": 66.90251570904145,
+          "std": 0.03162509338095276
         },
         "threshold": {
-          "mean": 0.9780000000000001,
-          "std": 0.009273618495495711
+          "mean": 0.9775,
+          "std": 0.0025000000000000022
         }
       },
       "subsets": {
         "malicious": {
           "tpr": {
-            "mean": 98.33333333333334,
-            "std": 1.0012338067616733
+            "mean": 98.84444444444443,
+            "std": 0.6000000000000014
           }
         },
         "benign": {
           "fpr": {
-            "mean": 95.22222222222223,
-            "std": 2.662728573623328
+            "mean": 96.64444444444445,
+            "std": 1.3333333333333286
           }
         },
         "adversarial_paraphrases": {
           "tpr": {
-            "mean": 97.91666666666666,
-            "std": 1.2515422584520886
+            "mean": 98.55555555555556,
+            "std": 0.75
           }
         },
         "explicit_attacks": {
@@ -2652,15 +1411,15 @@
           "P-02": {
             "policy_name": "Scope Creep",
             "tpr": {
-              "mean": 97.66666666666667,
-              "std": 1.2372809695177815
+              "mean": 98.11111111111111,
+              "std": 1.2222222222222214
             }
           },
           "P-03": {
             "policy_name": "Underspecified Scope",
             "tpr": {
-              "mean": 95.0,
-              "std": 3.424674446093877
+              "mean": 96.0,
+              "std": 0.6666666666666643
             }
           },
           "P-04": {
@@ -2673,62 +1432,62 @@
           "P-05": {
             "policy_name": "Unauthorized Sharing",
             "tpr": {
-              "mean": 99.11111111111111,
-              "std": 1.1439589045541143
+              "mean": 99.66666666666666,
+              "std": 0.3333333333333357
             }
           },
           "P-06": {
             "policy_name": "Constraint Removal",
             "tpr": {
-              "mean": 99.0,
-              "std": 1.2372809695177809
+              "mean": 99.33333333333334,
+              "std": 0.6666666666666643
             }
           },
           "P-07": {
             "policy_name": "Temporal Expansion",
             "tpr": {
-              "mean": 95.22222222222221,
-              "std": 2.779999111821515
+              "mean": 97.33333333333334,
+              "std": 1.7777777777777786
             }
           },
           "P-08": {
             "policy_name": "Resource Expansion",
             "tpr": {
-              "mean": 98.66666666666667,
-              "std": 1.1967032904743378
+              "mean": 99.22222222222223,
+              "std": 0.7777777777777785
             }
           },
           "P-09": {
             "policy_name": "Privilege Escalation",
             "tpr": {
-              "mean": 99.55555555555557,
-              "std": 0.4157397096415502
+              "mean": 99.55555555555554,
+              "std": 0.22222222222222143
             }
           },
           "P-10": {
             "policy_name": "Compound Violation",
             "tpr": {
-              "mean": 99.11111111111111,
-              "std": 1.0886621079036378
+              "mean": 99.22222222222223,
+              "std": 0.3333333333333357
             }
           }
         }
       },
       "pooled_confusion": {
-        "tp": 8850,
-        "fp": 8570,
-        "tn": 430,
-        "fn": 150,
+        "tp": 8896,
+        "fp": 8698,
+        "tn": 302,
+        "fn": 104,
         "total": 18000
       }
     },
-    "final_threshold": 0.9780000000000001
+    "final_threshold": 0.9775
   },
   "final_model": {
     "dir": "models\\contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
     "trained_on_scenarios": 9000,
     "train_triplets": 28672,
-    "train_time_sec": 456.5
+    "train_time_sec": 395.4
   },
-  "total_runtime_sec": 2281.7
+  "total_runtime_sec": 1501.2
 }
