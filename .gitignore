@@ -121,3 +121,4 @@ Thumbs.db
 *.log
 tmp/
 temp/
+training/.output/
