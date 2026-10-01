@@ -1,8 +1,11 @@
 """Model loading for the Sentinel inference service.
 
 Loads the NLI cross-encoder and the contrastive bi-encoder eagerly at startup
-(see ``main.py`` lifespan). If a fine-tuned ``model_dir`` is missing, it falls
-back to the configured base model so the service still runs in development.
+(see ``main.py`` lifespan). If a fine-tuned ``model_dir`` is missing, loading
+**raises** rather than silently serving an untrained model: the service still
+starts, but ``/health`` reports 503 and ``/evaluate`` returns 503 until the
+checkpoint is deployed. Set ``ALLOW_BASE_FALLBACK=1`` to opt into the old
+dev-mode fallback (base models, degraded health).
 """
 
 from __future__ import annotations
@@ -71,7 +74,12 @@ def _resolve(
             )
         logger.warning("Falling back to base model %r", base)
         return base, True
-    raise FileNotFoundError("Neither model_dir nor base is configured")
+    if model_dir:
+        raise FileNotFoundError(
+            f"{role}: configured model_dir={model_dir!r} does not exist under "
+            f"{models_dir}, and no base model is configured to fall back to."
+        )
+    raise FileNotFoundError(f"{role}: neither model_dir nor base is configured")
 
 
 def load_models(settings: Any, model_config: dict[str, Any]) -> LoadedModels:

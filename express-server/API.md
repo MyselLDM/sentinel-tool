@@ -93,7 +93,10 @@ authenticates a **machine client**. They are never interchangeable.
 
 ### `GET /readyz` — readiness
 
-Checks the inference service. `200` when OK, `503` when it is down.
+Checks the inference service. `200` when OK, `503` when it is down. Note that
+fastapi's `/health` returns `503` when it is running on *untrained base models*
+(only possible with `ALLOW_BASE_FALLBACK=1`), so a mis-deployed model shows up
+here as `"inference": "down"`.
 
 ```jsonc
 // 200
