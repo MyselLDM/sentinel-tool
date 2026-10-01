@@ -9,3 +9,7 @@
 # HuggingFace Trainer / sentence-transformers scratch output.
 checkpoints/
 _tmp_*/
+
+# Per-session archives (training/archive_output.ps1) hold whole run trees,
+# including model weights and full logs. Never commit them.
+.output/
