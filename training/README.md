@@ -16,9 +16,18 @@ statistics needed to answer the thesis' research questions.
 | `common.py` | Shared utilities: dataset loading, **training-parity** text formatting, binary metrics (TPR/FPR/Precision/F1), per-subset/per-policy breakdowns, the shared 5-fold split, JSON helpers. Not run directly. |
 | `train_nli.py` | Fine-tune `cross-encoder/nli-MiniLM2-L6-H768` (3-class) with 5-fold CV + off-the-shelf baseline. |
 | `train_contrastive.py` | Fine-tune `all-MiniLM-L12-v2` (TripletLoss, cosine) with 5-fold CV. |
-| `compare_models.py` | RQ3 one-tailed paired t-test + merged `models/model_config.json`. |
+| `compare_models.py` | RQ3 one-tailed paired t-test + merged `models/model_config.json`. `--protocol group` reads `logs/group/` (use it for the deployment config). |
+| `run_gpu.sh` / `run_gpu.ps1` | Run one script on the GPU (launch from a space-free cwd; `-X faulthandler`). |
+| `run_all_gpu.sh` | Whole pipeline for **one** protocol, archiving results to `logs/<protocol>/`. |
+| `run_protocols_gpu.sh` | Runs `group` then `sample`; touches `logs/RUN_DONE`. |
+| `deploy_to_fastapi.sh` / `.ps1` | Atomically deploy models + config into `fastapi/`, then verify they resolve. `--verify` asserts the *running* service isn't on base models. |
+| `archive_output.ps1` | File one session's `logs/` `models/` `review/` into `.output/<timestamp>/`. |
+| `check_gpu.py` | Device/arch + real matmul + backward; dumps env, `PATH`, `cwd`, free VRAM. |
+| `analyse_fit.py` | Over/under-fit diagnosis from existing artefacts (curves, train-vs-held-out gap, error concentration). |
+| `audit_dataset.py`, `flag_questionable_rows.py`, `review_sheet.py` | Corpus label-quality audit, row-level triage sheet, and a blind review sheet + scorer. |
 | `dataset.csv` | DelegationBench v4, original (9,900 `anchor`/`positive`/`negative` rows, 448 goals, policies P-01…P-11). |
 | `dataset_v2.csv` | **Active** (via `common.DATASET_PATH`): drops the P-10 *Replay Exploitation* family and renumbers the rest (`P-11 → P-10`), so 9,000 rows / policies P-01…P-10. Built by `make_dataset_v2.py`; `dataset.csv` is left untouched. |
+| `.output/` | One folder per archived training session (gitignored). See *Session archives*. |
 | `old-training/` | The original scripts used as the reference for this pipeline. |
 | `plan.md`, `Thesis.md` | FastAPI inference plan and the thesis (problem statement, metrics). |
 
@@ -192,6 +201,28 @@ the epoch budget stays fixed at 4 (never chosen from the curve), so the reported
 post-training numbers are not selected on the test fold. Full metric list:
 Accuracy, TPR, FPR, Precision, F1, per-subset TPR (malicious / adversarial
 paraphrases / explicit attacks), per-policy TPR, and confusion matrices.
+
+## Session archives (`.output/`)
+
+Each training session gets its own folder under `.output/`, named for the minute it
+was filed: `.output/<yyyy-MM-dd_HHmm>/`. Archive one session with:
+
+```powershell
+cd training
+.\archive_output.ps1                                  # .output\2026-10-02_0715\
+.\archive_output.ps1 -Name v2-anchor-cv               # .output\2026-10-02_0715-v2-anchor-cv\
+.\archive_output.ps1 -DryRun                          # show what would move
+```
+
+It creates the timestamped folder and **moves** `logs/`, `models/` and `review/`
+into it (skipping any that are missing/empty), writes a short `session.txt`
+manifest, then exits — leaving a clean tree for the next run. Two sessions filed in
+the same minute never merge: the second becomes `<stamp>-2`.
+
+**Archive after deploying, not before.** `deploy_to_fastapi.sh` / `.ps1` reads
+`models/model_config.json` and, when it must regenerate it, `logs/<protocol>/`.
+Archiving moves both out of the working tree, so deploy first or re-run training.
+`.output/` is gitignored — the archives contain full run trees including weights.
 
 ## Deploying the artifacts
 
