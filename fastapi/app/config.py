@@ -56,7 +56,8 @@ def load_model_config(path: str | None = None) -> dict[str, Any]:
     """Load ``model_config.json`` (model dirs, versions, thresholds, metrics).
 
     Returns a dict with empty ``nli``/``contrastive`` sections if the file is
-    absent, so the service can still start (and fall back to base models).
+    absent, so the service can still start (it then reports 503 from ``/health``
+    and ``/evaluate`` rather than silently serving untrained models).
     """
     resolved = Path(path or get_settings().model_config_path)
     if not resolved.exists():

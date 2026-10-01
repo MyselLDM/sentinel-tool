@@ -61,7 +61,7 @@ curl http://localhost:8000/health
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `POST` | `/evaluate` | Evaluate a `goal` + `subtask` pair. |
-| `GET` | `/health` | Liveness / readiness (models loaded?). |
+| `GET` | `/health` | Liveness / readiness. **503** until trained models are loaded. |
 | `GET` | `/models` | Read-only model info (versions, thresholds, metrics). |
 | `GET` | `/docs` | Swagger UI. |
 
@@ -235,9 +235,10 @@ print(data["is_rejected"], data["rejection_reason"], data["statistics"])
 }
 ```
 
-`on_base_models: true` means a fine-tuned checkpoint was missing and the base
-pretrained model was used (dev fallback). `model_error` is set when loading
-failed entirely.
+`on_base_models: true` means a fine-tuned checkpoint was missing. It is only
+reachable with `ALLOW_BASE_FALLBACK=1`, and in that state `/health` returns
+**503** (degraded) — an untrained gateway must not look healthy. `model_error` is
+set when loading failed entirely.
 
 ---
 
@@ -301,8 +302,10 @@ Environment variables (optionally via `fastapi/.env`):
 - **Caching & concurrency.** Identical `(goal, subtask, thresholds)` are served
   from an LRU cache (`cached: true`). The two models run concurrently in worker
   threads, bounded by `INFERENCE_MAX_CONCURRENCY`.
-- **Fallback.** If a fine-tuned dir is missing, the base pretrained model is used
-  and `/health` reports `on_base_models: true`.
+- **Fallback.** A missing fine-tuned dir makes loading **raise**, so `/health`
+  returns 503 and `/evaluate` returns 503 until the checkpoint is deployed.
+  `ALLOW_BASE_FALLBACK=1` restores the old dev-mode fallback, which still reports
+  `on_base_models: true` and a 503 from `/health`.
 
 ---
 
