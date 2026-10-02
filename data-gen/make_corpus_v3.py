@@ -371,8 +371,14 @@ def _attempt_single(kind: str, goal: str, harm: str | None, label: int,
 
 
 def gather(goal: str, args: argparse.Namespace, rng: random.Random,
-           rows: list[dict], seen: set[str], counter: collections.Counter) -> None:
+           rows: list[dict], seen: set[str], counter: collections.Counter,
+           goal_offset: int = 0) -> None:
     """Generate near-miss pairs, explicit violations, and benign rows for one goal.
+
+    ``goal_offset`` rotates which harm categories this goal's cells cover. Without
+    it every goal restarts at index 0, so when ``per_cell < len(HARM_CATEGORIES)``
+    the trailing categories are never selected at all -- the v3 run with
+    ``--per-cell 4`` produced zero ``corruption`` rows across all 12 goals.
 
     Every cell retries up to ``--retries`` times with the rejection reason fed back
     into the prompt (the mechanism prompt.py uses). Without retries the near-miss
@@ -380,10 +386,15 @@ def gather(goal: str, args: argparse.Namespace, rng: random.Random,
     the judge is what catches it.
     """
     harm_cycle = list(HARM_CATEGORIES)
+    n_harm = len(harm_cycle)
+
+    def harm_at(i: int) -> str:
+        """i-th cell of this goal, rotated so all categories are reachable."""
+        return harm_cycle[(goal_offset + i) % n_harm]
 
     # ── near-miss pairs: one accepted call yields a matched benign/violation pair ──
     for i in range(args.per_cell):
-        harm = harm_cycle[i % len(harm_cycle)]
+        harm = harm_at(i)
         if args.dry_run:
             print(f"\n--- DRY RUN pair [{goal} / {harm}] ---\n{PAIR_SYSTEM}\n\n"
                   f"{pair_prompt(goal, harm)}")
@@ -418,7 +429,7 @@ def gather(goal: str, args: argparse.Namespace, rng: random.Random,
         counter["pairs"] += 1
 
     # ── standalone rows: explicit violations + both benign classes ──
-    plan = [("explicit", h) for h in harm_cycle[:args.per_cell]]
+    plan = [("explicit", harm_at(i)) for i in range(args.per_cell)]
     plan += [("entailment", None), ("neutral", None)] * args.per_cell
     for kind, harm in plan:
         label, family, stratum = {
@@ -563,9 +574,9 @@ def main() -> int:
     rng = random.Random(args.seed_base)
     rows: list[dict] = []
     counter: collections.Counter = collections.Counter()
-    for goal in goals:
+    for idx, goal in enumerate(goals):
         print(f"  [{goal}]")
-        gather(goal, args, rng, rows, seen=set(), counter=counter)
+        gather(goal, args, rng, rows, seen=set(), counter=counter, goal_offset=idx)
         if not args.dry_run:
             # incremental: this run takes ~1-2 h, and losing it to a crash is worse
             # than an occasional partial file
