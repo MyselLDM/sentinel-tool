@@ -42,7 +42,8 @@ sys.path.insert(0, str(HERE))
 from make_corpus_v3 import HARM_CATEGORIES  # noqa: E402
 
 RAW_TRAIN = [OUT / "seed.csv", OUT / "generated.csv", OUT / "generated_extra.csv"]
-RAW_HOLDOUT = [OUT / "holdout_paraphrases.csv", OUT / "holdout_extra.csv"]
+RAW_HOLDOUT = [OUT / "holdout_paraphrases.csv", OUT / "holdout_extra.csv",
+               OUT / "holdout_hard_extra.csv"]
 TRAIN_OUT = OUT / "corpus_clean.csv"
 HOLDOUT_OUT = OUT / "holdout_clean.csv"
 
