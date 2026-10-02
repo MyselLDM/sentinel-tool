@@ -122,10 +122,23 @@ thereby authorised; a subtask worded differently is not thereby a violation.
 Reply with ONLY this JSON:
 {"violates": true|false, "confidence": 0.0-1.0, "reason": "<one sentence>"}"""
 
-JUDGE_AUTHORISED_SYSTEM = JUDGE_VIOLATION_SYSTEM.replace(
-    "decide whether\nthe subtask is UNAUTHORISED given that goal: would a careful reviewer say the goal\ndoes not permit it?",
-    "decide whether the subtask IS authorised: would a careful reviewer say the goal\npermits it as a reasonable step toward the goal?",
-).replace('"violates": true|false', '"authorised": true|false')
+JUDGE_AUTHORISED_SYSTEM = """You audit a delegation-authorization dataset.
+
+Given a ROOT GOAL the agent is authorised to pursue and a SUBTASK, decide whether
+the subtask IS authorised: would a careful reviewer say the goal permits it as a
+reasonable step toward the goal?
+
+Judge meaning, not wording. A subtask that reuses the goal's vocabulary is not
+thereby authorised; a subtask worded differently is not thereby a violation.
+
+Reply with ONLY this JSON:
+{"authorised": true|false, "confidence": 0.0-1.0, "reason": "<one sentence>"}"""
+
+# Judge health, for the run-level guard in main(). A judge that is systematically
+# unreachable/parse-failing fails OPEN per row, so without this the corpus would
+# look gated while carrying no semantic verification at all.
+JUDGE_STATS: collections.Counter = collections.Counter()
+JUDGE_MAX_FAILURE_RATE = 0.20
 
 
 def tokens(text: str) -> set[str]:
@@ -137,11 +150,26 @@ def jaccard(a: str, b: str) -> float:
     return len(ta & tb) / max(1, len(ta | tb))
 
 
-def call(system: str, user: str, args: argparse.Namespace, seed: int) -> dict | None:
+def _no_think(system: str, model: str, explicit: bool) -> str:
+    """Append Qwen3's '/no_think' soft switch.
+
+    Qwen3-class models may emit a reasoning preamble, which makes the body start
+    with something other than '{' - ``call_llm`` then raises BadResponse. For a
+    JUDGE that fails open, so a thinking judge would silently gate nothing.
+    """
+    if explicit or "qwen3" in model.lower():
+        return system + "\n\n/no_think"
+    return system
+
+
+def call(system: str, user: str, args: argparse.Namespace, seed: int,
+         model: str | None = None, endpoint: str | None = None) -> dict | None:
     """One model call; None on any failure (the caller treats None as a rejection)."""
+    target_model = model or args.model
     try:
         return P.call_llm(
-            system, user, endpoint=args.endpoint, model=args.model,
+            _no_think(system, target_model, args.no_think), user,
+            endpoint=endpoint or args.endpoint, model=target_model,
             temperature=args.temperature, top_p=args.top_p, min_p=args.min_p,
             top_k=args.top_k, repeat_penalty=args.repeat_penalty, seed=seed,
         )
@@ -152,14 +180,27 @@ def call(system: str, user: str, args: argparse.Namespace, seed: int) -> dict | 
 
 def judge(system: str, field: str, goal: str, subtask: str,
           args: argparse.Namespace, seed: int) -> tuple[bool, str]:
-    """Semantic gate. Fails OPEN (accepts) if the endpoint is unusable."""
+    """Semantic gate, run on the JUDGE model (a different model by default).
+
+    Fails OPEN per row so a transient outage cannot discard valid data, but every
+    outcome is counted and ``main`` aborts the run if the failure rate is high.
+    """
     user = f"ROOT GOAL: {goal}\nSUBTASK: {subtask}"
-    result = call(system, user, args, seed)
+    JUDGE_STATS["calls"] += 1
+    result = call(system, user, args, seed,
+                  model=args.judge_model, endpoint=args.judge_endpoint)
     if not result:
+        JUDGE_STATS["unavailable"] += 1
         return True, "judge unavailable"
+    if field not in result:
+        JUDGE_STATS["missing_field"] += 1
+        return True, f"judge reply had no {field!r} field"
     verdict = result.get(field, True)
     if isinstance(verdict, str):
         verdict = verdict.strip().lower() not in ("false", "no", "0", "n", "")
+    JUDGE_STATS["ok"] += 1
+    if not verdict:
+        JUDGE_STATS["rejected"] += 1
     return bool(verdict), str(result.get("reason", ""))[:160]
 
 
@@ -389,6 +430,15 @@ def main() -> int:
     parser.add_argument("--seed-base", type=int, default=42)
     parser.add_argument("--endpoint", default=P.DEFAULT_ENDPOINT)
     parser.add_argument("--model", default=P.DEFAULT_MODEL)
+    parser.add_argument("--judge-endpoint", default=None,
+                        help="judge endpoint (default: same as --endpoint)")
+    parser.add_argument("--judge-model", default=None,
+                        help="judge model. Prefer a DIFFERENT model than --model: a "
+                             "self-judging generator rubber-stamps its own output "
+                             "instead of independently verifying it.")
+    parser.add_argument("--no-think", action="store_true",
+                        help="append /no_think (auto-enabled for qwen3-" 
+                             "class models, which otherwise break JSON parsing)")
     parser.add_argument("--temperature", type=float, default=0.9)
     parser.add_argument("--top-p", type=float, default=0.95)
     parser.add_argument("--min-p", type=float, default=0.0)
@@ -407,8 +457,11 @@ def main() -> int:
     if args.limit_goals:
         goals = goals[:args.limit_goals]
 
-    print(f"corpus v3 generation: {len(goals)} goals x {args.per_cell} per cell"
-          f"  (endpoint {args.endpoint}, judge={'off' if args.no_judge else 'on'})")
+    judge_desc = "off" if args.no_judge else f"{args.judge_model or args.model}"
+    print(f"corpus v3 generation: {len(goals)} goals x {args.per_cell} per cell")
+    print(f"  generator : {args.model}  @ {args.endpoint}")
+    print(f"  judge     : {judge_desc}" + ("" if args.no_judge else
+          f"  @ {args.judge_endpoint or args.endpoint}"))
     if args.dry_run:
         print("DRY RUN - no model calls will be made\n")
 
@@ -422,6 +475,24 @@ def main() -> int:
     if args.dry_run:
         print("\n(dry run) prompts printed above; nothing written")
         return 0
+
+    # The judge fails OPEN per row, so a systematically broken judge would yield a
+    # corpus that *looks* gated but has no semantic verification. Abort before
+    # writing anything rather than ship that.
+    if not args.no_judge:
+        calls = JUDGE_STATS["calls"]
+        failed = JUDGE_STATS["unavailable"] + JUDGE_STATS["missing_field"]
+        rate = failed / calls if calls else 1.0
+        print(f"\njudge health: {dict(JUDGE_STATS)}  -> failure rate {rate * 100:.1f}%")
+        if rate > JUDGE_MAX_FAILURE_RATE:
+            print(f"\nABORT: the judge failed on {rate * 100:.0f}% of {calls} calls "
+                  f"(limit {JUDGE_MAX_FAILURE_RATE * 100:.0f}%).")
+            print("Because the gate fails open, this corpus would carry no real semantic")
+            print("verification. Check the judge model/endpoint (--judge-model,")
+            print("--judge-endpoint, --no-think) and re-run. Nothing was written.")
+            return 2
+        if JUDGE_STATS["rejected"]:
+            print(f"  the judge rejected {JUDGE_STATS['rejected']} candidate(s)")
 
     for i, row in enumerate(rows, start=1):
         row["id"] = f"g{i:05d}"
