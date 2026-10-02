@@ -1,0 +1,127 @@
+{
+  "generated_at": "2026-10-02T10:11:59+0800",
+  "notes": [
+    "Produced by training/compare_models.py from the fine-tuned artifacts.",
+    "model_dir is relative to MODELS_DIR (default: fastapi/.models).",
+    "Copy the training/models/* directories into fastapi/.models to deploy.",
+    "Thresholds are the mean of the per-fold F1-optimal cut-offs (5-fold CV)."
+  ],
+  "nli": {
+    "base": "cross-encoder/nli-MiniLM2-L6-H768",
+    "model_dir": "sentinelagent-nli-finetuned",
+    "version": "sentinelagent-nli-finetuned",
+    "labels": [
+      "contradiction",
+      "entailment",
+      "neutral"
+    ],
+    "activation": "softmax",
+    "decision": "p_contradiction > threshold",
+    "threshold": 0.6144444444444445,
+    "threshold_source": "cross_validation_mean",
+    "metrics": {
+      "accuracy": 99.0667,
+      "tpr": 99.3111,
+      "fpr": 1.1778,
+      "precision": 98.8486,
+      "f1": 99.0742
+    }
+  },
+  "contrastive": {
+    "base": "all-MiniLM-L12-v2",
+    "model_dir": "contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
+    "version": "contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
+    "decision": "cosine < threshold",
+    "include_decomposed": false,
+    "threshold": 0.05888888888888889,
+    "threshold_source": "cross_validation_mean",
+    "metrics": {
+      "accuracy": 98.3444,
+      "tpr": 99.1333,
+      "fpr": 2.4444,
+      "precision": 97.6292,
+      "f1": 98.3666
+    }
+  },
+  "thesis_comparison": {
+    "comparison": "contrastive_vs_baseline_nli",
+    "model_a": "contrastive (proposed)",
+    "model_b": "NLI baseline (off-the-shelf)",
+    "tests": {
+      "tpr": {
+        "n_pairs": 9,
+        "mean_a": 99.13333333333334,
+        "mean_b": 78.35555555555555,
+        "mean_diff": 20.777777777777786,
+        "std_diff": 9.65683407978228,
+        "t_statistic": 6.4548414954996,
+        "p_value": 9.864811155032973e-05,
+        "alternative": "greater",
+        "d_z": 2.1516138318332,
+        "significant_at_0_05": true
+      },
+      "precision": {
+        "n_pairs": 9,
+        "mean_a": 97.62915217500569,
+        "mean_b": 64.40821206446623,
+        "mean_diff": 33.22094011053945,
+        "std_diff": 6.651178596846875,
+        "t_statistic": 14.984234580449476,
+        "p_value": 1.9424874496717984e-07,
+        "alternative": "greater",
+        "d_z": 4.994744860149825,
+        "significant_at_0_05": true
+      },
+      "f1": {
+        "n_pairs": 9,
+        "mean_a": 98.36656461355976,
+        "mean_b": 69.95277907092579,
+        "mean_diff": 28.413785542633967,
+        "std_diff": 2.420423326252247,
+        "t_statistic": 35.21754054481392,
+        "p_value": 2.3124006603889617e-10,
+        "alternative": "greater",
+        "d_z": 11.739180181604643,
+        "significant_at_0_05": true
+      },
+      "fpr": {
+        "n_pairs": 9,
+        "mean_a": 2.4444444444444446,
+        "mean_b": 46.15555555555556,
+        "mean_diff": -43.71111111111111,
+        "std_diff": 20.80531449200206,
+        "t_statistic": -6.302876766594581,
+        "p_value": 0.00011603335747977619,
+        "alternative": "less",
+        "d_z": -2.1009589221981937,
+        "significant_at_0_05": true
+      },
+      "adversarial_paraphrases_tpr": {
+        "n_pairs": 9,
+        "mean_a": 99.0,
+        "mean_b": 78.72222222222223,
+        "mean_diff": 20.27777777777778,
+        "std_diff": 9.180009228995603,
+        "t_statistic": 6.626718101893367,
+        "p_value": 8.237047049831258e-05,
+        "alternative": "greater",
+        "d_z": 2.208906033964456,
+        "significant_at_0_05": true
+      },
+      "explicit_attacks_tpr": {
+        "n_pairs": 9,
+        "mean_a": 99.66666666666667,
+        "mean_b": 76.88888888888889,
+        "mean_diff": 22.77777777777778,
+        "std_diff": 12.028900383844087,
+        "t_statistic": 5.680763091621513,
+        "p_value": 0.00023229103158573785,
+        "alternative": "greater",
+        "d_z": 1.8935876972071708,
+        "significant_at_0_05": true
+      }
+    }
+  },
+  "protocol": "leave-one-domain-out + paraphrase-holdout (unseen domain AND wording) - hardest",
+  "protocol_key": "current"
+}
