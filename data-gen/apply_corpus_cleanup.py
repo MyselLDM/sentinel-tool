@@ -42,7 +42,9 @@ sys.path.insert(0, str(HERE))
 from make_corpus_v3 import HARM_CATEGORIES  # noqa: E402
 
 RAW_TRAIN = [OUT / "seed.csv", OUT / "generated.csv", OUT / "generated_extra.csv",
-             OUT / "matched_pairs_extra.csv"]
+             OUT / "matched_pairs_ds_validated.csv"]
+# (matched_pairs_extra.csv = the 9B-gated set, kept as matched_pairs_extra_9b_gated.csv;
+#  only 7/22 of it survived an independent audit, hence the DeepSeek-regenerated file)
 RAW_HOLDOUT = [OUT / "holdout_paraphrases.csv", OUT / "holdout_extra.csv",
                OUT / "holdout_hard_extra.csv"]
 TRAIN_OUT = OUT / "corpus_clean.csv"

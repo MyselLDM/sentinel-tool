@@ -637,6 +637,23 @@ def call_llm(
     Raises EndpointDown when the model is unreachable, BadResponse when the
     reply is not usable JSON. Never retries internally.
     """
+    # Auth for hosted OpenAI-compatible APIs. The key comes from the environment
+    # ONLY - never a CLI arg, never written to a file, never logged. Point
+    # --endpoint at the host and set DEEPSEEK_API_KEY / SENTINEL_LLM_API_KEY.
+    #
+    # "hosted" keys off the ENDPOINT as well as the key, so setting the key does not
+    # silently change local llama.cpp calls (which want seed/top_k/repeat_penalty and
+    # ignore Authorization).
+    headers = {"Content-Type": "application/json"}
+    api_key = os.environ.get("SENTINEL_LLM_API_KEY") or os.environ.get("DEEPSEEK_API_KEY", "")
+    _host = endpoint.split("//", 1)[-1].split("/", 1)[0].lower()
+    _local = ("127.0.0.1" in _host or "localhost" in _host or "0.0.0.0" in _host
+              or _host.startswith("100.") or _host.startswith("192.168.")
+              or _host.startswith("10."))
+    hosted = bool(api_key) and not _local
+    if hosted:
+        headers["Authorization"] = f"Bearer {api_key}"
+
     payload = {
         "model": model,
         "messages": [
@@ -646,16 +663,19 @@ def call_llm(
         "max_tokens": MAX_TOKENS,
         "temperature": temperature,
         "top_p": top_p,
-        "min_p": min_p,
-        "top_k": top_k,
-        "repeat_penalty": repeat_penalty,
-        "seed": seed,
         "stream": False,
     }
+    if hosted:
+        # llama.cpp-only sampling knobs and `seed` are rejected or ignored by hosted
+        # APIs; ask for JSON mode instead, which they do support.
+        payload["response_format"] = {"type": "json_object"}
+    else:
+        payload.update({"min_p": min_p, "top_k": top_k,
+                        "repeat_penalty": repeat_penalty, "seed": seed})
     request = urllib.request.Request(
         endpoint,
         data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers=headers,
     )
 
     try:

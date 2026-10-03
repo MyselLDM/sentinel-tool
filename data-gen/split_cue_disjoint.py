@@ -66,6 +66,12 @@ def main() -> int:
                     help="a TEST set smaller than this cannot support a statistical claim")
     ap.add_argument("--min-test-benign", type=int, default=20,
                     help="ditto for the benign/control side of TEST")
+    ap.add_argument("--group-by", choices=("concept", "cue"), default="concept",
+                    help="concept = hold out concept families (a bag of words can still "
+                         "generalise the OBJECT vocabulary across families, so this split "
+                         "keeps lexical power); cue = hold out the deciding PHRASES "
+                         "themselves, so a lexical model has no weight for the test rows' "
+                         "vocabulary and must fall to chance")
     ap.add_argument("--out-csv", default=str(OUT / "cue_split.csv"))
     ap.add_argument("--out-json", default=str(OUT / "cue_split.json"))
     args = ap.parse_args()
@@ -75,13 +81,20 @@ def main() -> int:
         tag = classify(r.get("subtask", ""), r.get("cue", ""))
         r["_concept"] = tag.concept
         r["_roles"] = ",".join(sorted(tag.roles))
+        # the group the split holds out: a concept family, or the deciding phrase itself
+        cue = (r.get("cue") or "").strip().lower()
+        r["_group"] = cue if (args.group_by == "cue" and cue) else tag.concept
+    if args.group_by == "cue":
+        n_cue = len({r["_group"] for r in rows if r.get("cue", "").strip()})
+        print(f"  group-by=cue: {n_cue} deciding phrases held out as units "
+              f"(a lexical model has no weight for an unseen phrase)")
 
     mal = [r for r in rows if r["label"] == "0"]
     ben = [r for r in rows if r["label"] in ("1", "2")]
     print(f"tagged {len(rows)} rows ({len(mal)} malicious, {len(ben)} benign/neutral)\n")
 
-    m_by = collections.Counter(r["_concept"] for r in mal)
-    b_by = collections.Counter(r["_concept"] for r in ben)
+    m_by = collections.Counter(r["_group"] for r in mal)
+    b_by = collections.Counter(r["_group"] for r in ben)
     print(f"  {'concept':<22}{'malicious':>10}{'benign':>8}   usable as a TEST family?")
     for c in sorted(set(m_by) | set(b_by), key=lambda x: -m_by.get(x, 0)):
         mm, bb = m_by.get(c, 0), b_by.get(c, 0)
@@ -97,6 +110,10 @@ def main() -> int:
     eligible = [c for c in m_by
                 if m_by[c] >= args.min_per_family and b_by.get(c, 0) >= args.min_per_family
                 and c != "unclassified" and c not in OFF_GOAL_ONLY]
+    # a single row can never be a usable test group
+    if args.group_by == "cue":
+        eligible = [c for c in m_by if b_by.get(c, 0) >= args.min_per_family
+                    and c != "unclassified"]
     total = sum(m_by[c] for c in eligible)
     print(f"\n  families usable as TEST: {len(eligible)}  {sorted(eligible) or '(none)'}")
     print(f"  malicious mass available in those families: {total}/{len(mal)}")
@@ -139,11 +156,11 @@ def main() -> int:
     print(f"              train={sorted(k for k,v in assign.items() if v=='train')}")
 
     for r in rows:
-        r["cue_split"] = assign.get(r["_concept"], "train")
+        r["cue_split"] = assign.get(r["_group"], "train")
 
     # verification: no concept family straddles the split
-    straddle = [c for c in set(r["_concept"] for r in rows)
-                if len({r["cue_split"] for r in rows if r["_concept"] == c}) > 1]
+    straddle = [c for c in set(r["_group"] for r in rows)
+                if len({r["cue_split"] for r in rows if r["_group"] == c}) > 1]
     te_m = sum(1 for r in rows if r["cue_split"] == "test" and r["label"] == "0")
     te_b = sum(1 for r in rows if r["cue_split"] == "test" and r["label"] in ("1", "2"))
     print(f"\n  concept families straddling train/test: {len(straddle)} (must be 0)")
@@ -170,19 +187,23 @@ def main() -> int:
         print("  both classes, then re-run this command. Until then no concept-level")
         print("  generalisation is being measured, whatever split is used.")
 
+    seen_train = {c for c, v in assign.items() if v == "train"}
     cols = ["id", "goal", "subtask", "label", "stratum", "source"]
     with Path(args.out_csv).open("w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=cols + ["concept", "roles", "cue_split"],
+        w = csv.DictWriter(fh, fieldnames=cols + ["concept", "roles", "cue_split",
+                                                  "group", "group_seen_in_train"],
                            extrasaction="ignore")
         w.writeheader()
         for r in rows:
             w.writerow({**{k: r.get(k, "") for k in cols},
                         "concept": r["_concept"], "roles": r["_roles"],
-                        "cue_split": r["cue_split"]})
+                        "cue_split": r["cue_split"], "group": r["_group"],
+                        "group_seen_in_train": r["_group"] in seen_train})
     json.dump({"feasible": usable, "usable": usable, "eligible": sorted(eligible),
                "assign": assign, "test_malicious": te_m, "test_benign": te_b,
                "straddling_families": straddle,
-               "malicious_by_concept": dict(m_by), "benign_by_concept": dict(b_by)},
+               "malicious_by_concept": dict(m_by), "benign_by_concept": dict(b_by),
+               "group_by": args.group_by},
               Path(args.out_json).open("w"), indent=2)
     print(f"\nwrote {Path(args.out_csv).name} and {Path(args.out_json).name} (usable: {usable})")
     if usable:
