@@ -41,7 +41,8 @@ OUT = HERE / "data" / "corpus_v3"
 sys.path.insert(0, str(HERE))
 from make_corpus_v3 import HARM_CATEGORIES  # noqa: E402
 
-RAW_TRAIN = [OUT / "seed.csv", OUT / "generated.csv", OUT / "generated_extra.csv"]
+RAW_TRAIN = [OUT / "seed.csv", OUT / "generated.csv", OUT / "generated_extra.csv",
+             OUT / "matched_pairs_extra.csv"]
 RAW_HOLDOUT = [OUT / "holdout_paraphrases.csv", OUT / "holdout_extra.csv",
                OUT / "holdout_hard_extra.csv"]
 TRAIN_OUT = OUT / "corpus_clean.csv"
@@ -140,7 +141,14 @@ def clean(rows: list[dict], styles: dict[str, str],
 
 
 def write(path: Path, rows: list[dict]) -> None:
-    fields = list(rows[0].keys())
+    # union of every row's keys, not rows[0]'s: the matched-pair source carries an
+    # extra `cue_concept` column, and a header taken from a seed row would drop it
+    # (and crash DictWriter) as soon as that row was written.
+    fields: list[str] = []
+    for r in rows:
+        for k in r:
+            if k not in fields:
+                fields.append(k)
     with path.open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=fields)
         w.writeheader()

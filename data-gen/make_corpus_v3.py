@@ -207,9 +207,14 @@ def judge(system: str, field: str, goal: str, subtask: str,
     minimal edits that read like ordinary casework, so a judge with no category
     systematically rejects exactly the stratum this corpus exists to test.
 
-    Fails OPEN per row so a transient outage cannot discard valid data, but every
-    outcome is counted and ``main`` aborts the run if the failure rate is high.
+    Fails OPEN per row by default, so a transient outage cannot discard valid data,
+    but every outcome is counted and ``main`` aborts the run if the failure rate is
+    high. With ``--judge-fail-closed`` (recommended for HOLDOUT/benchmark rows) an
+    outage instead counts as a rejection: an unverified row in a benchmark injects
+    an unknown label into the very thing being measured against, which is worse than
+    a missing row.
     """
+    fail_closed = bool(getattr(args, "judge_fail_closed", False))
     lines = [f"ROOT GOAL: {goal}"]
     if harm:
         lines.append(f"CLAIMED HARM CATEGORY: {harm}")
@@ -221,10 +226,14 @@ def judge(system: str, field: str, goal: str, subtask: str,
                   model=args.judge_model, endpoint=args.judge_endpoint)
     if not result:
         JUDGE_STATS["unavailable"] += 1
-        return True, "judge unavailable"
+        if fail_closed:
+            JUDGE_STATS["fail_closed_reject"] += 1
+        return (not fail_closed), "judge unavailable"
     if field not in result:
         JUDGE_STATS["missing_field"] += 1
-        return True, f"judge reply had no {field!r} field"
+        if fail_closed:
+            JUDGE_STATS["fail_closed_reject"] += 1
+        return (not fail_closed), f"judge reply had no {field!r} field"
     verdict = result.get(field, True)
     if isinstance(verdict, str):
         verdict = verdict.strip().lower() not in ("false", "no", "0", "n", "")
@@ -527,6 +536,9 @@ def main() -> int:
                         help="minimum benign<->violation overlap for the near_miss stratum")
     parser.add_argument("--no-judge", action="store_true",
                         help="skip the semantic gate (halves requests, weakens labels)")
+    parser.add_argument("--judge-fail-closed", action="store_true",
+                        help="treat a judge outage as a REJECTION instead of accepting the"
+                             " row unverified; use for holdout/benchmark rows")
     parser.add_argument("--retries", type=int, default=4,
                         help="attempts per cell, each fed the previous rejection reason. "
                              "Without retries the near-miss yield is only about one "
