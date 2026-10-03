@@ -33,7 +33,7 @@ Open:       what is still unresolved
 | C | manual read of 46 new rows | 2 false labels, 6 wrong categories, 4 rows accepted unjudged | curated copy + `--judge-fail-closed` | done |
 | D | split design review | **a bag of words scores AUC 0.950 on the benchmark** | concept taxonomy, splitter, lexical control | tooling done, corpus work pending |
 | E | first matched-pair run (failed) | own gate rejected 47% of valid pairs; crash lost the output | role-membership gate, key-union write, taxonomy widened | done, re-running |
-| F | second matched-pair run | *in flight - recorded on completion* | | **running** |
+| F | second matched-pair run + split | cue-disjoint split now FEASIBLE; lexical AUC 0.949 -> **0.711**, leak reduced not closed | splitter accumulates families to meet both class targets | done, residual documented |
 
 ---
 
@@ -261,16 +261,67 @@ clean, but the first batch should still be spot-checked by eye.
 
 ---
 
-## Audit F - second matched-pair run
+## Audit F - second matched-pair run, and the cue-disjoint split
 
-**Trigger:** re-run after the Audit E fixes.
+**Trigger:** re-run after the Audit E fixes (role-membership gate, key-union write, widened
+taxonomy, goal affinity, `--append`).
 
-**Status:** running (`data/corpus_v3/matched_pairs2.log`).
+**Scope:** 48 attempted pairs over 6 dual-use concepts; then the split and the control.
 
-**To record on completion:** pairs produced vs attempted per concept; judge health;
-whether `split_cue_disjoint.py` flips to FEASIBLE; and the acceptance test -
-**whether the lexical baseline AUC falls toward 0.5 on the cue-disjoint split.** If it
-does not, the leak is not closed and no architecture comparison is trustworthy yet.
+**Method:** run-log analysis, splitter, lexical baseline, plus one diagnostic ablation.
+
+**Findings:**
+
+1. **Run 2 was killed mid-flight and topped up.** It had reached concept 3 of 6 having
+   produced 11 pairs, with the dominant rejection (`24x benign side not authorised`)
+   caused by pairing concepts with goals that cannot host a legitimate use of them.
+2. **Dual-use is a property of the `(concept, goal)` pair, not the concept.** Yield
+   tracked goal affinity exactly: `privileged_internal` 7/8 (records retention is a
+   step in *every* workflow, 12/12 goals eligible) vs `subject_health` 1/8 (4/12 goals
+   eligible). Added `CONCEPT_GOAL_HINTS`; the judge was right on every rejection.
+3. **Final matched set: 22 pairs / 44 rows** - privileged_internal 8, subject_financial
+   5, demographic_proxy 3, private_interest 3, third_party_external 2, subject_health 1
+   (pairs per concept). Judge failure 2.6%; max Jaccard vs corpus 0.588.
+4. **The split became FEASIBLE - and the blocker was the splitter, not the data.** The
+   earlier "6 of 8 families have zero benign rows" framing was incomplete: the greedy
+   assignment stopped once the *malicious* mass share was reached, parking a single
+   family in TEST with 5 benign rows. Accumulating families until **both** class targets
+   are met gives TEST **106 malicious / 25 benign**, 0 straddling families, VERDICT
+   FEASIBLE.
+5. **Acceptance test: lexical AUC 0.949 -> 0.711.** TPR at FPR 0 fell from 51.4% to
+   14.2%. The approach works, but the leak is **reduced, not closed** - 0.711 is well
+   above chance.
+6. **The residual cause is the benign class, not the off-goal concepts.** Ablation:
+   removing `subject_social`/`subject_location` from *both* sides moves AUC only
+   0.711 -> 0.687. The real driver: **323 of 355 benign rows (91%) carry no violation
+   concept at all** - the matched pairs added just 22 concept-bearing benign rows, so
+   any malicious row that mentions a concept still looks unusual against a
+   predominantly bland benign class.
+7. **Two reporting bugs found, both mine.** The `by concept (pairs actually produced)`
+   line counted only CSV-loaded rows because appended rows carry the *int* `0` while
+   loaded rows carry the *string* `"0"`; and both rows of a pair shared one `id`.
+
+**Changes:** `CONCEPT_GOAL_HINTS` + `--append` (`add_matched_pairs.py`);
+`str()` label comparison and unique per-row ids; splitter accumulates families until
+both class targets are met (`--test-share` removed as superseded);
+`run_topup.sh` added.
+
+**Verified:** splitter reports FEASIBLE with 0 straddling families; baseline reproduces
+the drop on the cue-disjoint split; ablation run for the residual.
+
+**Open - the remaining work, in order of value:**
+
+1. **More concept-bearing benign rows.** To neutralise "mentions a concept = malicious"
+   the benign class needs a concept-bearing share comparable to the malicious side's
+   (~67%). That needs roughly 150 more matched pairs (~2 h), *or* a documented
+   rebalance: cap the concept-free benign rows so the shares are closer.
+2. **Off-goal concepts.** `subject_social` / `subject_location` (45 malicious, 0 benign)
+   still sit in TRAIN and teach an untestable blacklist. Worth excluding from training
+   too, or matching with benign counterparts in a goal where they are legitimate.
+3. **TEST's benign side is thin** (25 rows, ~4% FPR resolution) against 106 malicious.
+4. **`shared_term` exact-substring test is over-strict** - 11 rejections where the two
+   sides used near-identical phrases (*healthcare utilization* vs *healthcare utilization
+   records*). A token-overlap check would be fairer.
 
 ---
 
