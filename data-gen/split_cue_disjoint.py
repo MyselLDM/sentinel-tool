@@ -60,8 +60,6 @@ def read(paths: list[Path]) -> list[dict]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--test-share", type=float, default=0.30,
-                    help="fraction of malicious mass to place in TEST")
     ap.add_argument("--min-per-family", type=int, default=4,
                     help="a family needs at least this many rows in a class to count")
     ap.add_argument("--min-test-malicious", type=int, default=30,
@@ -119,15 +117,23 @@ def main() -> int:
         print(f"\nwrote {Path(args.out_json).name} (feasible: false)")
         return 0
 
-    # greedy: biggest families into TEST until test-share of eligible mass is reached
+    # Accumulate families into TEST until BOTH class targets are met. The earlier
+    # version stopped as soon as the malicious-mass share was reached, which parked a
+    # single family in TEST and left it with 5 benign rows against a target of 20 - a
+    # structurally valid split that still could not estimate FPR.
+    order = sorted(eligible, key=lambda x: -(b_by.get(x, 0) + m_by.get(x, 0)))
     assign: dict[str, str] = {}
-    placed = 0
-    for c in sorted(eligible, key=lambda x: -m_by[x]):
-        if placed < args.test_share * total:
-            assign[c] = "test"
-            placed += m_by[c]
-        else:
-            assign[c] = "train"
+    te_m = te_b = 0
+    for i, c in enumerate(order):
+        if te_m >= args.min_test_malicious and te_b >= args.min_test_benign:
+            break
+        if len(order) - i <= 1:          # always leave at least one family for TRAIN
+            break
+        assign[c] = "test"
+        te_m += m_by[c]
+        te_b += b_by.get(c, 0)
+    for c in eligible:
+        assign.setdefault(c, "train")
     assign["unclassified"] = "train"
     print(f"\n  assignment: test={sorted(k for k,v in assign.items() if v=='test')}")
     print(f"              train={sorted(k for k,v in assign.items() if v=='train')}")

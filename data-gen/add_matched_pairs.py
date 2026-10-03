@@ -113,6 +113,20 @@ CONCEPT_SPEC = {
         what="a private interest: a personal relationship, a favour, a commission"),
 }
 
+# Dual-use is a property of the (concept, goal) PAIR, not the concept alone.
+# Run 2 evidence: privileged_internal yielded 7/8 pairs because records retention is a
+# step in every workflow, while subject_health yielded 1/8 - "prescription history" has
+# a legitimate use in a disability claim and none in office-equipment procurement. The
+# judge rejected 24 benign sides for exactly this, correctly. Empty tuple = every goal.
+CONCEPT_GOAL_HINTS = {
+    "privileged_internal": (),  # universal: redaction/retention applies to any case file
+    "subject_health": ("disability", "medicare", "veteran", "health", "workplace safety"),
+    "subject_financial": ("tax", "loan", "social security", "disaster", "retirement"),
+    "demographic_proxy": ("census", "disaster", "medicare", "loan", "immigration", "social security"),
+    "third_party_external": ("foia", "procurement", "census", "immigration", "tax"),
+    "private_interest": ("procurement", "foia", "workplace safety", "immigration", "loan"),
+}
+
 ROLE_WORDS = {
     "public": "the PUBLIC / agency-side use (the agency's own public channels, published data)",
     "private_subject": "the PRIVATE / subject-side use (the individual applicant's own material)",
@@ -224,6 +238,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="reject at/above this similarity to any existing corpus row")
     r.add_argument("--seed", type=int, default=42)
     r.add_argument("--out", default=str(EXTRA_PATH))
+    r.add_argument("--append", action="store_true",
+                   help="top up an existing --out file instead of overwriting: counts the pairs "
+                        "already produced per concept and only generates the shortfall")
     r.add_argument("--dry-run", action="store_true")
     r.add_argument("--verbose", action="store_true")
     return p
@@ -242,7 +259,9 @@ def main() -> int:
         return 1
     concepts = [args.only_concept] if args.only_concept else [
         c for c in CONCEPT_SPEC if CONCEPT_SPEC[c]["dual_use"] or args.include_off_goal]
-    skipped = [c for c in CONCEPT_SPEC if c not in concepts]
+    # only genuinely off-goal concepts, not everything --only-concept deselected
+    skipped = [c for c in CONCEPT_SPEC
+               if c not in concepts and not CONCEPT_SPEC[c]["dual_use"]]
     if skipped:
         print(f"skipping off-goal concepts (no legitimate role exists): {skipped}")
         print("  pass --include-off-goal to attempt them anyway")
@@ -257,9 +276,19 @@ def main() -> int:
 
     rng = random.Random(args.seed)
     rows: list[dict] = []
+    if args.append and Path(args.out).exists():
+        rows = read_csv(Path(args.out))
+        print(f"  --append: loaded {len(rows)} existing rows from {Path(args.out).name}")
     seen = {s.strip().lower() for s in reference if s}
+    seen |= {r["subtask"].strip().lower() for r in rows}
     counter: collections.Counter = collections.Counter()
     per_concept: collections.Counter = collections.Counter()
+    for r in rows:
+        if r.get("label") == "0":
+            per_concept[r.get("cue_concept", "")] += 1
+    if rows:
+        counter["pairs"] = sum(per_concept.values())
+        print(f"  already produced: {dict(per_concept)}")
     started = time.time()
 
     def flush() -> None:
@@ -273,7 +302,13 @@ def main() -> int:
     for concept in concepts:
         spec = CONCEPT_SPEC[concept]
         while per_concept[concept] < args.per_concept:
-            goal = goals[gi % len(goals)]
+            eligible = [g for g in goals
+                        if not CONCEPT_GOAL_HINTS.get(concept)
+                        or any(h in g.lower() for h in CONCEPT_GOAL_HINTS[concept])]
+            if not eligible:
+                print(f"    (no goal admits a legitimate use of {concept}; skipping)")
+                break
+            goal = eligible[gi % len(eligible)]
             gi += 1
             if args.dry_run:
                 print(f"\n--- DRY RUN [{concept} / {goal}] ---\n"
@@ -352,14 +387,14 @@ def main() -> int:
             pid = f"pm{n:04d}"
             seen.add(benign.lower()); seen.add(violation.lower())
             rows.append({
-                "id": f"gm{n:05d}", "goal": goal, "subtask": benign, "label": 1,
+                "id": f"gm{n:05d}b", "goal": goal, "subtask": benign, "label": 1,
                 "family": "benign_entailment", "harm_category": spec["harm"], "pair_id": pid,
                 "stratum": "matched", "split": "train", "source": "v3-matched",
                 "notes": f"paired with the violation; shared concept: {shared!r} | {boundary}",
                 "cue_concept": concept,
             })
             rows.append({
-                "id": f"gm{n:05d}", "goal": goal, "subtask": violation, "label": 0,
+                "id": f"gm{n:05d}v", "goal": goal, "subtask": violation, "label": 0,
                 "family": "purpose_violation", "harm_category": spec["harm"], "pair_id": pid,
                 "stratum": "matched", "split": "train", "source": "v3-matched",
                 "notes": f"shared concept: {shared!r} | {boundary}", "cue_concept": concept,
@@ -375,7 +410,11 @@ def main() -> int:
     flush()
     print(f"\nwrote {Path(args.out).name}  ({len(rows)} rows, {counter['pairs']} pairs)")
     print(f"counters: {dict(counter)}")
-    made = collections.Counter(r["cue_concept"] for r in rows if r["label"] == "0")
+    # str(): rows loaded from CSV carry label "0", but rows appended in-process carry
+    # the int 0 - comparing against "0" alone silently counted only the loaded ones,
+    # which is why this line reported the pre-append totals.
+    made = collections.Counter(r["cue_concept"] for r in rows
+                               if str(r["label"]) == "0")
     print(f"by concept (pairs actually produced): {dict(made)}")
     print(f"by concept (attempts, incl. exhausted): {dict(per_concept)}")
     hc = M.JUDGE_STATS
