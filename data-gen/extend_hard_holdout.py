@@ -192,6 +192,9 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--repeat-penalty", type=float, default=1.05)
     s.add_argument("--no-think", action="store_true")
     s.add_argument("--no-judge", action="store_true")
+    j.add_argument("--judge-fail-closed", action="store_true",
+                   help="treat a judge outage as a REJECTION instead of accepting the row"
+                        " unverified; use for holdout/benchmark rows")
     r = p.add_argument_group("run")
     r.add_argument("--per-goal", type=int, default=4, help="rows to add per goal")
     r.add_argument("--retries", type=int, default=4)
