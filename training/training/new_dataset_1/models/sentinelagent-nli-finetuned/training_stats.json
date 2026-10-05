@@ -1,0 +1,948 @@
+{
+  "generated_at": "2026-10-03T14:29:46+0800",
+  "model": "sentinelagent-nli-finetuned",
+  "role": "NLI cross-encoder (SentinelAgent P2 intent verifier)",
+  "base": "cross-encoder/nli-MiniLM2-L6-H768",
+  "labels": [
+    "contradiction",
+    "entailment",
+    "neutral"
+  ],
+  "decision": "p_contradiction > threshold",
+  "higher_score_means_malicious": true,
+  "compute": {
+    "device": "cuda",
+    "torch": "2.9.1+rocm7.2.1",
+    "hip": "7.2.53211-158bd99533",
+    "cuda": null,
+    "cwd": "C:\\sentinel-gpu"
+  },
+  "dataset": {
+    "rows": 106,
+    "unique_goals": 2,
+    "label_counts": {
+      "malicious": 41,
+      "benign-entailment": 42,
+      "neutral": 23
+    },
+    "malicious": 41,
+    "benign": 65,
+    "by_stratum": {
+      "easy": 68,
+      "matched": 20,
+      "near_miss": 18
+    },
+    "by_source": {
+      "generated": 42,
+      "original_190": 44,
+      "v3-matched": 20
+    },
+    "by_harm_category": {
+      "bias": 10,
+      "corruption": 7,
+      "exfiltration": 14,
+      "privilege_escalation": 18,
+      "surveillance": 11
+    },
+    "paired_rows": 38,
+    "path": "corpus_clean.csv",
+    "limit_goals": 2
+  },
+  "config": {
+    "base": "cross-encoder/nli-MiniLM2-L6-H768",
+    "labels": [
+      "contradiction",
+      "entailment",
+      "neutral"
+    ],
+    "decision": "p_contradiction > threshold",
+    "activation": "softmax",
+    "epochs": 1,
+    "batch_size": 16,
+    "learning_rate": 2e-05,
+    "weight_decay": 0.01,
+    "warmup_ratio": 0.1,
+    "folds": 2,
+    "fold_strategy": "group",
+    "protocol": "anchor-grouped cross-validation (unseen goals) - PRIMARY",
+    "seed": 42,
+    "device": "cpu",
+    "precision": "bf16",
+    "max_length": null,
+    "num_train_pairs_per_fold": 53
+  },
+  "folds": [
+    {
+      "fold": 0,
+      "train_rows": 53,
+      "train_pairs": 53,
+      "test_rows": 53,
+      "test_examples": 53,
+      "threshold": 0.435,
+      "threshold_f1": 64.51612903225806,
+      "train_time_sec": 9.8,
+      "summary": {
+        "threshold": 0.435,
+        "n": 53,
+        "confusion": {
+          "tp": 20,
+          "fp": 20,
+          "tn": 11,
+          "fn": 2,
+          "total": 53
+        },
+        "tpr": 90.9090909090909,
+        "fpr": 64.51612903225806,
+        "precision": 50.0,
+        "f1": 64.51612903225806,
+        "accuracy": 58.490566037735846,
+        "subsets": {
+          "malicious": {
+            "n": 22,
+            "tp": 20,
+            "fn": 2,
+            "tpr": 90.9090909090909
+          },
+          "benign": {
+            "n": 31,
+            "fp": 20,
+            "tn": 11,
+            "fpr": 64.51612903225806
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 15,
+              "tp": 14,
+              "fn": 1,
+              "tpr": 93.33333333333333
+            },
+            "matched": {
+              "n": 3,
+              "tp": 2,
+              "fn": 1,
+              "tpr": 66.66666666666666
+            },
+            "near_miss": {
+              "n": 4,
+              "tp": 4,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 8,
+              "tp": 7,
+              "fn": 1,
+              "tpr": 87.5
+            },
+            "original_190": {
+              "n": 11,
+              "tp": 11,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "v3-matched": {
+              "n": 3,
+              "tp": 2,
+              "fn": 1,
+              "tpr": 66.66666666666666
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 93.33333333333333,
+            "matched": 66.66666666666666,
+            "near_miss": 100.0
+          }
+        }
+      },
+      "training_curve": [
+        {
+          "epoch": 0,
+          "threshold": 0.03,
+          "accuracy": 62.264150943396224,
+          "tpr": 77.27272727272727,
+          "fpr": 48.38709677419355,
+          "precision": 53.125,
+          "f1": 62.96296296296296,
+          "easy_tpr": 93.33333333333333,
+          "matched_tpr": 66.66666666666666,
+          "near_miss_tpr": 25.0
+        },
+        {
+          "epoch": 1,
+          "threshold": 0.435,
+          "accuracy": 58.490566037735846,
+          "tpr": 90.9090909090909,
+          "fpr": 64.51612903225806,
+          "precision": 50.0,
+          "f1": 64.51612903225806,
+          "easy_tpr": 93.33333333333333,
+          "matched_tpr": 66.66666666666666,
+          "near_miss_tpr": 100.0
+        }
+      ],
+      "train_log_history": [
+        {
+          "train_runtime": 5.4482,
+          "train_samples_per_second": 9.728,
+          "train_steps_per_second": 0.734,
+          "total_flos": 0.0,
+          "train_loss": 2.21040415763855,
+          "epoch": 1.0,
+          "step": 4
+        }
+      ],
+      "fixed_threshold_summary": {
+        "threshold": 0.355,
+        "n": 53,
+        "confusion": {
+          "tp": 20,
+          "fp": 26,
+          "tn": 5,
+          "fn": 2,
+          "total": 53
+        },
+        "tpr": 90.9090909090909,
+        "fpr": 83.87096774193549,
+        "precision": 43.47826086956522,
+        "f1": 58.82352941176471,
+        "accuracy": 47.16981132075472,
+        "subsets": {
+          "malicious": {
+            "n": 22,
+            "tp": 20,
+            "fn": 2,
+            "tpr": 90.9090909090909
+          },
+          "benign": {
+            "n": 31,
+            "fp": 26,
+            "tn": 5,
+            "fpr": 83.87096774193549
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 15,
+              "tp": 14,
+              "fn": 1,
+              "tpr": 93.33333333333333
+            },
+            "matched": {
+              "n": 3,
+              "tp": 2,
+              "fn": 1,
+              "tpr": 66.66666666666666
+            },
+            "near_miss": {
+              "n": 4,
+              "tp": 4,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 8,
+              "tp": 7,
+              "fn": 1,
+              "tpr": 87.5
+            },
+            "original_190": {
+              "n": 11,
+              "tp": 11,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "v3-matched": {
+              "n": 3,
+              "tp": 2,
+              "fn": 1,
+              "tpr": 66.66666666666666
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 93.33333333333333,
+            "matched": 66.66666666666666,
+            "near_miss": 100.0
+          }
+        }
+      }
+    },
+    {
+      "fold": 1,
+      "train_rows": 53,
+      "train_pairs": 53,
+      "test_rows": 53,
+      "test_examples": 53,
+      "threshold": 0.275,
+      "threshold_f1": 55.072463768115945,
+      "train_time_sec": 9.1,
+      "summary": {
+        "threshold": 0.275,
+        "n": 53,
+        "confusion": {
+          "tp": 19,
+          "fp": 31,
+          "tn": 3,
+          "fn": 0,
+          "total": 53
+        },
+        "tpr": 100.0,
+        "fpr": 91.17647058823529,
+        "precision": 38.0,
+        "f1": 55.072463768115945,
+        "accuracy": 41.509433962264154,
+        "subsets": {
+          "malicious": {
+            "n": 19,
+            "tp": 19,
+            "fn": 0,
+            "tpr": 100.0
+          },
+          "benign": {
+            "n": 34,
+            "fp": 31,
+            "tn": 3,
+            "fpr": 91.17647058823529
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 7,
+              "tp": 7,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "matched": {
+              "n": 7,
+              "tp": 7,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "near_miss": {
+              "n": 5,
+              "tp": 5,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 9,
+              "tp": 9,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "original_190": {
+              "n": 3,
+              "tp": 3,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "v3-matched": {
+              "n": 7,
+              "tp": 7,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 100.0,
+            "matched": 100.0,
+            "near_miss": 100.0
+          }
+        }
+      },
+      "training_curve": [
+        {
+          "epoch": 0,
+          "threshold": 0.02,
+          "accuracy": 43.39622641509434,
+          "tpr": 89.47368421052632,
+          "fpr": 82.35294117647058,
+          "precision": 37.77777777777778,
+          "f1": 53.125,
+          "easy_tpr": 100.0,
+          "matched_tpr": 85.71428571428571,
+          "near_miss_tpr": 80.0
+        },
+        {
+          "epoch": 1,
+          "threshold": 0.275,
+          "accuracy": 41.509433962264154,
+          "tpr": 100.0,
+          "fpr": 91.17647058823529,
+          "precision": 38.0,
+          "f1": 55.072463768115945,
+          "easy_tpr": 100.0,
+          "matched_tpr": 100.0,
+          "near_miss_tpr": 100.0
+        }
+      ],
+      "train_log_history": [
+        {
+          "train_runtime": 4.8258,
+          "train_samples_per_second": 10.983,
+          "train_steps_per_second": 0.829,
+          "total_flos": 0.0,
+          "train_loss": 2.1507697105407715,
+          "epoch": 1.0,
+          "step": 4
+        }
+      ],
+      "fixed_threshold_summary": {
+        "threshold": 0.355,
+        "n": 53,
+        "confusion": {
+          "tp": 17,
+          "fp": 30,
+          "tn": 4,
+          "fn": 2,
+          "total": 53
+        },
+        "tpr": 89.47368421052632,
+        "fpr": 88.23529411764706,
+        "precision": 36.17021276595745,
+        "f1": 51.515151515151516,
+        "accuracy": 39.62264150943396,
+        "subsets": {
+          "malicious": {
+            "n": 19,
+            "tp": 17,
+            "fn": 2,
+            "tpr": 89.47368421052632
+          },
+          "benign": {
+            "n": 34,
+            "fp": 30,
+            "tn": 4,
+            "fpr": 88.23529411764706
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 7,
+              "tp": 7,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "matched": {
+              "n": 7,
+              "tp": 6,
+              "fn": 1,
+              "tpr": 85.71428571428571
+            },
+            "near_miss": {
+              "n": 5,
+              "tp": 4,
+              "fn": 1,
+              "tpr": 80.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 9,
+              "tp": 8,
+              "fn": 1,
+              "tpr": 88.88888888888889
+            },
+            "original_190": {
+              "n": 3,
+              "tp": 3,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "v3-matched": {
+              "n": 7,
+              "tp": 6,
+              "fn": 1,
+              "tpr": 85.71428571428571
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 100.0,
+            "matched": 85.71428571428571,
+            "near_miss": 80.0
+          }
+        }
+      }
+    }
+  ],
+  "aggregate": {
+    "metrics": {
+      "accuracy": {
+        "mean": 50.0,
+        "std": 8.490566037735846
+      },
+      "tpr": {
+        "mean": 95.45454545454545,
+        "std": 4.545454545454547
+      },
+      "fpr": {
+        "mean": 77.84629981024668,
+        "std": 13.330170777988613
+      },
+      "precision": {
+        "mean": 44.0,
+        "std": 6.0
+      },
+      "f1": {
+        "mean": 59.79429640018701,
+        "std": 4.7218326320710595
+      },
+      "threshold": {
+        "mean": 0.355,
+        "std": 0.07999999999999999
+      }
+    },
+    "subsets": {
+      "malicious": {
+        "tpr": {
+          "mean": 95.45454545454545,
+          "std": 4.545454545454547
+        }
+      },
+      "benign": {
+        "fpr": {
+          "mean": 77.84629981024668,
+          "std": 13.330170777988613
+        }
+      },
+      "by_stratum": {
+        "easy": {
+          "tpr": {
+            "mean": 96.66666666666666,
+            "std": 3.3333333333333357
+          }
+        },
+        "matched": {
+          "tpr": {
+            "mean": 83.33333333333333,
+            "std": 16.66666666666667
+          }
+        },
+        "near_miss": {
+          "tpr": {
+            "mean": 100.0,
+            "std": 0.0
+          }
+        }
+      }
+    },
+    "pooled_confusion": {
+      "tp": 39,
+      "fp": 51,
+      "tn": 14,
+      "fn": 2,
+      "total": 106
+    },
+    "pooled_tpr": 95.1219512195122,
+    "pooled_fpr": 78.46153846153847
+  },
+  "aggregate_fixed_threshold": {
+    "metrics": {
+      "accuracy": {
+        "mean": 43.39622641509434,
+        "std": 3.7735849056603783
+      },
+      "tpr": {
+        "mean": 90.19138755980862,
+        "std": 0.7177033492822957
+      },
+      "fpr": {
+        "mean": 86.05313092979128,
+        "std": 2.1821631878557852
+      },
+      "precision": {
+        "mean": 39.82423681776133,
+        "std": 3.6540240518038836
+      },
+      "f1": {
+        "mean": 55.16934046345811,
+        "std": 3.6541889483065972
+      },
+      "threshold": {
+        "mean": 0.355,
+        "std": 0.0
+      }
+    },
+    "subsets": {
+      "malicious": {
+        "tpr": {
+          "mean": 90.19138755980862,
+          "std": 0.7177033492822957
+        }
+      },
+      "benign": {
+        "fpr": {
+          "mean": 86.05313092979128,
+          "std": 2.1821631878557852
+        }
+      },
+      "by_stratum": {
+        "easy": {
+          "tpr": {
+            "mean": 96.66666666666666,
+            "std": 3.3333333333333357
+          }
+        },
+        "matched": {
+          "tpr": {
+            "mean": 76.19047619047618,
+            "std": 9.523809523809526
+          }
+        },
+        "near_miss": {
+          "tpr": {
+            "mean": 90.0,
+            "std": 10.0
+          }
+        }
+      }
+    },
+    "pooled_confusion": {
+      "tp": 37,
+      "fp": 56,
+      "tn": 9,
+      "fn": 4,
+      "total": 106
+    },
+    "pooled_tpr": 90.2439024390244,
+    "pooled_fpr": 86.15384615384616
+  },
+  "aggregate_curve": [
+    {
+      "epoch": 0,
+      "threshold": {
+        "mean": 0.025,
+        "std": 0.004999999999999999
+      },
+      "accuracy": {
+        "mean": 52.83018867924528,
+        "std": 9.433962264150942
+      },
+      "tpr": {
+        "mean": 83.37320574162679,
+        "std": 6.100478468899524
+      },
+      "fpr": {
+        "mean": 65.37001897533207,
+        "std": 16.982922201138514
+      },
+      "precision": {
+        "mean": 45.451388888888886,
+        "std": 7.673611111111111
+      },
+      "f1": {
+        "mean": 58.04398148148148,
+        "std": 4.918981481481481
+      },
+      "easy_tpr": {
+        "mean": 96.66666666666666,
+        "std": 3.3333333333333357
+      },
+      "near_miss_tpr": {
+        "mean": 52.5,
+        "std": 27.5
+      },
+      "matched_tpr": {
+        "mean": 76.19047619047618,
+        "std": 9.523809523809526
+      }
+    },
+    {
+      "epoch": 1,
+      "threshold": {
+        "mean": 0.355,
+        "std": 0.07999999999999999
+      },
+      "accuracy": {
+        "mean": 50.0,
+        "std": 8.490566037735846
+      },
+      "tpr": {
+        "mean": 95.45454545454545,
+        "std": 4.545454545454547
+      },
+      "fpr": {
+        "mean": 77.84629981024668,
+        "std": 13.330170777988613
+      },
+      "precision": {
+        "mean": 44.0,
+        "std": 6.0
+      },
+      "f1": {
+        "mean": 59.79429640018701,
+        "std": 4.7218326320710595
+      },
+      "easy_tpr": {
+        "mean": 96.66666666666666,
+        "std": 3.3333333333333357
+      },
+      "near_miss_tpr": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "matched_tpr": {
+        "mean": 83.33333333333333,
+        "std": 16.66666666666667
+      }
+    }
+  ],
+  "final_threshold": 0.355,
+  "baseline": {
+    "description": "off-the-shelf (pre-trained, un-fine-tuned) NLI baseline",
+    "folds": [
+      {
+        "fold": 0,
+        "threshold": 0.03,
+        "threshold_f1": 62.96296296296296,
+        "summary": {
+          "threshold": 0.03,
+          "n": 53,
+          "confusion": {
+            "tp": 17,
+            "fp": 15,
+            "tn": 16,
+            "fn": 5,
+            "total": 53
+          },
+          "tpr": 77.27272727272727,
+          "fpr": 48.38709677419355,
+          "precision": 53.125,
+          "f1": 62.96296296296296,
+          "accuracy": 62.264150943396224,
+          "subsets": {
+            "malicious": {
+              "n": 22,
+              "tp": 17,
+              "fn": 5,
+              "tpr": 77.27272727272727
+            },
+            "benign": {
+              "n": 31,
+              "fp": 15,
+              "tn": 16,
+              "fpr": 48.38709677419355
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 15,
+                "tp": 14,
+                "fn": 1,
+                "tpr": 93.33333333333333
+              },
+              "matched": {
+                "n": 3,
+                "tp": 2,
+                "fn": 1,
+                "tpr": 66.66666666666666
+              },
+              "near_miss": {
+                "n": 4,
+                "tp": 1,
+                "fn": 3,
+                "tpr": 25.0
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 8,
+                "tp": 4,
+                "fn": 4,
+                "tpr": 50.0
+              },
+              "original_190": {
+                "n": 11,
+                "tp": 11,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 3,
+                "tp": 2,
+                "fn": 1,
+                "tpr": 66.66666666666666
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 93.33333333333333,
+              "matched": 66.66666666666666,
+              "near_miss": 25.0
+            }
+          }
+        }
+      },
+      {
+        "fold": 1,
+        "threshold": 0.02,
+        "threshold_f1": 53.125,
+        "summary": {
+          "threshold": 0.02,
+          "n": 53,
+          "confusion": {
+            "tp": 17,
+            "fp": 28,
+            "tn": 6,
+            "fn": 2,
+            "total": 53
+          },
+          "tpr": 89.47368421052632,
+          "fpr": 82.35294117647058,
+          "precision": 37.77777777777778,
+          "f1": 53.125,
+          "accuracy": 43.39622641509434,
+          "subsets": {
+            "malicious": {
+              "n": 19,
+              "tp": 17,
+              "fn": 2,
+              "tpr": 89.47368421052632
+            },
+            "benign": {
+              "n": 34,
+              "fp": 28,
+              "tn": 6,
+              "fpr": 82.35294117647058
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 7,
+                "tp": 7,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "matched": {
+                "n": 7,
+                "tp": 6,
+                "fn": 1,
+                "tpr": 85.71428571428571
+              },
+              "near_miss": {
+                "n": 5,
+                "tp": 4,
+                "fn": 1,
+                "tpr": 80.0
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 9,
+                "tp": 8,
+                "fn": 1,
+                "tpr": 88.88888888888889
+              },
+              "original_190": {
+                "n": 3,
+                "tp": 3,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 7,
+                "tp": 6,
+                "fn": 1,
+                "tpr": 85.71428571428571
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 100.0,
+              "matched": 85.71428571428571,
+              "near_miss": 80.0
+            }
+          }
+        }
+      }
+    ],
+    "aggregate": {
+      "metrics": {
+        "accuracy": {
+          "mean": 52.83018867924528,
+          "std": 9.433962264150942
+        },
+        "tpr": {
+          "mean": 83.37320574162679,
+          "std": 6.100478468899524
+        },
+        "fpr": {
+          "mean": 65.37001897533207,
+          "std": 16.982922201138514
+        },
+        "precision": {
+          "mean": 45.451388888888886,
+          "std": 7.673611111111111
+        },
+        "f1": {
+          "mean": 58.04398148148148,
+          "std": 4.918981481481481
+        },
+        "threshold": {
+          "mean": 0.025,
+          "std": 0.004999999999999999
+        }
+      },
+      "subsets": {
+        "malicious": {
+          "tpr": {
+            "mean": 83.37320574162679,
+            "std": 6.100478468899524
+          }
+        },
+        "benign": {
+          "fpr": {
+            "mean": 65.37001897533207,
+            "std": 16.982922201138514
+          }
+        },
+        "by_stratum": {
+          "easy": {
+            "tpr": {
+              "mean": 96.66666666666666,
+              "std": 3.3333333333333357
+            }
+          },
+          "matched": {
+            "tpr": {
+              "mean": 76.19047619047618,
+              "std": 9.523809523809526
+            }
+          },
+          "near_miss": {
+            "tpr": {
+              "mean": 52.5,
+              "std": 27.5
+            }
+          }
+        }
+      },
+      "pooled_confusion": {
+        "tp": 34,
+        "fp": 43,
+        "tn": 22,
+        "fn": 7,
+        "total": 106
+      },
+      "pooled_tpr": 82.92682926829268,
+      "pooled_fpr": 66.15384615384615
+    },
+    "final_threshold": 0.025
+  },
+  "final_model": {
+    "dir": "models\\sentinelagent-nli-finetuned",
+    "trained_on_rows": 106,
+    "train_pairs": 106,
+    "train_time_sec": 14.0,
+    "train_log_history": [
+      {
+        "train_runtime": 9.2492,
+        "train_samples_per_second": 11.46,
+        "train_steps_per_second": 0.757,
+        "total_flos": 0.0,
+        "train_loss": 1.6216986519949776,
+        "epoch": 1.0,
+        "step": 7
+      }
+    ]
+  },
+  "total_runtime_sec": 33.9
+}

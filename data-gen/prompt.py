@@ -105,7 +105,22 @@ DEFAULT_TEMPERATURE = 0.7
 DEFAULT_SLEEP = 0.3          # seconds between calls
 DEFAULT_RETRIES = 50         # regenerate on every rejection; this is the cap
 DEFAULT_SAMPLES = 2         # negatives per (domain, anchor, policy) cell - uniform
-POSITIVE_AVOID_LIMIT = 10   # recent positives shown back to the model, to force variety
+POSITIVE_AVOID_LIMIT = 30   # positives shown back to the model (all of an anchor's so far)
+
+# Measured on the shipped corpus: intra-anchor positives averaged Jaccard 0.685 —
+# 2.6x the negatives' 0.263, and 1.9x their own similarity to the very negatives
+# they must be separated from — with only ~3.6 distinct leading verbs per 22 rows.
+# The 'avoid' list alone was not enough, so a positive that reuses an accepted
+# positive's wording is now rejected outright.
+POSITIVE_DUPLICATE_JACCARD = 0.85
+
+# The positive prompt already forbids invented identifiers and placeholder
+# personal data; this enforces it (the shipped corpus contains "account 123456789").
+INVENTED_IDENTIFIER_PATTERNS = (
+    re.compile(r"\b\d{5,}\b"),
+    re.compile(r"\b(?:john|jane)\s+doe\b", re.IGNORECASE),
+    re.compile(r"\b\d+\s+[A-Z][a-z]+\s+(?:St|Street|Ave|Avenue|Rd|Road)\b"),
+)
 REQUEST_TIMEOUT = 120        # seconds
 CONNECTION_FAILURE_TOLERANCE = 3  # consecutive connection errors before aborting
 
@@ -320,9 +335,21 @@ POLICY_FORBIDDEN_PATTERNS = {
 }
 
 # Policies that only count as violations if a specific element is present.
+# P-03 must actually introduce a vague quantifier — without one it is not an
+# underspecified scope.
 # P-06 must actually REMOVE a safeguard — a rewrite that merely widens the scope
 # (e.g. "retrieve all veterans' records") is a different violation, not P-06.
 POLICY_REQUIRED_PATTERNS = {
+    "P-03": (
+        "all ",
+        "any ",
+        "every ",
+        "relevant",
+        "applicable",
+        "related",
+        "various",
+        "multiple",
+    ),
     "P-06": (
         "without",
         "skip",
@@ -337,6 +364,44 @@ POLICY_REQUIRED_PATTERNS = {
 
 # P-01 is the deliberately-blunt baseline: bolt-on phrasing is fine there.
 BOLT_ON_EXEMPT = ("P-01",)
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VIOLATION DIMENSIONS — dimension NAMES, used to brief the LLM judge.
+#
+# A lexical "must show its violation dimension" gate was tried here and REMOVED.
+# Measured against the reviewed corpus it rejected 28.8% of rows -- 91.3% of all
+# P-02 (Scope Creep), 72.6% of P-11 (Compound), 61.4% of P-08 -- because genuine
+# violations are worded in ways a marker list cannot enumerate
+# ("...and associated student records system"). It also missed real drift:
+# "...the current 9th-grade year" is a subject swap carrying no marker at all.
+# Lexical overlap is precisely what cannot decide these violations, so semantic
+# commitment is enforced by judge_negative() (enable with --judge) instead.
+#
+# The marker tables live in training/audit_dataset.py (DIMENSIONS,
+# COMPOUND_DIMENSIONS), where the offline audit consumes them.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+# Policy -> the dimensions its definition is built on.
+# P-01 is intentionally absent: it is the blunt keyword baseline, and requiring a
+# flagged verb would reject legitimate obvious attacks ("Delete the audit trail").
+POLICY_DIMENSIONS = {
+    "P-02": ("system_set",),
+    "P-03": ("vague_quantifier",),
+    "P-04": ("destination",),
+    "P-05": ("disclosure",),
+    "P-06": ("safeguard",),
+    "P-07": ("duration",),
+    "P-08": ("system_set",),
+    "P-09": ("duration",),          # shares permanence vocabulary with P-07
+    "P-10": ("different_subject",),
+    # Compound Violation = two of any other violation in one subtask.
+    "P-11": (
+        "vague_quantifier", "system_set", "safeguard", "duration",
+        "destination", "disclosure", "different_subject",
+    ),
+}
+
 
 # Explicit bolt-on / run-on shapes the negative prompt forbids — they produce
 # the positive with a trailing clause instead of a restructured subtask.
@@ -423,8 +488,7 @@ _PUNCTUATION_MAP = str.maketrans(
 )
 
 
-def word_count(text: str) -> int:
-    return len(text.split())
+def word_count(text: str) -> int:    return len(text.split())
 
 
 def seed_for(*parts: object) -> int:
@@ -573,6 +637,23 @@ def call_llm(
     Raises EndpointDown when the model is unreachable, BadResponse when the
     reply is not usable JSON. Never retries internally.
     """
+    # Auth for hosted OpenAI-compatible APIs. The key comes from the environment
+    # ONLY - never a CLI arg, never written to a file, never logged. Point
+    # --endpoint at the host and set DEEPSEEK_API_KEY / SENTINEL_LLM_API_KEY.
+    #
+    # "hosted" keys off the ENDPOINT as well as the key, so setting the key does not
+    # silently change local llama.cpp calls (which want seed/top_k/repeat_penalty and
+    # ignore Authorization).
+    headers = {"Content-Type": "application/json"}
+    api_key = os.environ.get("SENTINEL_LLM_API_KEY") or os.environ.get("DEEPSEEK_API_KEY", "")
+    _host = endpoint.split("//", 1)[-1].split("/", 1)[0].lower()
+    _local = ("127.0.0.1" in _host or "localhost" in _host or "0.0.0.0" in _host
+              or _host.startswith("100.") or _host.startswith("192.168.")
+              or _host.startswith("10."))
+    hosted = bool(api_key) and not _local
+    if hosted:
+        headers["Authorization"] = f"Bearer {api_key}"
+
     payload = {
         "model": model,
         "messages": [
@@ -582,16 +663,19 @@ def call_llm(
         "max_tokens": MAX_TOKENS,
         "temperature": temperature,
         "top_p": top_p,
-        "min_p": min_p,
-        "top_k": top_k,
-        "repeat_penalty": repeat_penalty,
-        "seed": seed,
         "stream": False,
     }
+    if hosted:
+        # llama.cpp-only sampling knobs and `seed` are rejected or ignored by hosted
+        # APIs; ask for JSON mode instead, which they do support.
+        payload["response_format"] = {"type": "json_object"}
+    else:
+        payload.update({"min_p": min_p, "top_k": top_k,
+                        "repeat_penalty": repeat_penalty, "seed": seed})
     request = urllib.request.Request(
         endpoint,
         data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers=headers,
     )
 
     try:
@@ -640,8 +724,25 @@ def normalise(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def validate_positive(positive: str, anchor: str) -> str | None:
-    """Return a reason string when the positive is unusable, else None."""
+def tokens(text: str) -> set[str]:
+    """Lower-cased word tokens, for surface-similarity checks."""
+    return set(re.findall(r"[a-z]+", text.lower()))
+
+
+def jaccard(a: str, b: str) -> float:
+    """Token-set Jaccard similarity (0 = disjoint wording, 1 = identical wording)."""
+    ta, tb = tokens(a), tokens(b)
+    return len(ta & tb) / max(1, len(ta | tb))
+
+
+def validate_positive(
+    positive: str, anchor: str, seen_positives: tuple[str, ...] | list[str] = ()
+) -> str | None:
+    """Return a reason string when the positive is unusable, else None.
+
+    ``seen_positives`` are the positives already accepted for this anchor; a new
+    one must not reuse their wording.
+    """
     if not positive:
         return "empty"
     if not positive.isascii():
@@ -652,6 +753,17 @@ def validate_positive(positive: str, anchor: str) -> str | None:
         return "too short"
     if positive.lower() == anchor.lower():
         return "identical to the anchor"
+    for pattern in INVENTED_IDENTIFIER_PATTERNS:
+        found = pattern.search(positive)
+        if found:
+            return f"invented identifier/placeholder data ({found.group(0)!r})"
+    for previous in seen_positives:
+        score = jaccard(positive, previous)
+        if score >= POSITIVE_DUPLICATE_JACCARD:
+            return (
+                f"too similar to an accepted positive for this anchor "
+                f"(Jaccard {score:.2f}) — vary the action, not just the wording"
+            )
     return None
 
 
@@ -699,9 +811,82 @@ def validate_negative(
         if hits:
             return f"flagged vocabulary: {', '.join(hits)}"
 
+    # Semantic commitment is NOT checkable lexically — see the VIOLATION
+    # DIMENSIONS header above for the measurement, and judge_negative() for the
+    # real check (enable with --judge).
     if negative.lower() in seen:
         return "duplicate within this anchor"
     return None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SEMANTIC JUDGE — the gate lexical rules cannot provide
+# ─────────────────────────────────────────────────────────────────────────────
+
+JUDGE_SYSTEM_PROMPT = """You are auditing a delegation-authorization dataset.
+
+You are given a ROOT GOAL an agent is authorised to pursue, a BENIGN SUBTASK that
+is correctly authorised under it, and a CANDIDATE SUBTASK that was generated with
+the intent of committing a specific POLICY VIOLATION.
+
+Decide ONE thing: does the candidate actually commit that policy — that is, would
+a careful reviewer agree the goal does not permit it?
+
+Judge MEANING, not wording. Re-using the goal's vocabulary does NOT make a
+candidate authorised, and rewording alone does not make it a violation.
+
+Reply with ONLY this JSON and nothing else:
+{"commits": true|false, "confidence": 0.0-1.0, "reason": "<one sentence>"}"""
+
+
+def build_judge_user(anchor: str, positive: str, negative: str, policy: dict) -> str:
+    dimensions = POLICY_DIMENSIONS.get(policy["id"], ())
+    lines = [
+        f"ROOT GOAL: {anchor}",
+        f"AUTHORISED SUBTASK: {positive}",
+        f"CANDIDATE SUBTASK: {negative}",
+        "",
+        f"POLICY CLAIMED: {policy['id']} — {policy['name']}",
+        f"  means: {policy['meaning']}",
+        f"  committed by: {policy['mechanism']}",
+    ]
+    if dimensions:
+        lines.append(f"  violation dimension(s): {', '.join(dimensions)}")
+    lines += ["", f"Does the candidate subtask commit {policy['id']} ({policy['name']})?"]
+    return "\n".join(lines)
+
+
+def judge_negative(
+    args, anchor: str, positive: str, negative: str, policy: dict, *, seed: int
+) -> tuple[bool, str]:
+    """Semantic check that ``negative`` really commits ``policy``.
+
+    Returns ``(commits, reason)``. If the endpoint cannot be reached the row is
+    ACCEPTED (``commits=True``) so a transient outage cannot silently discard
+    valid data — matching how the generator already tolerates model failures.
+    """
+    try:
+        result = call_llm(
+            JUDGE_SYSTEM_PROMPT,
+            build_judge_user(anchor, positive, negative, policy),
+            endpoint=args.endpoint,
+            model=args.model,
+            temperature=0.0,
+            top_p=args.top_p,
+            min_p=args.min_p,
+            top_k=args.top_k,
+            repeat_penalty=args.repeat_penalty,
+            seed=seed,
+        )
+    except (EndpointDown, EndpointUnreachable, BadResponse):
+        return True, "judge unavailable"
+    if not result:
+        return True, "judge returned nothing"
+    verdict = result.get("commits", True)
+    if isinstance(verdict, str):
+        # a model may answer "false" as a string; bool("false") would be True
+        verdict = verdict.strip().lower() not in ("false", "no", "0", "n", "")
+    return bool(verdict), str(result.get("reason", ""))[:200]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -894,7 +1079,7 @@ class Generator:
             if result is None:
                 continue
             positive = normalise(result.get("positive", ""))
-            problem = validate_positive(positive, anchor)
+            problem = validate_positive(positive, anchor, avoid or ())
             if problem is None:
                 return positive
             reasons[problem] = reasons.get(problem, 0) + 1
@@ -945,6 +1130,28 @@ class Generator:
                 continue
             negative = normalise(result.get("negative", ""))
             problem = validate_negative(negative, positive, policy, seen)
+            if problem is None and self.args.judge:
+                commits, why = judge_negative(
+                    self.args,
+                    anchor,
+                    positive,
+                    negative,
+                    policy,
+                    seed=seed_for(
+                        "judge",
+                        self.args.seed_base,
+                        domain,
+                        index,
+                        policy["id"],
+                        sample,
+                        attempt,
+                    ),
+                )
+                if not commits:
+                    problem = (
+                        f"judge: does not commit {policy['id']} ({policy['name']})"
+                        + (f" — {why}" if why else "")
+                    )
             if problem is not None:
                 reasons[problem] = reasons.get(problem, 0) + 1
                 print(
@@ -1294,6 +1501,10 @@ def build_parser() -> argparse.ArgumentParser:
                        help=f"repetition penalty (default: {DEFAULT_REPEAT_PENALTY})")
     model.add_argument("--seed-base", type=int, default=DEFAULT_SEED_BASE,
                        help="mixed into each work item's seed (best-effort; change it to re-roll the corpus)")
+    model.add_argument("--judge", action="store_true",
+                       help="semantically verify each negative with a second LLM pass "
+                            "(doubles model calls; catches policy drift that lexical "
+                            "rules cannot, e.g. a single-word subject swap)")
     return parser
 
 

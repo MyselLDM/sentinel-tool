@@ -1,0 +1,29 @@
+# Sentinel model-training dependencies (training/)
+# ---------------------------------------------------------------------------
+# These scripts reuse the same ML stack as the inference service
+# (fastapi/requirements.txt). The simplest way to run them is with the existing
+# FastAPI virtualenv, which already has everything:
+#
+#   ../fastapi/.venv/Scripts/python.exe train_nli.py        # Windows
+#   ../fastapi/.venv/bin/python train_nli.py                # macOS / Linux
+#
+# To build a dedicated venv instead:
+#
+#   python -m venv .venv && .venv/Scripts/activate
+#   pip install -r requirements.txt
+# ---------------------------------------------------------------------------
+
+# ── Models / ML stack (pinned to the checkpoint-producing environment) ──────
+sentence-transformers==5.5.0
+transformers==5.8.1
+torch>=2.11                     # CPU: --index-url https://download.pytorch.org/whl/cpu
+numpy>=1.26,<3
+datasets==5.0.1
+
+# ── Training / evaluation extras ────────────────────────────────────────────
+accelerate>=1.1.0               # required by the HF Trainer (NLI cross-encoder)
+scikit-learn>=1.5               # StratifiedGroupKFold for the shared CV folds
+scipy>=1.14                     # paired one-tailed t-test (compare_models.py)
+
+# ── Dev / testing ───────────────────────────────────────────────────────────
+pytest>=8.0

@@ -1,0 +1,144 @@
+{
+  "generated_at": "2026-10-04T15:23:05+0800",
+  "notes": [
+    "Produced by training/compare_models.py from the fine-tuned artifacts.",
+    "model_dir is relative to MODELS_DIR (default: fastapi/.models).",
+    "Copy the training/models/* directories into fastapi/.models to deploy.",
+    "Thresholds are the mean of the per-fold F1-optimal cut-offs (5-fold CV)."
+  ],
+  "nli": {
+    "base": "cross-encoder/nli-MiniLM2-L6-H768",
+    "model_dir": "dryrun-nli",
+    "version": "dryrun-nli",
+    "labels": [
+      "contradiction",
+      "entailment",
+      "neutral"
+    ],
+    "activation": "softmax",
+    "decision": "p_contradiction > threshold",
+    "threshold": 0.25,
+    "threshold_source": "cross_validation_mean",
+    "metrics": {
+      "accuracy": 100.0,
+      "tpr": 100.0,
+      "fpr": 0.0,
+      "precision": 100.0,
+      "f1": 100.0
+    }
+  },
+  "contrastive": {
+    "base": "all-MiniLM-L12-v2",
+    "model_dir": "dryrun-contrastive",
+    "version": "dryrun-contrastive",
+    "decision": "cosine < threshold",
+    "include_decomposed": false,
+    "threshold": 0.15,
+    "threshold_source": "cross_validation_mean",
+    "metrics": {
+      "accuracy": 100.0,
+      "tpr": 100.0,
+      "fpr": 0.0,
+      "precision": 100.0,
+      "f1": 100.0
+    }
+  },
+  "thesis_comparison": {
+    "comparison": "contrastive_vs_baseline_nli",
+    "model_a": "contrastive (proposed)",
+    "model_b": "NLI baseline (off-the-shelf)",
+    "tests": {
+      "tpr": {
+        "n_pairs": 5,
+        "mean_a": 100.0,
+        "mean_b": 100.0,
+        "mean_diff": 0.0,
+        "std_diff": 0.0,
+        "t_statistic": NaN,
+        "p_value": NaN,
+        "alternative": "greater",
+        "d_z": 0.0,
+        "significant_at_0_05": false
+      },
+      "precision": {
+        "n_pairs": 5,
+        "mean_a": 100.0,
+        "mean_b": 100.0,
+        "mean_diff": 0.0,
+        "std_diff": 0.0,
+        "t_statistic": NaN,
+        "p_value": NaN,
+        "alternative": "greater",
+        "d_z": 0.0,
+        "significant_at_0_05": false
+      },
+      "f1": {
+        "n_pairs": 5,
+        "mean_a": 100.0,
+        "mean_b": 100.0,
+        "mean_diff": 0.0,
+        "std_diff": 0.0,
+        "t_statistic": NaN,
+        "p_value": NaN,
+        "alternative": "greater",
+        "d_z": 0.0,
+        "significant_at_0_05": false
+      },
+      "fpr": {
+        "n_pairs": 5,
+        "mean_a": 0.0,
+        "mean_b": 0.0,
+        "mean_diff": 0.0,
+        "std_diff": 0.0,
+        "t_statistic": NaN,
+        "p_value": NaN,
+        "alternative": "less",
+        "d_z": 0.0,
+        "significant_at_0_05": false
+      },
+      "easy_tpr": {
+        "n_pairs": 5,
+        "mean_a": 100.0,
+        "mean_b": 100.0,
+        "mean_diff": 0.0,
+        "std_diff": 0.0,
+        "t_statistic": NaN,
+        "p_value": NaN,
+        "alternative": "greater",
+        "d_z": 0.0,
+        "significant_at_0_05": false
+      },
+      "matched_tpr": {
+        "n_pairs": 5,
+        "mean_a": 100.0,
+        "mean_b": 100.0,
+        "mean_diff": 0.0,
+        "std_diff": 0.0,
+        "t_statistic": NaN,
+        "p_value": NaN,
+        "alternative": "greater",
+        "d_z": 0.0,
+        "significant_at_0_05": false
+      },
+      "near_miss_tpr": {
+        "n_pairs": 5,
+        "mean_a": 100.0,
+        "mean_b": 100.0,
+        "mean_diff": 0.0,
+        "std_diff": 0.0,
+        "t_statistic": NaN,
+        "p_value": NaN,
+        "alternative": "greater",
+        "d_z": 0.0,
+        "significant_at_0_05": false
+      }
+    },
+    "focal_subsets": [
+      "easy",
+      "matched",
+      "near_miss"
+    ]
+  },
+  "protocol": "unknown",
+  "protocol_key": "current"
+}

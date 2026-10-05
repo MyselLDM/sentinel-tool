@@ -429,7 +429,7 @@ export function Chatbot() {
     }
   }, [messages, loading]);
 
-  /* ── Send to Gemini for goal generation ────────────────────────── */
+  /* ── Send to DeepSeek for goal generation ──────────────────────── */
   const sendChat = useCallback(
     async (userText: string) => {
       const userMsg: ChatMessage = { id: nextId(), role: "user", content: userText };
