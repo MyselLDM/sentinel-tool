@@ -11,7 +11,8 @@ FastAPI inference service** (`../fastapi`).
 
 ## 1. Requirements
 
-- **Node.js >= 18** (developed on Node 25; uses the built-in global `fetch`).
+- **Node.js ≥ 20.12** (developed on Node 25; uses the built-in global `fetch`
+  and `process.loadEnvFile`).
 - The **FastAPI inference service** running for real evaluations
   (default `http://localhost:8000`). Without it, run Express in **mock mode**
   (§5) so you can still exercise every endpoint.
@@ -49,6 +50,7 @@ Key variables (all optional in development — see `.env.example` for the full l
 | `INFERENCE_MOCK` | `false` | `true` = never call FastAPI; synthesize deterministic scores. |
 | `INFERENCE_MOCK_FALLBACK` | `false` | `true` = fall back to mock when a live call fails. |
 | `RATE_LIMIT_DEFAULT_PER_MIN` | `60` | Default per-key limit for `/api/evaluate`. |
+| `API_KEY_PREFIX` | `sk_test_` (`sk_live_` in production) | Prefix stamped on newly issued API keys. |
 | `DB_PATH` | `data/sentinel.db` | SQLite file backing the whole store (created on first run). `:memory:` = ephemeral. |
 | `SEED_DEMO` | `true` (non-prod) | Seed a demo user + API key at startup and log them. |
 

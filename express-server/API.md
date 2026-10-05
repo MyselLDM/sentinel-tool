@@ -77,8 +77,13 @@ authenticates a **machine client**. They are never interchangeable.
 ```jsonc
 { "id": "uuid", "requestId": "uuid", "createdAt": "2026-01-01T00:00:00.000Z",
   "goal": "…", "subtask": "…", "isRejected": false, "rejectionReason": "accepted",
+  "nliScore": 0.12, "nliThreshold": 0.924, "nliResult": false,
+  "contrastiveScore": 0.81, "contrastiveThreshold": 0.024, "contrastiveResult": false,
   "responseTimeMs": 88, "modelVersion": "nli=…;con=…", "evaluationMode": "standard" }
 ```
+
+`nliResult` / `contrastiveResult` are the stored **model reject** booleans
+(`true` = that model rejected), the same convention as the detail view.
 
 ---
 
@@ -257,8 +262,8 @@ Threshold overrides are **not** accepted here (see `/api/evaluate/preview`).
   "result": true,
   "date": "2026-01-01T12:00:00.000Z",
   "id": "<requestId>",
-  "nli":         { "score": 0.12, "result": true, "threshold": 0.5 },
-  "contrastive": { "score": 0.81, "result": true, "threshold": 0.5 }
+  "nli":         { "score": 0.12, "result": true, "threshold": 0.924 },
+  "contrastive": { "score": 0.81, "result": true, "threshold": 0.024 }
 }
 ```
 - `result: true` = **accepted** (overall).
@@ -340,9 +345,9 @@ All require an access JWT and are scoped to the caller's own keys.
   "id": "uuid", "requestId": "uuid", "createdAt": "…",
   "goal": "…", "subtask": "…",
   "isRejected": false, "rejectionReason": "accepted",
-  "nli":         { "score": 0.12, "result": false, "threshold": 0.5,
+  "nli":         { "score": 0.12, "result": false, "threshold": 0.924,
                    "rawScores": { "contradiction": 0.12, "entailment": 0.85, "neutral": 0.03 } },
-  "contrastive": { "score": 0.81, "result": false, "threshold": 0.5 },
+  "contrastive": { "score": 0.81, "result": false, "threshold": 0.024 },
   "responseTimeMs": 88, "modelVersion": "…", "evaluationMode": "detailed",
   "userAgent": "curl/8.0", "apiKeyId": "uuid"
 } } }
@@ -408,23 +413,26 @@ last-known payload (or defaults) is returned with `stale: true` (never errors).
   "stale": false,
   "nli": {
     "base": "cross-encoder/nli-MiniLM2-L6-H768",
-    "version": "sentinelagent-nli-3class-v1",
+    "model_dir": "sentinelagent-nli-finetuned",
+    "version": "sentinelagent-nli-finetuned",
     "labels": ["contradiction", "entailment", "neutral"],
+    "activation": "softmax",
     "decision": "p_contradiction > threshold",
-    "threshold": 0.5,
-    "threshold_source": "placeholder",
-    "metrics": {},
-    "resolved_source": "…/fastapi/.models/sentinelagent_nli_finetuned"
+    "threshold": 0.924,
+    "threshold_source": "cross_validation_mean",
+    "metrics": { "accuracy": 99.1, "tpr": 99.5889, "fpr": 1.3889, "precision": 98.638, "f1": 99.1075 },
+    "resolved_source": "…/fastapi/.models/sentinelagent-nli-finetuned"
   },
   "contrastive": {
     "base": "all-MiniLM-L12-v2",
-    "version": "contrastive-minilm-e4-b16-lr1e-05-mn6-raw-vs0.2",
+    "model_dir": "contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
+    "version": "contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
     "decision": "cosine < threshold",
     "include_decomposed": false,
-    "threshold": 0.5,
-    "threshold_source": "placeholder",
-    "metrics": {},
-    "resolved_source": "…/fastapi/.models/contrastive-…-raw-vs0.2"
+    "threshold": 0.024,
+    "threshold_source": "cross_validation_mean",
+    "metrics": { "accuracy": 97.9333, "tpr": 99.3556, "fpr": 3.4889, "precision": 96.6349, "f1": 97.9688 },
+    "resolved_source": "…/fastapi/.models/contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw"
   }
 } }
 ```
