@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Shield } from "lucide-react";
+import { SentinelLogoFull } from "@/components/sentinel-logo";
 
 const COLUMNS = [
   {
@@ -34,12 +34,7 @@ export function SiteFooter() {
       <div className="mx-auto w-full max-w-6xl px-6 py-14">
         <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div className="max-w-xs">
-            <div className="flex items-center gap-2.5">
-              <Shield className="h-5 w-5 text-primary-blue" />
-              <span className="text-lg font-semibold tracking-tight text-heading">
-                Sentinel
-              </span>
-            </div>
+            <SentinelLogoFull className="h-8" />
             <p className="mt-4 text-sm leading-relaxed text-muted">
               Alignment verification for agent subtasks. Two independent models,
               one auditable decision.

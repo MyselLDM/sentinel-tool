@@ -2,21 +2,19 @@
 
 import { useCallback, useRef, useState, useEffect } from "react";
 import {
-  Check,
   Loader2,
-  MessageSquare,
   Play,
   RotateCcw,
   Send,
   ShieldCheck,
   ShieldX,
   Target,
-  X,
   Zap,
 } from "lucide-react";
 import { Eyebrow } from "@/components/ui/eyebrow";
 import { Section } from "@/components/ui/section";
 import { cn } from "@/lib/cn";
+import { SentinelLogoIcon, SentinelThinkingIcon } from "@/components/sentinel-logo";
 
 /* ── Types ────────────────────────────────────────────────────────── */
 
@@ -306,19 +304,19 @@ function GoalPicker({
   disabled: boolean;
 }) {
   return (
-    <div className="mt-3 space-y-1.5">
+    <div className="mt-3 space-y-2">
       {goals.map((goal, i) => (
         <button
           key={i}
           type="button"
           disabled={disabled}
           onClick={() => onPick(goal)}
-          className="group flex w-full items-start gap-2.5 border border-line bg-paper px-3 py-2.5 text-left transition-colors hover:border-ink hover:bg-paper-soft disabled:pointer-events-none disabled:opacity-40"
+          className="group flex w-full items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-left transition-all hover:border-gray-400 hover:bg-white hover:shadow-sm disabled:pointer-events-none disabled:opacity-40"
         >
-          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border border-line-strong font-mono text-[9px] tracking-wider text-muted transition-colors group-hover:border-ink group-hover:text-ink">
+          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white border border-gray-200 font-mono text-[9px] tracking-wider text-gray-400 transition-colors group-hover:border-gray-400 group-hover:text-gray-600">
             {String(i + 1).padStart(2, "0")}
           </span>
-          <span className="text-sm leading-relaxed">{goal}</span>
+          <span className="text-sm leading-relaxed text-gray-700">{goal}</span>
         </button>
       ))}
     </div>
@@ -341,28 +339,23 @@ function ChatBubble({
   const isUser = message.role === "user";
 
   return (
-    <div className={cn("flex gap-3", isUser && "flex-row-reverse")}>
+    <div className={cn("flex gap-3 items-start", isUser && "flex-row-reverse")}>
       {/* Avatar */}
-      <div
-        className={cn(
-          "flex h-7 w-7 shrink-0 items-center justify-center border",
-          isUser
-            ? "border-line-strong bg-paper text-muted"
-            : "border-ink bg-ink text-paper",
-        )}
-      >
-        {isUser ? (
-          <span className="font-mono text-[9px] tracking-wider">YOU</span>
-        ) : (
-          <MessageSquare className="h-3 w-3" />
-        )}
-      </div>
+      {isUser ? (
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 border border-gray-200 text-muted">
+          <span className="font-mono text-[9px] tracking-wider text-gray-500">YOU</span>
+        </div>
+      ) : (
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1 border border-gray-100 shadow-sm">
+          <SentinelLogoIcon className="h-7 w-7" />
+        </div>
+      )}
 
       {/* Content */}
-      <div className={cn("max-w-[88%] min-w-0", isUser && "text-right")}>
+      <div className={cn("max-w-[85%] min-w-0", isUser && "text-right")}>
         {/* Selected goal badge */}
         {message.selectedGoal && (
-          <div className="mb-2 inline-flex items-center gap-1.5 border border-line bg-paper-soft px-2 py-1 text-left">
+          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-line bg-paper-soft px-3 py-1 text-left">
             <Target className="h-3 w-3 text-muted" />
             <span className="font-mono text-[10px] tracking-wider text-muted">GOAL LOCKED</span>
           </div>
@@ -370,11 +363,13 @@ function ChatBubble({
 
         <div
           className={cn(
-            "border px-3.5 py-2.5",
-            isUser ? "border-line bg-paper-soft" : "border-line bg-paper",
+            "rounded-2xl px-4 py-3 shadow-sm",
+            isUser
+              ? "rounded-tr-sm bg-gray-100 border border-gray-200"
+              : "rounded-tl-sm bg-white border border-gray-100",
           )}
         >
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-800">{message.content}</p>
 
           {/* Goal list */}
           {message.goals && message.goals.length > 0 && (
@@ -627,19 +622,36 @@ export function Chatbot() {
         </p>
       </div>
 
-      <div className="border-t border-line">
-        {/* ── Chat area ──────────────────────────────────────────── */}
-        <div ref={scrollRef} className="h-[480px] overflow-y-auto px-6 py-6 md:px-10">
+      {/* ── Modern rounded chatbot card ──────────────────────── */}
+      <div className="mx-4 mb-6 rounded-2xl border border-gray-200 bg-white shadow-lg md:mx-6">
+
+        {/* ── Chatbot header ──────────────────────────────────── */}
+        <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50/80 px-5 py-3.5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white p-2 shadow-sm border border-gray-100">
+            <SentinelLogoIcon className="h-8 w-8" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-900">Sentinel</p>
+            <p className="text-[11px] text-gray-400">Dual-model alignment verification</p>
+          </div>
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            <span className="text-[11px] font-medium text-gray-400">Live</span>
+          </div>
+        </div>
+
+        {/* ── Chat area ──────────────────────────────────────── */}
+        <div ref={scrollRef} className="h-[440px] overflow-y-auto bg-gray-50/40 px-5 py-5">
           {isEmpty ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
-              <div className="flex h-12 w-12 items-center justify-center border border-line">
-                <MessageSquare className="h-5 w-5 text-muted" />
+              <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-sm border border-gray-100">
+                <SentinelLogoIcon className="h-14 w-14" />
               </div>
-              <p className="mt-5 max-w-xs text-sm leading-relaxed text-muted">
+              <p className="mt-4 max-w-xs text-sm leading-relaxed text-gray-500">
                 Describe what your agent should do and I&apos;ll suggest goals to authorize.
                 Then try sending subtasks to see them evaluated.
               </p>
-              <div className="mt-4 flex flex-wrap justify-center gap-1.5">
+              <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {[
                   "Process insurance claims",
                   "Manage patient records",
@@ -650,7 +662,7 @@ export function Chatbot() {
                     key={s}
                     type="button"
                     onClick={() => { setInput(s); inputRef.current?.focus(); }}
-                    className="border border-line px-2.5 py-1.5 font-mono text-[10px] tracking-wider text-muted transition-colors hover:border-ink hover:text-ink"
+                    className="rounded-full border border-gray-200 bg-white px-3.5 py-1.5 text-xs font-medium text-gray-600 shadow-sm transition-all hover:border-gray-400 hover:bg-gray-50 hover:shadow"
                   >
                     {s}
                   </button>
@@ -658,7 +670,7 @@ export function Chatbot() {
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {messages.map((msg) => (
                 <ChatBubble
                   key={msg.id}
@@ -669,12 +681,11 @@ export function Chatbot() {
                 />
               ))}
               {loading && (
-                <div className="flex gap-3">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center border border-ink bg-ink text-paper">
-                    <MessageSquare className="h-3 w-3" />
+                <div className="flex gap-3 items-start">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1 border border-gray-100 shadow-sm">
+                    <SentinelThinkingIcon thinking className="h-7 w-7" />
                   </div>
-                  <div className="flex items-center gap-2 border border-line px-3.5 py-2.5 text-sm text-muted">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm bg-white border border-gray-100 px-4 py-3 text-sm text-gray-500 shadow-sm">
                     Generating goals…
                   </div>
                 </div>
@@ -683,12 +694,12 @@ export function Chatbot() {
           )}
         </div>
 
-        {/* ── Active goal banner ──────────────────────────────────── */}
+        {/* ── Active goal banner ─────────────────────────────── */}
         {selectedGoal && (
-          <div className="flex items-center gap-3 border-t border-line bg-paper-soft px-6 py-2.5 md:px-10">
-            <Target className="h-3.5 w-3.5 shrink-0 text-muted" />
-            <span className="min-w-0 flex-1 truncate font-mono text-[10px] tracking-wider text-muted">
-              GOAL: {selectedGoal}
+          <div className="flex items-center gap-3 border-t border-gray-100 bg-blue-50/60 px-5 py-2.5">
+            <Target className="h-3.5 w-3.5 shrink-0 text-blue-400" />
+            <span className="min-w-0 flex-1 truncate text-xs font-medium text-blue-600">
+              {selectedGoal}
             </span>
             <button
               type="button"
@@ -703,15 +714,15 @@ export function Chatbot() {
                   },
                 ]);
               }}
-              className="shrink-0 font-mono text-[10px] tracking-wider text-muted transition-colors hover:text-ink"
+              className="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium text-blue-400 transition-colors hover:bg-blue-100 hover:text-blue-600"
             >
-              CLEAR
+              Clear
             </button>
           </div>
         )}
 
-        {/* ── Input bar ──────────────────────────────────────────── */}
-        <div className="flex items-end gap-3 border-t border-line px-6 py-4 md:px-10">
+        {/* ── Input bar ──────────────────────────────────────── */}
+        <div className="flex items-end gap-2.5 border-t border-gray-100 bg-white px-4 py-4">
           <textarea
             ref={inputRef}
             value={input}
@@ -724,13 +735,13 @@ export function Chatbot() {
                 ? "Type a subtask to evaluate and run…"
                 : "Describe a scenario for your agent…"
             }
-            className="min-h-[40px] max-h-[120px] flex-1 resize-none border border-line bg-paper p-2.5 text-sm leading-relaxed outline-none transition-colors focus:border-ink"
+            className="min-h-[42px] max-h-[120px] flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm leading-relaxed text-gray-800 outline-none placeholder:text-gray-400 transition-colors focus:border-gray-400 focus:bg-white focus:shadow-sm"
           />
           <button
             type="button"
             onClick={handleSubmit}
             disabled={!input.trim() || loading}
-            className="inline-flex h-10 w-10 items-center justify-center border border-ink bg-ink text-paper transition-colors hover:bg-ink-soft hover:border-ink-soft disabled:pointer-events-none disabled:opacity-40"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-900 text-white shadow-sm transition-all hover:bg-gray-700 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
@@ -739,28 +750,28 @@ export function Chatbot() {
               type="button"
               onClick={handleReset}
               title="Reset conversation"
-              className="inline-flex h-10 w-10 items-center justify-center border border-line text-muted transition-colors hover:border-ink hover:text-ink"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 text-gray-400 transition-all hover:border-gray-400 hover:text-gray-600"
             >
               <RotateCcw className="h-3.5 w-3.5" />
             </button>
           )}
         </div>
 
-        {/* ── Footer hint ────────────────────────────────────────── */}
-        <div className="flex items-center justify-between border-t border-line px-6 py-2 md:px-10">
-          <div className="flex items-center gap-4">
-            <span className="font-mono text-[10px] tracking-wider text-muted">
-              {selectedGoal ? "● EVALUATING" : "○ GOAL GENERATION"}
+        {/* ── Footer hint ────────────────────────────────────── */}
+        <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/60 px-5 py-2">
+          <div className="flex items-center gap-3">
+            <span className={cn("h-1.5 w-1.5 rounded-full", selectedGoal ? "bg-blue-400" : "bg-gray-300")} />
+            <span className="text-[11px] font-medium text-gray-400">
+              {selectedGoal ? "Evaluating subtasks" : "Goal generation mode"}
             </span>
             {selectedGoal && (
-              <span className="font-mono text-[10px] tracking-wider text-muted">
-                ACCEPT → EXECUTE · REJECT → BLOCK
-              </span>
+              <span className="text-[11px] text-gray-300">·</span>
+            )}
+            {selectedGoal && (
+              <span className="text-[11px] text-gray-400">Accept → Execute · Reject → Block</span>
             )}
           </div>
-          <span className="hidden font-mono text-[10px] tracking-wider text-muted sm:inline">
-            ENTER TO SEND · SHIFT+ENTER FOR NEWLINE
-          </span>
+          <span className="hidden text-[11px] text-gray-300 sm:inline">↵ to send</span>
         </div>
       </div>
     </Section>

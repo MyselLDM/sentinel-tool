@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-12 -12 184 184" fill="none" role="img" aria-label="Sentinel emblem">
+  <defs>
+    <linearGradient id="si-grad" x1="80" y1="18" x2="80" y2="142" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5B9BF8"/>
+      <stop offset="50%" stop-color="#3D6CE8"/>
+      <stop offset="100%" stop-color="#1A2E7A"/>
+    </linearGradient>
+    <linearGradient id="si-star" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#A8C8FF"/>
+      <stop offset="100%" stop-color="#6BA3FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Upper ribbon -->
+  <path d="M 110 32 C 124 32, 134 22, 124 14 C 114 6, 84 8, 68 16 C 46 26, 34 46, 42 64 C 48 78, 64 86, 80 90 C 92 94, 100 100, 98 110 C 96 120, 84 128, 70 126 C 58 124, 50 116, 52 106"
+    stroke="url(#si-grad)" stroke-width="17" stroke-linecap="round" fill="none"/>
+
+  <!-- Lower ribbon -->
+  <path d="M 50 126 C 36 126, 26 136, 36 144 C 46 152, 76 150, 92 142 C 114 132, 126 112, 118 94 C 112 80, 96 72, 80 68 C 68 64, 60 58, 62 48 C 64 38, 76 30, 90 32 C 102 34, 110 42, 108 52"
+    stroke="url(#si-grad)" stroke-width="17" stroke-linecap="round" fill="none"/>
+
+  <!-- 4-point star -->
+  <g transform="translate(80,80)">
+    <path d="M0,-15 L3.2,-3.2 L0,0 L-3.2,-3.2Z" fill="url(#si-star)"/>
+    <path d="M0,15 L-3.2,3.2 L0,0 L3.2,3.2Z" fill="url(#si-star)"/>
+    <path d="M-15,0 L-3.2,-3.2 L0,0 L-3.2,3.2Z" fill="url(#si-star)"/>
+    <path d="M15,0 L3.2,3.2 L0,0 L3.2,-3.2Z" fill="url(#si-star)"/>
+  </g>
+</svg>
