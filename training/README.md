@@ -5,9 +5,36 @@ cross-encoder (SentinelAgent **P2** intent verifier) and the contrastive
 bi-encoder (**the thesis' proposed solution**) — on DelegationBench v4, and the
 statistics needed to answer the thesis' research questions.
 
-> The checkpoints currently in `fastapi/.models/` are the base (un-fine-tuned)
-> models. This directory produces the **fine-tuned** artifacts and the
-> calibrated thresholds/metrics in `training/models/`.
+> The fine-tuned checkpoints **are** deployed: `fastapi/.models/` holds
+> `sentinelagent-nli-finetuned` and `contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw`,
+> with real CV-tuned thresholds (NLI `0.924`, contrastive `0.024`) in
+> `fastapi/model_config.json`. This directory produces those artifacts, and
+> `deploy_to_fastapi.sh` / `.ps1` installs them — see
+> [Deploying the artifacts](#deploying-the-artifacts).
+
+## Documentation map
+
+This README is the entry point for the **pipeline**. The folder also carries several
+focused documents — read the one that matches your question:
+
+| Doc | Kind | Covers |
+| --- | --- | --- |
+| `README.md` (this file) | index + pipeline | How to train, run and deploy; the data→model mapping; the matched-budget control; GPU/ROCm setup; outputs; session archives. |
+| `Thesis.md` | thesis | The full write-up — problem statement, conceptual framework, research design, metrics and statistical treatment. The authority for *why* the pipeline is shaped this way. |
+| `plan.md` | duplicate | **Byte-identical copy of [`../fastapi/plan.md`](../fastapi/plan.md)** (the inference-service plan) — not training-specific. Edit the FastAPI copy. |
+| `AMD_REPORT.md` | bug report | Standalone ROCm-on-Windows report: every GPU kernel launch faults (`0xC0000005`) while allocation succeeds; minimal repro, ruled-out causes, evidence. |
+| `EXTERNAL_REVIEW.md` | review | Review of the external training session below — read against the lexical ceiling, verdict that the NLI was underfit, and the dataset rationale behind it. |
+| `external_training.md` | raw results | The tabulated config + results of that external session (622 train / 84 test `cue_split`), before the review. |
+| `dataset-v3/DATASET_V3.md` | datasheet | The dataset-v3 corpus the nested packages train on: provenance, files, schema, the lexical ceiling, limitations. |
+| `per_anchor_split/README.md` | variant | A **domain-holdout** variant of this pipeline (hold out a whole service domain) — the `per_anchor_split` copy of this README. |
+| `per_anchor_split/REPORT.md` | report | Its run report: 9 folds, "domain transfer costs nothing", threshold stability, limitations. |
+| `training/new_dataset_1/README.md` | package | A **self-contained** training package for dataset-v3 (its own `logs/`, `models/`, GPU notes); read `data/DATASET_V3.md` §4 first. |
+| `*/models/*/README.md` | generated | Hugging Face **model cards** emitted by the trainers — not hand-written. |
+
+**Sub-folders** (non-doc): `dataset-v3/` (a frozen, byte-identical snapshot of
+`../data-gen/data/corpus_v3/`), `per_anchor_split/` (the domain-holdout variant),
+`training/new_dataset_1/` (the self-contained dataset-v3 package), `old-training/`
+(the original reference scripts), and `.output/` (archived sessions, gitignored).
 
 ## Files
 
@@ -29,7 +56,7 @@ statistics needed to answer the thesis' research questions.
 | `dataset_v2.csv` | **Active** (via `common.DATASET_PATH`): drops the P-10 *Replay Exploitation* family and renumbers the rest (`P-11 → P-10`), so 9,000 rows / policies P-01…P-10. Built by `make_dataset_v2.py`; `dataset.csv` is left untouched. |
 | `.output/` | One folder per archived training session (gitignored). See *Session archives*. |
 | `old-training/` | The original scripts used as the reference for this pipeline. |
-| `plan.md`, `Thesis.md` | FastAPI inference plan and the thesis (problem statement, metrics). |
+| `plan.md`, `Thesis.md` | The thesis write-up, and a byte-identical duplicate of `../fastapi/plan.md` — see the **Documentation map** above. |
 
 ## Data → model mapping
 
