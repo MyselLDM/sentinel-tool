@@ -9,6 +9,7 @@ import { BookOpen, LogOut, Menu } from "lucide-react";
 import { signOut } from "@/lib/auth/actions";
 import { cn } from "@/lib/cn";
 import { CONSOLE_ROUTES, activeRoute } from "./nav-items";
+import { SentinelLogoFull } from "@/components/sentinel-logo";
 
 /**
  * The authenticated console shell: a daisyUI `drawer` holding the navigation
@@ -56,11 +57,11 @@ export function ConsoleShell({ user, children }: { user: ConsoleUser; children: 
 
       {/* ── Content column ─────────────────────────────────────────── */}
       <div className="drawer-content flex min-h-dvh flex-col">
-        <header className="sticky top-0 z-40 border-b border-line bg-paper/85 backdrop-blur-md">
-          <div className="flex h-16 items-center gap-3 px-4 md:px-6">
+        <header className="sticky top-0 z-40 border-b border-border bg-surface/90 backdrop-blur-md">
+          <div className="flex h-14 items-center gap-3 px-4 md:px-6">
             <label
               htmlFor={DRAWER_ID}
-              className="btn btn-ghost btn-sm drawer-button -ml-2 lg:hidden"
+              className="btn btn-ghost btn-sm drawer-button -ml-2 rounded-lg lg:hidden"
               aria-label="Open navigation"
             >
               <Menu className="h-4 w-4" />
@@ -69,14 +70,14 @@ export function ConsoleShell({ user, children }: { user: ConsoleUser; children: 
             <nav aria-label="Breadcrumb" className="min-w-0">
               <ol className="flex items-center gap-2 text-sm">
                 <li className="hidden sm:block">
-                  <Link href="/dashboard" className="text-muted transition-colors hover:text-ink">
+                  <Link href="/dashboard" className="text-muted transition-colors hover:text-heading">
                     Console
                   </Link>
                 </li>
-                <li aria-hidden className="hidden text-muted sm:block">
+                <li aria-hidden className="hidden text-border-strong sm:block">
                   /
                 </li>
-                <li aria-current="page" className="truncate text-ink">
+                <li aria-current="page" className="truncate font-medium text-heading">
                   {active?.label ?? "Console"}
                 </li>
               </ol>
@@ -84,29 +85,28 @@ export function ConsoleShell({ user, children }: { user: ConsoleUser; children: 
 
             <Link
               href="/docs"
-              className="ml-auto text-sm text-muted transition-colors hover:text-ink"
+              className="ml-auto text-sm text-muted transition-colors hover:text-heading"
             >
               Docs
             </Link>
           </div>
         </header>
 
-        <main className="bg-hatch flex-1">
-          <div className="mx-auto w-full max-w-6xl px-6 py-10 md:py-12">{children}</div>
+        <main className="flex-1 bg-page">
+          <div className="mx-auto w-full max-w-6xl px-6 py-8 md:py-10">{children}</div>
         </main>
       </div>
 
       {/* ── Sidebar ────────────────────────────────────────────────── */}
       <div className="drawer-side z-50">
         <label htmlFor={DRAWER_ID} aria-label="Close navigation" className="drawer-overlay" />
-        <aside className="flex min-h-full w-72 flex-col border-r border-line bg-paper">
-          <div className="flex h-16 items-center gap-2.5 border-b border-line px-5">
-            <span aria-hidden className="block h-3 w-3 border border-ink" />
-            <span className="font-serif text-[22px] leading-none tracking-tight">Sentinel</span>
+        <aside className="flex min-h-full w-64 flex-col border-r border-border bg-surface">
+          <div className="flex h-14 items-center border-b border-border px-5">
+            <SentinelLogoFull className="h-8" />
           </div>
 
-          <nav aria-label="Console" className="flex-1 overflow-y-auto p-3">
-            <ul className="menu w-full">
+          <nav aria-label="Console" className="flex-1 overflow-y-auto px-3 py-4">
+            <ul className="flex flex-col gap-1">
               {CONSOLE_ROUTES.map((route) => {
                 const isActive = route.href === active?.href;
                 return (
@@ -115,9 +115,14 @@ export function ConsoleShell({ user, children }: { user: ConsoleUser; children: 
                       href={route.href}
                       aria-current={isActive ? "page" : undefined}
                       onClick={closeDrawer}
-                      className={cn("gap-2.5", !isActive && "text-muted")}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                        isActive
+                          ? "bg-primary-light text-primary-blue"
+                          : "text-muted hover:bg-page hover:text-heading",
+                      )}
                     >
-                      <route.icon className="h-4 w-4" />
+                      <route.icon className="h-4.5 w-4.5" />
                       {route.label}
                     </Link>
                   </li>
@@ -127,25 +132,24 @@ export function ConsoleShell({ user, children }: { user: ConsoleUser; children: 
           </nav>
 
           {/* Bottom of the sidebar: docs, then the account block. */}
-          <div className="border-t border-line p-3">
-            <ul className="menu w-full">
-              <li>
-                <Link href="/docs" className="gap-2.5 text-muted">
-                  <BookOpen className="h-4 w-4" />
-                  Documentation
-                </Link>
-              </li>
-            </ul>
+          <div className="border-t border-border px-3 py-3">
+            <Link
+              href="/docs"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted transition-colors hover:bg-page hover:text-heading"
+            >
+              <BookOpen className="h-4 w-4" />
+              Documentation
+            </Link>
           </div>
 
-          <div className="border-t border-line p-3">
-            <div className="flex items-center gap-2.5 px-2 py-1.5">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center bg-ink font-mono text-[11px] text-paper">
+          <div className="border-t border-border px-4 py-3">
+            <div className="flex items-center gap-3 py-1.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-light text-xs font-semibold text-primary-blue">
                 {initials(user.name) || "S"}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm leading-tight">{user.name}</span>
-                <span className="block truncate font-mono text-[11px] text-muted">
+                <span className="block truncate text-sm font-medium text-heading">{user.name}</span>
+                <span className="block truncate text-xs text-muted">
                   {user.email}
                 </span>
               </span>
@@ -153,7 +157,7 @@ export function ConsoleShell({ user, children }: { user: ConsoleUser; children: 
             <form action={signOut} className="mt-1">
               <button
                 type="submit"
-                className="btn btn-ghost btn-sm w-full justify-start gap-2 text-muted hover:text-ink"
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted transition-colors hover:bg-page hover:text-heading"
               >
                 <LogOut className="h-4 w-4" />
                 Sign out

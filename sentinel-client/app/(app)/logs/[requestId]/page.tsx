@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowLeft, Clock, Info } from "lucide-react";
+import { ArrowLeft, Clock, Info, ShieldAlert, ShieldCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { Eyebrow } from "@/components/ui/eyebrow";
@@ -44,16 +44,18 @@ function pct(n: number): string {
 // ── Score Meter ───────────────────────────────────────────────────────────────
 
 /**
- * Renders a horizontal bar with the score and a threshold tick-mark.
+ * Renders a horizontal progress bar with the score and a threshold tick-mark.
  * `signed` normalises the [-1, 1] cosine range to [0, 1] for display.
  */
 function ScoreMeter({
   score,
   threshold,
+  rejected,
   signed = false,
 }: {
   score: number;
   threshold: number;
+  rejected: boolean;
   signed?: boolean;
 }) {
   const normalize = (n: number) => (signed ? (n + 1) / 2 : n);
@@ -63,11 +65,17 @@ function ScoreMeter({
   const tick = clamp(normalize(threshold));
 
   return (
-    <div className="relative h-2 w-full border border-line bg-paper-soft" role="img" aria-label={`Score ${score.toFixed(3)}, threshold ${threshold.toFixed(3)}`}>
-      <div className="absolute inset-y-0 left-0 bg-ink" style={{ width: `${fill}%` }} />
+    <div className="relative h-2.5 w-full rounded-full bg-page" role="img" aria-label={`Score ${score.toFixed(3)}, threshold ${threshold.toFixed(3)}`}>
+      <div
+        className={cn(
+          "absolute inset-y-0 left-0 rounded-full transition-all",
+          rejected ? "bg-error-red" : "bg-success-green",
+        )}
+        style={{ width: `${fill}%` }}
+      />
       <span
         aria-hidden
-        className="absolute -bottom-1 -top-1 w-px bg-ink/40"
+        className="absolute -bottom-0.5 -top-0.5 w-0.5 rounded-full bg-heading/40"
         style={{ left: `${tick}%` }}
       />
     </div>
@@ -92,31 +100,33 @@ function ModelCard({
   const rejected = model.result; // nli/contrastive result = true means rejected (stored model reject)
 
   return (
-    <div className="border border-line bg-paper p-5">
+    <div className="rounded-xl border border-border bg-surface p-5">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="label-mono">{name}</p>
-          <p className="mt-1 font-mono text-[11px] tracking-wider text-muted">{rule}</p>
+          <p className="text-sm font-semibold text-heading">{name}</p>
+          <p className="mt-1 text-xs text-muted">{rule}</p>
         </div>
         <span
           className={cn(
-            "shrink-0 font-mono text-xs tracking-wider",
-            rejected ? "text-ink" : "text-muted",
+            "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium",
+            rejected
+              ? "bg-error-bg text-error-red"
+              : "bg-success-bg text-success-green",
           )}
         >
-          {rejected ? "REJECTED" : "ACCEPTED"}
+          {rejected ? "Rejected" : "Accepted"}
         </span>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-5">
         <div className="mb-2 flex items-center justify-between">
-          <span className="font-mono text-xs text-muted">Score</span>
-          <span className="font-mono text-sm">{model.score.toFixed(4)}</span>
+          <span className="text-xs font-medium text-muted">Score</span>
+          <span className="font-mono text-sm font-semibold text-heading">{model.score.toFixed(4)}</span>
         </div>
-        <ScoreMeter score={model.score} threshold={model.threshold} signed={signed} />
-        <div className="mt-1.5 flex items-center justify-between font-mono text-[10px] tracking-wider text-muted">
+        <ScoreMeter score={model.score} threshold={model.threshold} rejected={rejected} signed={signed} />
+        <div className="mt-2 flex items-center justify-between text-xs text-muted">
           <span>0{signed ? " (−1)" : ""}</span>
-          <span>THRESHOLD {model.threshold.toFixed(3)}</span>
+          <span className="font-medium">Threshold: {model.threshold.toFixed(3)}</span>
           <span>1{signed ? " (+1)" : ""}</span>
         </div>
       </div>
@@ -136,19 +146,22 @@ function RawScoresCard({ rawScores }: { rawScores: NliDetail["rawScores"] }) {
   ];
 
   return (
-    <div className="mt-4 border-t border-line pt-4 space-y-2">
-      <p className="label-mono mb-3">Raw NLI probabilities</p>
+    <div className="mt-5 border-t border-border pt-4 space-y-3">
+      <p className="text-xs font-medium text-muted">Raw NLI probabilities</p>
       {labels.map(({ key, label }) => {
         const val = rawScores[key];
         return (
           <div key={key}>
             <div className="flex items-center justify-between mb-1">
-              <span className="font-mono text-xs text-muted uppercase tracking-wider">{label}</span>
-              <span className="font-mono text-xs">{pct(val)}</span>
+              <span className="text-xs text-muted">{label}</span>
+              <span className="font-mono text-xs font-medium text-heading">{pct(val)}</span>
             </div>
-            <div className="relative h-1.5 w-full border border-line bg-paper-soft">
+            <div className="relative h-1.5 w-full rounded-full bg-page">
               <div
-                className={cn("absolute inset-y-0 left-0", key === "contradiction" ? "bg-ink" : "bg-line-strong")}
+                className={cn(
+                  "absolute inset-y-0 left-0 rounded-full",
+                  key === "contradiction" ? "bg-error-red" : "bg-border-strong",
+                )}
                 style={{ width: pct(val) }}
               />
             </div>
@@ -178,29 +191,29 @@ function VerdictBanner({
   return (
     <div
       className={cn(
-        "flex items-start gap-4 border p-5",
-        isRejected ? "border-ink bg-ink text-paper" : "border-line bg-paper",
+        "flex items-start gap-4 rounded-xl p-5",
+        isRejected
+          ? "border border-error-red/20 bg-error-bg"
+          : "border border-success-green/20 bg-success-bg",
       )}
     >
       <div
         className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center border font-mono text-lg",
-          isRejected ? "border-paper/40" : "border-ink",
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+          isRejected ? "bg-error-red/10 text-error-red" : "bg-success-green/10 text-success-green",
         )}
         aria-hidden
       >
-        {isRejected ? "✕" : "✓"}
+        {isRejected ? <ShieldAlert className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
       </div>
       <div className="min-w-0">
-        <p className="font-mono text-sm font-medium tracking-widest">
-          {isRejected ? "REJECTED" : "ACCEPTED"}
+        <p className={cn(
+          "text-base font-semibold",
+          isRejected ? "text-error-red" : "text-success-green",
+        )}>
+          Subtask {isRejected ? "rejected" : "accepted"}
         </p>
-        <p
-          className={cn(
-            "mt-1 text-sm leading-relaxed",
-            isRejected ? "text-paper/80" : "text-muted",
-          )}
-        >
+        <p className="mt-1 text-sm leading-relaxed text-body">
           {REASON_LABEL[rejectionReason] ?? rejectionReason}
         </p>
       </div>
@@ -212,9 +225,9 @@ function VerdictBanner({
 
 function MetaRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="flex flex-wrap items-baseline gap-3 border-b border-line py-2.5 last:border-0">
-      <span className="label-mono w-36 shrink-0">{label}</span>
-      <span className="min-w-0 font-mono text-xs leading-relaxed">{value}</span>
+    <div className="flex flex-wrap items-baseline gap-3 border-b border-border py-3 last:border-0">
+      <span className="w-36 shrink-0 text-sm text-muted">{label}</span>
+      <span className="min-w-0 text-sm font-medium text-heading">{value}</span>
     </div>
   );
 }
@@ -262,15 +275,15 @@ export default async function RequestDetailPage({
       <div>
         <Link
           href="/logs"
-          className="inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wider text-muted transition-colors hover:text-ink"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-blue transition-colors hover:text-primary-hover"
         >
-          <ArrowLeft className="h-3 w-3" />
-          BACK TO LOGS
+          <ArrowLeft className="h-3.5 w-3.5" />
+          Back to logs
         </Link>
 
         <div className="mt-5">
           <Eyebrow>Evaluation Detail</Eyebrow>
-          <h1 className="mt-3 font-serif text-3xl leading-tight tracking-[-0.01em] md:text-4xl">
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-heading md:text-3xl">
             Request Inspector
           </h1>
           <p className="mt-2 font-mono text-xs text-muted" title={detail.requestId}>
@@ -280,26 +293,23 @@ export default async function RequestDetailPage({
       </div>
 
       {/* Combined verdict */}
-      <div>
-        <p className="label-mono mb-3">Overall verdict</p>
-        <VerdictBanner isRejected={isRejected} rejectionReason={rejectionReason} />
-      </div>
+      <VerdictBanner isRejected={isRejected} rejectionReason={rejectionReason} />
 
       {/* Goal + Subtask */}
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="border border-line bg-paper p-5">
-          <p className="label-mono mb-3">Goal</p>
-          <p className="text-sm leading-relaxed">{goal}</p>
+        <div className="rounded-xl border border-border bg-surface p-5">
+          <p className="text-xs font-medium text-muted mb-3">Goal</p>
+          <p className="text-sm leading-relaxed text-heading">{goal}</p>
         </div>
-        <div className="border border-line bg-paper p-5">
-          <p className="label-mono mb-3">Subtask</p>
-          <p className="text-sm leading-relaxed">{subtask}</p>
+        <div className="rounded-xl border border-border bg-surface p-5">
+          <p className="text-xs font-medium text-muted mb-3">Subtask</p>
+          <p className="text-sm leading-relaxed text-heading">{subtask}</p>
         </div>
       </div>
 
       {/* Model scores */}
       <div>
-        <p className="label-mono mb-3">Model scores</p>
+        <p className="text-sm font-medium text-muted mb-4">Model scores</p>
         <div className="grid gap-4 md:grid-cols-2">
           {/* NLI */}
           <ModelCard
@@ -321,38 +331,40 @@ export default async function RequestDetailPage({
       </div>
 
       {/* Request metadata */}
-      <div className="border border-line bg-paper p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <Info className="h-4 w-4 text-muted" />
-          <p className="label-mono">Request metadata</p>
+      <div className="rounded-xl border border-border bg-surface p-5">
+        <div className="mb-4 flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-light text-primary-blue">
+            <Info className="h-4 w-4" />
+          </div>
+          <p className="text-sm font-semibold text-heading">Request metadata</p>
         </div>
 
         <div>
-          <MetaRow label="Request ID" value={detail.requestId} />
+          <MetaRow label="Request ID" value={<span className="font-mono text-xs">{detail.requestId}</span>} />
           <MetaRow
             label="API Key"
             value={
-              <span title={apiKeyId}>
-                {apiKeyId.slice(0, 8)}… <span className="text-muted">(masked)</span>
+              <span className="font-mono text-xs" title={apiKeyId}>
+                {apiKeyId.slice(0, 8)}… <span className="text-muted font-normal">(masked)</span>
               </span>
             }
           />
-          <MetaRow label="Model version" value={modelVersion} />
+          <MetaRow label="Model version" value={<span className="font-mono text-xs">{modelVersion}</span>} />
           <MetaRow
             label="Mode"
-            value={<span className="uppercase">{evaluationMode}</span>}
+            value={<span className="rounded-md bg-page px-2 py-0.5 text-xs font-medium capitalize">{evaluationMode}</span>}
           />
           <MetaRow
             label="Latency"
             value={
               <span className="flex items-center gap-1.5">
                 <Clock className="h-3 w-3 text-muted" />
-                {responseTimeMs.toLocaleString()} ms
+                <span className="font-mono text-xs">{responseTimeMs.toLocaleString()} ms</span>
               </span>
             }
           />
           <MetaRow label="Created at" value={fmtDateTime(createdAt)} />
-          {userAgent && <MetaRow label="User agent" value={userAgent} />}
+          {userAgent && <MetaRow label="User agent" value={<span className="text-xs">{userAgent}</span>} />}
         </div>
       </div>
     </div>

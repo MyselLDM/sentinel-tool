@@ -1,0 +1,1867 @@
+{
+  "generated_at": "dry-run",
+  "model": "dryrun-contrastive",
+  "role": "proposed (contrastive)",
+  "base": "all-MiniLM-L12-v2",
+  "labels": null,
+  "decision": "cosine < threshold",
+  "higher_score_means_malicious": false,
+  "include_decomposed": false,
+  "compute": {
+    "device": "cpu",
+    "precision": "fp32"
+  },
+  "config": {
+    "fold_strategy": "group",
+    "folds": 5,
+    "epochs": 4
+  },
+  "dataset": {
+    "rows": 584,
+    "unique_goals": 12,
+    "label_counts": {
+      "malicious": 220,
+      "benign-entailment": 251,
+      "neutral": 113
+    },
+    "malicious": 220,
+    "benign": 364,
+    "by_stratum": {
+      "easy": 308,
+      "matched": 166,
+      "near_miss": 110
+    },
+    "by_source": {
+      "generated": 254,
+      "original_190": 164,
+      "v3-matched": 166
+    },
+    "by_harm_category": {
+      "bias": 88,
+      "corruption": 46,
+      "exfiltration": 66,
+      "privilege_escalation": 88,
+      "surveillance": 70
+    },
+    "paired_rows": 276
+  },
+  "folds": [
+    {
+      "fold": 0,
+      "train_scenarios": 476,
+      "test_scenarios": 108,
+      "test_examples": 108,
+      "threshold": 0.15,
+      "threshold_f1": 100.0,
+      "train_time_sec": 1.0,
+      "summary": {
+        "threshold": 0.15,
+        "n": 108,
+        "confusion": {
+          "tp": 44,
+          "fp": 0,
+          "tn": 64,
+          "fn": 0,
+          "total": 108
+        },
+        "tpr": 100.0,
+        "fpr": 0.0,
+        "precision": 100.0,
+        "f1": 100.0,
+        "accuracy": 100.0,
+        "subsets": {
+          "malicious": {
+            "n": 44,
+            "tp": 44,
+            "fn": 0,
+            "tpr": 100.0
+          },
+          "benign": {
+            "n": 64,
+            "fp": 0,
+            "tn": 64,
+            "fpr": 0.0
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 22,
+              "tp": 22,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "matched": {
+              "n": 13,
+              "tp": 13,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "near_miss": {
+              "n": 9,
+              "tp": 9,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 17,
+              "tp": 17,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "original_190": {
+              "n": 14,
+              "tp": 14,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "v3-matched": {
+              "n": 13,
+              "tp": 13,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 100.0,
+            "matched": 100.0,
+            "near_miss": 100.0
+          }
+        }
+      },
+      "fixed_threshold_summary": {
+        "threshold": 0.15,
+        "n": 108,
+        "confusion": {
+          "tp": 44,
+          "fp": 0,
+          "tn": 64,
+          "fn": 0,
+          "total": 108
+        },
+        "tpr": 100.0,
+        "fpr": 0.0,
+        "precision": 100.0,
+        "f1": 100.0,
+        "accuracy": 100.0,
+        "subsets": {
+          "malicious": {
+            "n": 44,
+            "tp": 44,
+            "fn": 0,
+            "tpr": 100.0
+          },
+          "benign": {
+            "n": 64,
+            "fp": 0,
+            "tn": 64,
+            "fpr": 0.0
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 22,
+              "tp": 22,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "matched": {
+              "n": 13,
+              "tp": 13,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "near_miss": {
+              "n": 9,
+              "tp": 9,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 17,
+              "tp": 17,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "original_190": {
+              "n": 14,
+              "tp": 14,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "v3-matched": {
+              "n": 13,
+              "tp": 13,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 100.0,
+            "matched": 100.0,
+            "near_miss": 100.0
+          }
+        }
+      }
+    },
+    {
+      "fold": 1,
+      "train_scenarios": 489,
+      "test_scenarios": 95,
+      "test_examples": 95,
+      "threshold": 0.15,
+      "threshold_f1": 100.0,
+      "train_time_sec": 1.0,
+      "summary": {
+        "threshold": 0.15,
+        "n": 95,
+        "confusion": {
+          "tp": 35,
+          "fp": 0,
+          "tn": 60,
+          "fn": 0,
+          "total": 95
+        },
+        "tpr": 100.0,
+        "fpr": 0.0,
+        "precision": 100.0,
+        "f1": 100.0,
+        "accuracy": 100.0,
+        "subsets": {
+          "malicious": {
+            "n": 35,
+            "tp": 35,
+            "fn": 0,
+            "tpr": 100.0
+          },
+          "benign": {
+            "n": 60,
+            "fp": 0,
+            "tn": 60,
+            "fpr": 0.0
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 11,
+              "tp": 11,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "matched": {
+              "n": 14,
+              "tp": 14,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "near_miss": {
+              "n": 10,
+              "tp": 10,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 18,
+              "tp": 18,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "original_190": {
+              "n": 3,
+              "tp": 3,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "v3-matched": {
+              "n": 14,
+              "tp": 14,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 100.0,
+            "matched": 100.0,
+            "near_miss": 100.0
+          }
+        }
+      },
+      "fixed_threshold_summary": {
+        "threshold": 0.15,
+        "n": 95,
+        "confusion": {
+          "tp": 35,
+          "fp": 0,
+          "tn": 60,
+          "fn": 0,
+          "total": 95
+        },
+        "tpr": 100.0,
+        "fpr": 0.0,
+        "precision": 100.0,
+        "f1": 100.0,
+        "accuracy": 100.0,
+        "subsets": {
+          "malicious": {
+            "n": 35,
+            "tp": 35,
+            "fn": 0,
+            "tpr": 100.0
+          },
+          "benign": {
+            "n": 60,
+            "fp": 0,
+            "tn": 60,
+            "fpr": 0.0
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 11,
+              "tp": 11,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "matched": {
+              "n": 14,
+              "tp": 14,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "near_miss": {
+              "n": 10,
+              "tp": 10,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 18,
+              "tp": 18,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "original_190": {
+              "n": 3,
+              "tp": 3,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "v3-matched": {
+              "n": 14,
+              "tp": 14,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 100.0,
+            "matched": 100.0,
+            "near_miss": 100.0
+          }
+        }
+      }
+    },
+    {
+      "fold": 2,
+      "train_scenarios": 475,
+      "test_scenarios": 109,
+      "test_examples": 109,
+      "threshold": 0.15,
+      "threshold_f1": 100.0,
+      "train_time_sec": 1.0,
+      "summary": {
+        "threshold": 0.15,
+        "n": 109,
+        "confusion": {
+          "tp": 41,
+          "fp": 0,
+          "tn": 68,
+          "fn": 0,
+          "total": 109
+        },
+        "tpr": 100.0,
+        "fpr": 0.0,
+        "precision": 100.0,
+        "f1": 100.0,
+        "accuracy": 100.0,
+        "subsets": {
+          "malicious": {
+            "n": 41,
+            "tp": 41,
+            "fn": 0,
+            "tpr": 100.0
+          },
+          "benign": {
+            "n": 68,
+            "fp": 0,
+            "tn": 68,
+            "fpr": 0.0
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 13,
+              "tp": 13,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "matched": {
+              "n": 18,
+              "tp": 18,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "near_miss": {
+              "n": 10,
+              "tp": 10,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 18,
+              "tp": 18,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "original_190": {
+              "n": 5,
+              "tp": 5,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "v3-matched": {
+              "n": 18,
+              "tp": 18,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 100.0,
+            "matched": 100.0,
+            "near_miss": 100.0
+          }
+        }
+      },
+      "fixed_threshold_summary": {
+        "threshold": 0.15,
+        "n": 109,
+        "confusion": {
+          "tp": 41,
+          "fp": 0,
+          "tn": 68,
+          "fn": 0,
+          "total": 109
+        },
+        "tpr": 100.0,
+        "fpr": 0.0,
+        "precision": 100.0,
+        "f1": 100.0,
+        "accuracy": 100.0,
+        "subsets": {
+          "malicious": {
+            "n": 41,
+            "tp": 41,
+            "fn": 0,
+            "tpr": 100.0
+          },
+          "benign": {
+            "n": 68,
+            "fp": 0,
+            "tn": 68,
+            "fpr": 0.0
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 13,
+              "tp": 13,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "matched": {
+              "n": 18,
+              "tp": 18,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "near_miss": {
+              "n": 10,
+              "tp": 10,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 18,
+              "tp": 18,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "original_190": {
+              "n": 5,
+              "tp": 5,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "v3-matched": {
+              "n": 18,
+              "tp": 18,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 100.0,
+            "matched": 100.0,
+            "near_miss": 100.0
+          }
+        }
+      }
+    },
+    {
+      "fold": 3,
+      "train_scenarios": 446,
+      "test_scenarios": 138,
+      "test_examples": 138,
+      "threshold": 0.15,
+      "threshold_f1": 100.0,
+      "train_time_sec": 1.0,
+      "summary": {
+        "threshold": 0.15,
+        "n": 138,
+        "confusion": {
+          "tp": 53,
+          "fp": 0,
+          "tn": 85,
+          "fn": 0,
+          "total": 138
+        },
+        "tpr": 100.0,
+        "fpr": 0.0,
+        "precision": 100.0,
+        "f1": 100.0,
+        "accuracy": 100.0,
+        "subsets": {
+          "malicious": {
+            "n": 53,
+            "tp": 53,
+            "fn": 0,
+            "tpr": 100.0
+          },
+          "benign": {
+            "n": 85,
+            "fp": 0,
+            "tn": 85,
+            "fpr": 0.0
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 20,
+              "tp": 20,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "matched": {
+              "n": 19,
+              "tp": 19,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "near_miss": {
+              "n": 14,
+              "tp": 14,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 26,
+              "tp": 26,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "original_190": {
+              "n": 8,
+              "tp": 8,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "v3-matched": {
+              "n": 19,
+              "tp": 19,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 100.0,
+            "matched": 100.0,
+            "near_miss": 100.0
+          }
+        }
+      },
+      "fixed_threshold_summary": {
+        "threshold": 0.15,
+        "n": 138,
+        "confusion": {
+          "tp": 53,
+          "fp": 0,
+          "tn": 85,
+          "fn": 0,
+          "total": 138
+        },
+        "tpr": 100.0,
+        "fpr": 0.0,
+        "precision": 100.0,
+        "f1": 100.0,
+        "accuracy": 100.0,
+        "subsets": {
+          "malicious": {
+            "n": 53,
+            "tp": 53,
+            "fn": 0,
+            "tpr": 100.0
+          },
+          "benign": {
+            "n": 85,
+            "fp": 0,
+            "tn": 85,
+            "fpr": 0.0
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 20,
+              "tp": 20,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "matched": {
+              "n": 19,
+              "tp": 19,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "near_miss": {
+              "n": 14,
+              "tp": 14,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 26,
+              "tp": 26,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "original_190": {
+              "n": 8,
+              "tp": 8,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "v3-matched": {
+              "n": 19,
+              "tp": 19,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 100.0,
+            "matched": 100.0,
+            "near_miss": 100.0
+          }
+        }
+      }
+    },
+    {
+      "fold": 4,
+      "train_scenarios": 450,
+      "test_scenarios": 134,
+      "test_examples": 134,
+      "threshold": 0.15,
+      "threshold_f1": 100.0,
+      "train_time_sec": 1.0,
+      "summary": {
+        "threshold": 0.15,
+        "n": 134,
+        "confusion": {
+          "tp": 47,
+          "fp": 0,
+          "tn": 87,
+          "fn": 0,
+          "total": 134
+        },
+        "tpr": 100.0,
+        "fpr": 0.0,
+        "precision": 100.0,
+        "f1": 100.0,
+        "accuracy": 100.0,
+        "subsets": {
+          "malicious": {
+            "n": 47,
+            "tp": 47,
+            "fn": 0,
+            "tpr": 100.0
+          },
+          "benign": {
+            "n": 87,
+            "fp": 0,
+            "tn": 87,
+            "fpr": 0.0
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 16,
+              "tp": 16,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "matched": {
+              "n": 19,
+              "tp": 19,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "near_miss": {
+              "n": 12,
+              "tp": 12,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 24,
+              "tp": 24,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "original_190": {
+              "n": 4,
+              "tp": 4,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "v3-matched": {
+              "n": 19,
+              "tp": 19,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 100.0,
+            "matched": 100.0,
+            "near_miss": 100.0
+          }
+        }
+      },
+      "fixed_threshold_summary": {
+        "threshold": 0.15,
+        "n": 134,
+        "confusion": {
+          "tp": 47,
+          "fp": 0,
+          "tn": 87,
+          "fn": 0,
+          "total": 134
+        },
+        "tpr": 100.0,
+        "fpr": 0.0,
+        "precision": 100.0,
+        "f1": 100.0,
+        "accuracy": 100.0,
+        "subsets": {
+          "malicious": {
+            "n": 47,
+            "tp": 47,
+            "fn": 0,
+            "tpr": 100.0
+          },
+          "benign": {
+            "n": 87,
+            "fp": 0,
+            "tn": 87,
+            "fpr": 0.0
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 16,
+              "tp": 16,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "matched": {
+              "n": 19,
+              "tp": 19,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "near_miss": {
+              "n": 12,
+              "tp": 12,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 24,
+              "tp": 24,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "original_190": {
+              "n": 4,
+              "tp": 4,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "v3-matched": {
+              "n": 19,
+              "tp": 19,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 100.0,
+            "matched": 100.0,
+            "near_miss": 100.0
+          }
+        }
+      }
+    }
+  ],
+  "aggregate": {
+    "metrics": {
+      "accuracy": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "tpr": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "fpr": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "precision": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "f1": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "threshold": {
+        "mean": 0.15,
+        "std": 0.0
+      }
+    },
+    "subsets": {
+      "malicious": {
+        "tpr": {
+          "mean": 100.0,
+          "std": 0.0
+        }
+      },
+      "benign": {
+        "fpr": {
+          "mean": 0.0,
+          "std": 0.0
+        }
+      },
+      "by_stratum": {
+        "easy": {
+          "tpr": {
+            "mean": 100.0,
+            "std": 0.0
+          }
+        },
+        "matched": {
+          "tpr": {
+            "mean": 100.0,
+            "std": 0.0
+          }
+        },
+        "near_miss": {
+          "tpr": {
+            "mean": 100.0,
+            "std": 0.0
+          }
+        }
+      }
+    },
+    "pooled_confusion": {
+      "tp": 220,
+      "fp": 0,
+      "tn": 364,
+      "fn": 0,
+      "total": 584
+    },
+    "pooled_tpr": 100.0,
+    "pooled_fpr": 0.0
+  },
+  "aggregate_fixed_threshold": {
+    "metrics": {
+      "accuracy": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "tpr": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "fpr": {
+        "mean": 0.0,
+        "std": 0.0
+      },
+      "precision": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "f1": {
+        "mean": 100.0,
+        "std": 0.0
+      },
+      "threshold": {
+        "mean": 0.15,
+        "std": 0.0
+      }
+    },
+    "subsets": {
+      "malicious": {
+        "tpr": {
+          "mean": 100.0,
+          "std": 0.0
+        }
+      },
+      "benign": {
+        "fpr": {
+          "mean": 0.0,
+          "std": 0.0
+        }
+      },
+      "by_stratum": {
+        "easy": {
+          "tpr": {
+            "mean": 100.0,
+            "std": 0.0
+          }
+        },
+        "matched": {
+          "tpr": {
+            "mean": 100.0,
+            "std": 0.0
+          }
+        },
+        "near_miss": {
+          "tpr": {
+            "mean": 100.0,
+            "std": 0.0
+          }
+        }
+      }
+    },
+    "pooled_confusion": {
+      "tp": 220,
+      "fp": 0,
+      "tn": 364,
+      "fn": 0,
+      "total": 584
+    },
+    "pooled_tpr": 100.0,
+    "pooled_fpr": 0.0
+  },
+  "aggregate_curve": [],
+  "final_threshold": 0.15,
+  "baseline": {
+    "description": "off-the-shelf, untrained",
+    "folds": [
+      {
+        "fold": 0,
+        "train_scenarios": 476,
+        "test_scenarios": 108,
+        "test_examples": 108,
+        "threshold": 0.15,
+        "threshold_f1": 100.0,
+        "train_time_sec": 1.0,
+        "summary": {
+          "threshold": 0.15,
+          "n": 108,
+          "confusion": {
+            "tp": 44,
+            "fp": 0,
+            "tn": 64,
+            "fn": 0,
+            "total": 108
+          },
+          "tpr": 100.0,
+          "fpr": 0.0,
+          "precision": 100.0,
+          "f1": 100.0,
+          "accuracy": 100.0,
+          "subsets": {
+            "malicious": {
+              "n": 44,
+              "tp": 44,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "benign": {
+              "n": 64,
+              "fp": 0,
+              "tn": 64,
+              "fpr": 0.0
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 22,
+                "tp": 22,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "matched": {
+                "n": 13,
+                "tp": 13,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "near_miss": {
+                "n": 9,
+                "tp": 9,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 17,
+                "tp": 17,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "original_190": {
+                "n": 14,
+                "tp": 14,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 13,
+                "tp": 13,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 100.0,
+              "matched": 100.0,
+              "near_miss": 100.0
+            }
+          }
+        },
+        "fixed_threshold_summary": {
+          "threshold": 0.15,
+          "n": 108,
+          "confusion": {
+            "tp": 44,
+            "fp": 0,
+            "tn": 64,
+            "fn": 0,
+            "total": 108
+          },
+          "tpr": 100.0,
+          "fpr": 0.0,
+          "precision": 100.0,
+          "f1": 100.0,
+          "accuracy": 100.0,
+          "subsets": {
+            "malicious": {
+              "n": 44,
+              "tp": 44,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "benign": {
+              "n": 64,
+              "fp": 0,
+              "tn": 64,
+              "fpr": 0.0
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 22,
+                "tp": 22,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "matched": {
+                "n": 13,
+                "tp": 13,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "near_miss": {
+                "n": 9,
+                "tp": 9,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 17,
+                "tp": 17,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "original_190": {
+                "n": 14,
+                "tp": 14,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 13,
+                "tp": 13,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 100.0,
+              "matched": 100.0,
+              "near_miss": 100.0
+            }
+          }
+        }
+      },
+      {
+        "fold": 1,
+        "train_scenarios": 489,
+        "test_scenarios": 95,
+        "test_examples": 95,
+        "threshold": 0.15,
+        "threshold_f1": 100.0,
+        "train_time_sec": 1.0,
+        "summary": {
+          "threshold": 0.15,
+          "n": 95,
+          "confusion": {
+            "tp": 35,
+            "fp": 0,
+            "tn": 60,
+            "fn": 0,
+            "total": 95
+          },
+          "tpr": 100.0,
+          "fpr": 0.0,
+          "precision": 100.0,
+          "f1": 100.0,
+          "accuracy": 100.0,
+          "subsets": {
+            "malicious": {
+              "n": 35,
+              "tp": 35,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "benign": {
+              "n": 60,
+              "fp": 0,
+              "tn": 60,
+              "fpr": 0.0
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 11,
+                "tp": 11,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "matched": {
+                "n": 14,
+                "tp": 14,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "near_miss": {
+                "n": 10,
+                "tp": 10,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 18,
+                "tp": 18,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "original_190": {
+                "n": 3,
+                "tp": 3,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 14,
+                "tp": 14,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 100.0,
+              "matched": 100.0,
+              "near_miss": 100.0
+            }
+          }
+        },
+        "fixed_threshold_summary": {
+          "threshold": 0.15,
+          "n": 95,
+          "confusion": {
+            "tp": 35,
+            "fp": 0,
+            "tn": 60,
+            "fn": 0,
+            "total": 95
+          },
+          "tpr": 100.0,
+          "fpr": 0.0,
+          "precision": 100.0,
+          "f1": 100.0,
+          "accuracy": 100.0,
+          "subsets": {
+            "malicious": {
+              "n": 35,
+              "tp": 35,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "benign": {
+              "n": 60,
+              "fp": 0,
+              "tn": 60,
+              "fpr": 0.0
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 11,
+                "tp": 11,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "matched": {
+                "n": 14,
+                "tp": 14,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "near_miss": {
+                "n": 10,
+                "tp": 10,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 18,
+                "tp": 18,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "original_190": {
+                "n": 3,
+                "tp": 3,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 14,
+                "tp": 14,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 100.0,
+              "matched": 100.0,
+              "near_miss": 100.0
+            }
+          }
+        }
+      },
+      {
+        "fold": 2,
+        "train_scenarios": 475,
+        "test_scenarios": 109,
+        "test_examples": 109,
+        "threshold": 0.15,
+        "threshold_f1": 100.0,
+        "train_time_sec": 1.0,
+        "summary": {
+          "threshold": 0.15,
+          "n": 109,
+          "confusion": {
+            "tp": 41,
+            "fp": 0,
+            "tn": 68,
+            "fn": 0,
+            "total": 109
+          },
+          "tpr": 100.0,
+          "fpr": 0.0,
+          "precision": 100.0,
+          "f1": 100.0,
+          "accuracy": 100.0,
+          "subsets": {
+            "malicious": {
+              "n": 41,
+              "tp": 41,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "benign": {
+              "n": 68,
+              "fp": 0,
+              "tn": 68,
+              "fpr": 0.0
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 13,
+                "tp": 13,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "matched": {
+                "n": 18,
+                "tp": 18,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "near_miss": {
+                "n": 10,
+                "tp": 10,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 18,
+                "tp": 18,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "original_190": {
+                "n": 5,
+                "tp": 5,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 18,
+                "tp": 18,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 100.0,
+              "matched": 100.0,
+              "near_miss": 100.0
+            }
+          }
+        },
+        "fixed_threshold_summary": {
+          "threshold": 0.15,
+          "n": 109,
+          "confusion": {
+            "tp": 41,
+            "fp": 0,
+            "tn": 68,
+            "fn": 0,
+            "total": 109
+          },
+          "tpr": 100.0,
+          "fpr": 0.0,
+          "precision": 100.0,
+          "f1": 100.0,
+          "accuracy": 100.0,
+          "subsets": {
+            "malicious": {
+              "n": 41,
+              "tp": 41,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "benign": {
+              "n": 68,
+              "fp": 0,
+              "tn": 68,
+              "fpr": 0.0
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 13,
+                "tp": 13,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "matched": {
+                "n": 18,
+                "tp": 18,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "near_miss": {
+                "n": 10,
+                "tp": 10,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 18,
+                "tp": 18,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "original_190": {
+                "n": 5,
+                "tp": 5,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 18,
+                "tp": 18,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 100.0,
+              "matched": 100.0,
+              "near_miss": 100.0
+            }
+          }
+        }
+      },
+      {
+        "fold": 3,
+        "train_scenarios": 446,
+        "test_scenarios": 138,
+        "test_examples": 138,
+        "threshold": 0.15,
+        "threshold_f1": 100.0,
+        "train_time_sec": 1.0,
+        "summary": {
+          "threshold": 0.15,
+          "n": 138,
+          "confusion": {
+            "tp": 53,
+            "fp": 0,
+            "tn": 85,
+            "fn": 0,
+            "total": 138
+          },
+          "tpr": 100.0,
+          "fpr": 0.0,
+          "precision": 100.0,
+          "f1": 100.0,
+          "accuracy": 100.0,
+          "subsets": {
+            "malicious": {
+              "n": 53,
+              "tp": 53,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "benign": {
+              "n": 85,
+              "fp": 0,
+              "tn": 85,
+              "fpr": 0.0
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 20,
+                "tp": 20,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "matched": {
+                "n": 19,
+                "tp": 19,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "near_miss": {
+                "n": 14,
+                "tp": 14,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 26,
+                "tp": 26,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "original_190": {
+                "n": 8,
+                "tp": 8,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 19,
+                "tp": 19,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 100.0,
+              "matched": 100.0,
+              "near_miss": 100.0
+            }
+          }
+        },
+        "fixed_threshold_summary": {
+          "threshold": 0.15,
+          "n": 138,
+          "confusion": {
+            "tp": 53,
+            "fp": 0,
+            "tn": 85,
+            "fn": 0,
+            "total": 138
+          },
+          "tpr": 100.0,
+          "fpr": 0.0,
+          "precision": 100.0,
+          "f1": 100.0,
+          "accuracy": 100.0,
+          "subsets": {
+            "malicious": {
+              "n": 53,
+              "tp": 53,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "benign": {
+              "n": 85,
+              "fp": 0,
+              "tn": 85,
+              "fpr": 0.0
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 20,
+                "tp": 20,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "matched": {
+                "n": 19,
+                "tp": 19,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "near_miss": {
+                "n": 14,
+                "tp": 14,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 26,
+                "tp": 26,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "original_190": {
+                "n": 8,
+                "tp": 8,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 19,
+                "tp": 19,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 100.0,
+              "matched": 100.0,
+              "near_miss": 100.0
+            }
+          }
+        }
+      },
+      {
+        "fold": 4,
+        "train_scenarios": 450,
+        "test_scenarios": 134,
+        "test_examples": 134,
+        "threshold": 0.15,
+        "threshold_f1": 100.0,
+        "train_time_sec": 1.0,
+        "summary": {
+          "threshold": 0.15,
+          "n": 134,
+          "confusion": {
+            "tp": 47,
+            "fp": 0,
+            "tn": 87,
+            "fn": 0,
+            "total": 134
+          },
+          "tpr": 100.0,
+          "fpr": 0.0,
+          "precision": 100.0,
+          "f1": 100.0,
+          "accuracy": 100.0,
+          "subsets": {
+            "malicious": {
+              "n": 47,
+              "tp": 47,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "benign": {
+              "n": 87,
+              "fp": 0,
+              "tn": 87,
+              "fpr": 0.0
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 16,
+                "tp": 16,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "matched": {
+                "n": 19,
+                "tp": 19,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "near_miss": {
+                "n": 12,
+                "tp": 12,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 24,
+                "tp": 24,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "original_190": {
+                "n": 4,
+                "tp": 4,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 19,
+                "tp": 19,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 100.0,
+              "matched": 100.0,
+              "near_miss": 100.0
+            }
+          }
+        },
+        "fixed_threshold_summary": {
+          "threshold": 0.15,
+          "n": 134,
+          "confusion": {
+            "tp": 47,
+            "fp": 0,
+            "tn": 87,
+            "fn": 0,
+            "total": 134
+          },
+          "tpr": 100.0,
+          "fpr": 0.0,
+          "precision": 100.0,
+          "f1": 100.0,
+          "accuracy": 100.0,
+          "subsets": {
+            "malicious": {
+              "n": 47,
+              "tp": 47,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "benign": {
+              "n": 87,
+              "fp": 0,
+              "tn": 87,
+              "fpr": 0.0
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 16,
+                "tp": 16,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "matched": {
+                "n": 19,
+                "tp": 19,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "near_miss": {
+                "n": 12,
+                "tp": 12,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 24,
+                "tp": 24,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "original_190": {
+                "n": 4,
+                "tp": 4,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 19,
+                "tp": 19,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 100.0,
+              "matched": 100.0,
+              "near_miss": 100.0
+            }
+          }
+        }
+      }
+    ],
+    "aggregate": {
+      "metrics": {
+        "accuracy": {
+          "mean": 100.0,
+          "std": 0.0
+        },
+        "tpr": {
+          "mean": 100.0,
+          "std": 0.0
+        },
+        "fpr": {
+          "mean": 0.0,
+          "std": 0.0
+        },
+        "precision": {
+          "mean": 100.0,
+          "std": 0.0
+        },
+        "f1": {
+          "mean": 100.0,
+          "std": 0.0
+        },
+        "threshold": {
+          "mean": 0.15,
+          "std": 0.0
+        }
+      },
+      "subsets": {
+        "malicious": {
+          "tpr": {
+            "mean": 100.0,
+            "std": 0.0
+          }
+        },
+        "benign": {
+          "fpr": {
+            "mean": 0.0,
+            "std": 0.0
+          }
+        },
+        "by_stratum": {
+          "easy": {
+            "tpr": {
+              "mean": 100.0,
+              "std": 0.0
+            }
+          },
+          "matched": {
+            "tpr": {
+              "mean": 100.0,
+              "std": 0.0
+            }
+          },
+          "near_miss": {
+            "tpr": {
+              "mean": 100.0,
+              "std": 0.0
+            }
+          }
+        }
+      },
+      "pooled_confusion": {
+        "tp": 220,
+        "fp": 0,
+        "tn": 364,
+        "fn": 0,
+        "total": 584
+      },
+      "pooled_tpr": 100.0,
+      "pooled_fpr": 0.0
+    },
+    "final_threshold": 0.15
+  },
+  "final_model": {
+    "dir": "models/dryrun-contrastive",
+    "trained_on_scenarios": 584,
+    "train_time_sec": 1.0
+  },
+  "total_runtime_sec": 1.0
+}

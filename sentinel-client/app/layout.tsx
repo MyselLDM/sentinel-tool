@@ -1,19 +1,10 @@
 import type { Metadata } from "next";
-import { DM_Serif_Display, Geist_Mono, Space_Grotesk } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-// Titles — display serif with strong contrast.
-const dmSerifDisplay = DM_Serif_Display({
-  variable: "--font-dm-serif-display",
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
-  display: "swap",
-});
-
-// Body — clean, geometric sans.
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+// Primary UI font — clean, highly readable.
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
 });
@@ -35,9 +26,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${dmSerifDisplay.variable} ${spaceGrotesk.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-paper text-ink">
+      <body className="flex min-h-full flex-col bg-page text-body">
         {children}
       </body>
     </html>

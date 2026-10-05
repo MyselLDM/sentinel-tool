@@ -1,0 +1,15 @@
+# The repo .gitignore ignores "models/" everywhere, which would also hide the
+# small, useful JSON metadata this pipeline writes. Re-include the directory so
+# model_config.json and */training_stats.json are tracked, while the large weight
+# files stay ignored by the repo-wide "*.safetensors" / "*.bin" / "*.pt" rules.
+!models/
+!models/*/
+!models/**/*.json
+
+# HuggingFace Trainer / sentence-transformers scratch output.
+checkpoints/
+_tmp_*/
+
+# Per-session archives (training/archive_output.ps1) hold whole run trees,
+# including model weights and full logs. Never commit them.
+.output/

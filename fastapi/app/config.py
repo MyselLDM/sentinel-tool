@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     models_dir: str = str(BASE_DIR / ".models")
     model_config_path: str = str(BASE_DIR / "model_config.json")
     inference_device: str = "cpu"
+    # Serving on the untrained base models must be an explicit choice: a gateway
+    # that silently gates on a base model looks healthy and decides at random.
+    # Set ALLOW_BASE_FALLBACK=1 to opt in (development only).
+    allow_base_fallback: bool = False
     inference_max_concurrency: int = max(1, os.cpu_count() or 2)
     cache_size: int = 1024
 
@@ -52,7 +56,8 @@ def load_model_config(path: str | None = None) -> dict[str, Any]:
     """Load ``model_config.json`` (model dirs, versions, thresholds, metrics).
 
     Returns a dict with empty ``nli``/``contrastive`` sections if the file is
-    absent, so the service can still start (and fall back to base models).
+    absent, so the service can still start (it then reports 503 from ``/health``
+    and ``/evaluate`` rather than silently serving untrained models).
     """
     resolved = Path(path or get_settings().model_config_path)
     if not resolved.exists():

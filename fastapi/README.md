@@ -61,7 +61,7 @@ curl http://localhost:8000/health
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `POST` | `/evaluate` | Evaluate a `goal` + `subtask` pair. |
-| `GET` | `/health` | Liveness / readiness (models loaded?). |
+| `GET` | `/health` | Liveness / readiness. **503** until trained models are loaded. |
 | `GET` | `/models` | Read-only model info (versions, thresholds, metrics). |
 | `GET` | `/docs` | Swagger UI. |
 
@@ -101,20 +101,20 @@ curl http://localhost:8000/health
   "result": true,
   "is_rejected": false,
   "rejection_reason": "accepted",
-  "model_version": "nli=sentinelagent-nli-3class-v1;con=contrastive-minilm-e4-b16-lr1e-05-mn6-raw-vs0.2",
+  "model_version": "nli=sentinelagent-nli-finetuned;con=contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
   "nli": {
     "score": 0.12,
-    "threshold": 0.5,
+    "threshold": 0.924,
     "rejected": false,
-    "margin": -0.38,
+    "margin": -0.804,
     "raw_scores": { "contradiction": 0.12, "entailment": 0.85, "neutral": 0.03 },
     "latency_ms": 12.3
   },
   "contrastive": {
     "score": 0.81,
-    "threshold": 0.5,
+    "threshold": 0.024,
     "rejected": false,
-    "margin": 0.31,
+    "margin": 0.786,
     "latency_ms": 8.1
   },
   "statistics": {
@@ -123,8 +123,8 @@ curl http://localhost:8000/health
     "contrastive_latency_ms": 8.1,
     "decision_rule": "reject if either model rejects",
     "rejecting_models": [],
-    "nli_threshold": 0.5,
-    "contrastive_threshold": 0.5,
+    "nli_threshold": 0.924,
+    "contrastive_threshold": 0.024,
     "cached": false
   }
 }
@@ -229,22 +229,24 @@ print(data["is_rejected"], data["rejection_reason"], data["statistics"])
   "contrastive_loaded": true,
   "on_base_models": false,
   "device": "cpu",
-  "nli_version": "sentinelagent-nli-3class-v1",
-  "contrastive_version": "contrastive-minilm-e4-b16-lr1e-05-mn6-raw-vs0.2",
+  "nli_version": "sentinelagent-nli-finetuned",
+  "contrastive_version": "contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
   "model_error": null
 }
 ```
 
-`on_base_models: true` means a fine-tuned checkpoint was missing and the base
-pretrained model was used (dev fallback). `model_error` is set when loading
-failed entirely.
+`on_base_models: true` means a fine-tuned checkpoint was missing. It is only
+reachable with `ALLOW_BASE_FALLBACK=1`, and in that state `/health` returns
+**503** (degraded) — an untrained gateway must not look healthy. `model_error` is
+set when loading failed entirely.
 
 ---
 
 ## 5. `GET /models`
 
-Read-only model info sourced from `model_config.json` (versions, decision rules,
-thresholds, reference metrics).
+Read-only model info — the `nli` / `contrastive` sections of `model_config.json`
+verbatim, plus the path each model actually resolved to (`resolved_source`).
+Versions, decision rules, thresholds and reference metrics are all included.
 
 ```json
 {
@@ -252,24 +254,39 @@ thresholds, reference metrics).
   "on_base_models": false,
   "nli": {
     "base": "cross-encoder/nli-MiniLM2-L6-H768",
-    "version": "sentinelagent-nli-3class-v1",
+    "model_dir": "sentinelagent-nli-finetuned",
+    "version": "sentinelagent-nli-finetuned",
     "labels": ["contradiction", "entailment", "neutral"],
+    "activation": "softmax",
     "decision": "p_contradiction > threshold",
-    "threshold": 0.5,
-    "threshold_source": "placeholder",
-    "resolved_source": "/abs/path/fastapi/.models/sentinelagent_nli_finetuned"
+    "threshold": 0.924,
+    "threshold_source": "cross_validation_mean",
+    "metrics": {
+      "accuracy": 99.1, "tpr": 99.5889, "fpr": 1.3889,
+      "precision": 98.638, "f1": 99.1075
+    },
+    "resolved_source": "/abs/path/fastapi/.models/sentinelagent-nli-finetuned"
   },
   "contrastive": {
     "base": "all-MiniLM-L12-v2",
-    "version": "contrastive-minilm-e4-b16-lr1e-05-mn6-raw-vs0.2",
+    "model_dir": "contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
+    "version": "contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
     "decision": "cosine < threshold",
     "include_decomposed": false,
-    "threshold": 0.5,
-    "threshold_source": "placeholder",
-    "resolved_source": "/abs/path/fastapi/.models/contrastive-…-raw-vs0.2"
+    "threshold": 0.024,
+    "threshold_source": "cross_validation_mean",
+    "metrics": {
+      "accuracy": 97.9333, "tpr": 99.3556, "fpr": 3.4889,
+      "precision": 96.6349, "f1": 97.9688
+    },
+    "resolved_source": "/abs/path/fastapi/.models/contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw"
   }
 }
 ```
+
+> `metrics` are percentages from the anchor-grouped 5-fold CV the thresholds were
+> tuned on. `source` is `model_config.json`, or `defaults` when that file is
+> missing (the service then serves 503s rather than untrained scores).
 
 ---
 
@@ -284,6 +301,7 @@ Environment variables (optionally via `fastapi/.env`):
 | `INFERENCE_DEVICE` | `cpu` | `cpu` or `cuda`. |
 | `INFERENCE_MAX_CONCURRENCY` | CPU count | Max concurrent inferences. |
 | `CACHE_SIZE` | `1024` | LRU cache entries (`0` disables). |
+| `ALLOW_BASE_FALLBACK` | `false` | Opt-in dev fallback to the untrained base models when a `model_dir` is missing (reports degraded `/health`). |
 
 ---
 
@@ -295,14 +313,18 @@ Environment variables (optionally via `fastapi/.env`):
   by label (`contradiction` is index 0) — never rely on positional order.
 - **Contrastive is the `-raw-` variant.** It was trained on the raw
   `"Goal: …. Subtask: …."` template only, so no decomposition input is used.
-- **Thresholds are placeholders** until training writes
-  `logs/nli_cv_results.json` / `logs/contrastive_cv_results.json`. Override them
-  per request (see §3.1) or edit `model_config.json`.
+- **Thresholds come from training.** They are the mean of the per-fold,
+  F1-optimal cut-offs of an anchor-grouped 5-fold CV (`threshold_source:
+  cross_validation_mean`), written into `model_config.json` by the training
+  pipeline. Override them per request (see §3.1) or edit `model_config.json`.
 - **Caching & concurrency.** Identical `(goal, subtask, thresholds)` are served
   from an LRU cache (`cached: true`). The two models run concurrently in worker
   threads, bounded by `INFERENCE_MAX_CONCURRENCY`.
-- **Fallback.** If a fine-tuned dir is missing, the base pretrained model is used
-  and `/health` reports `on_base_models: true`.
+- **Fallback.** A missing fine-tuned dir makes loading **raise**, so `/health`
+  returns 503 and `/evaluate` returns 503 until the checkpoint is deployed
+  (copy the training outputs in with `../training/deploy_to_fastapi.sh`, or
+  `.ps1`). `ALLOW_BASE_FALLBACK=1` restores the old dev-mode fallback, which
+  still reports `on_base_models: true` and a 503 from `/health`.
 
 ---
 
@@ -314,7 +336,7 @@ fastapi/
 │  ├─ main.py            # FastAPI app + lifespan (loads models)
 │  ├─ config.py          # env settings + model_config.json loader
 │  ├─ preprocess.py      # training-parity text formatting
-│  ├─ models.py          # model loading + base-model fallback
+│  ├─ models.py          # model loading + fallback policy (_resolve)
 │  ├─ service.py         # pure inference logic (softmax, NLI, contrastive, decision)
 │  ├─ cache.py           # thread-safe LRU cache
 │  ├─ schemas.py         # pydantic request/response models
@@ -322,8 +344,29 @@ fastapi/
 │     ├─ evaluate.py     # POST /evaluate
 │     ├─ health.py       # GET /health
 │     └─ models_info.py  # GET /models
-├─ .models/              # fine-tuned checkpoints (git-ignored weights)
-├─ model_config.json     # model dirs, versions, thresholds
+├─ tests/                # pytest: preprocess parity, decision logic, model-dir resolution
+├─ .models/              # fine-tuned checkpoints (weights git-ignored)
+│  ├─ sentinelagent-nli-finetuned/
+│  └─ contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw/
+├─ model_config.json     # model dirs, versions, thresholds (written by ../training)
 ├─ requirements.txt
-└─ old-training/         # the scripts that produced the models
+└─ old-training/         # legacy training scripts (superseded by ../training)
 ```
+
+---
+
+## 9. Tests
+
+22 unit tests, no models required (`pytest` + `httpx` are pinned in
+`requirements.txt`):
+
+```bash
+.venv/bin/python -m pytest -q          # macOS / Linux
+.venv\Scripts\python -m pytest -q      # Windows
+```
+
+| File | Covers |
+| --- | --- |
+| `tests/test_preprocess.py` | `format_nli` / `format_document` parity with training (golden strings). |
+| `tests/test_service.py` | Softmax, the NLI/contrastive decisions, OR-combination, `build_result`. |
+| `tests/test_models.py` | `models._resolve` — trained-dir resolution and the `ALLOW_BASE_FALLBACK` policy (pure path logic, no torch). |

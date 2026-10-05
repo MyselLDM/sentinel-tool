@@ -68,16 +68,16 @@ function Modal({
       ref={dialogRef}
       onClose={onClose}
       onClick={onClickBackdrop}
-      className="modal modal-bottom sm:modal-middle backdrop:bg-ink/20 backdrop:backdrop-blur-sm"
+      className="modal modal-bottom sm:modal-middle backdrop:bg-heading/20 backdrop:backdrop-blur-sm"
     >
-      <div className="modal-box border border-line bg-paper p-0 shadow-none sm:max-w-lg">
-        <div className="flex items-center justify-between border-b border-line px-6 py-4">
-          <h2 className="font-serif text-xl tracking-tight">{title}</h2>
+      <div className="modal-box rounded-xl border border-border bg-surface p-0 shadow-lg sm:max-w-lg">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+          <h2 className="text-lg font-semibold text-heading">{title}</h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="flex h-8 w-8 items-center justify-center text-muted transition-colors hover:text-ink"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors hover:bg-page hover:text-heading"
           >
             <X className="h-4 w-4" />
           </button>
@@ -103,14 +103,16 @@ function Alert({
     <div
       role="alert"
       className={cn(
-        "flex items-start gap-3 border p-4 text-sm",
-        type === "error" ? "border-line bg-paper-soft" : "border-line bg-paper-soft",
+        "flex items-start gap-3 rounded-lg border p-4 text-sm",
+        type === "error"
+          ? "border-error-red/20 bg-error-bg text-error-red"
+          : "border-success-green/20 bg-success-bg text-success-green",
       )}
     >
       {type === "error" ? (
-        <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
+        <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
       ) : (
-        <Check className="mt-0.5 h-4 w-4 shrink-0 text-ink" />
+        <Check className="mt-0.5 h-4 w-4 shrink-0" />
       )}
       <span className="flex-1 leading-relaxed">{message}</span>
       {onClose && (
@@ -118,7 +120,7 @@ function Alert({
           type="button"
           onClick={onClose}
           aria-label="Dismiss"
-          className="text-muted hover:text-ink"
+          className="opacity-60 hover:opacity-100"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -154,10 +156,10 @@ function SecretRevealModal({
     <Modal open title={`Key created: ${keyName}`} onClose={onClose}>
       <div className="space-y-5">
         {/* Warning */}
-        <div className="flex items-start gap-3 border border-line bg-paper-soft p-4">
-          <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
-          <p className="text-sm leading-relaxed text-muted">
-            <strong className="text-ink">Save this key now.</strong> It will not be shown again.
+        <div className="flex items-start gap-3 rounded-lg border border-warning-amber/20 bg-warning-bg p-4">
+          <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning-amber" />
+          <p className="text-sm leading-relaxed text-body">
+            <strong className="text-heading">Save this key now.</strong> It will not be shown again.
             Sentinel stores only a hash — there is no way to recover the plaintext secret after this
             dialog is closed.
           </p>
@@ -165,26 +167,26 @@ function SecretRevealModal({
 
         {/* Key display */}
         <div>
-          <p className="label-mono mb-2">API key (plaintext — shown once)</p>
-          <div className="flex items-center gap-2 border border-line bg-paper p-3">
-            <code className="min-w-0 flex-1 break-all font-mono text-sm leading-relaxed">
+          <p className="mb-2 text-sm font-medium text-heading">API key (shown once)</p>
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-page p-3">
+            <code className="min-w-0 flex-1 break-all font-mono text-sm leading-relaxed text-heading">
               {apiKey}
             </code>
             <button
               type="button"
               onClick={() => void copy()}
               aria-label="Copy API key to clipboard"
-              className="flex shrink-0 items-center gap-1.5 border border-line px-2.5 py-1.5 font-mono text-[11px] tracking-wider text-muted transition-colors hover:border-ink hover:text-ink"
+              className="flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:text-heading"
             >
               {copied ? (
                 <>
-                  <Check className="h-3 w-3" />
-                  COPIED
+                  <Check className="h-3 w-3 text-success-green" />
+                  Copied
                 </>
               ) : (
                 <>
                   <Copy className="h-3 w-3" />
-                  COPY
+                  Copy
                 </>
               )}
             </button>
@@ -194,7 +196,7 @@ function SecretRevealModal({
         <button
           type="button"
           onClick={onClose}
-          className="w-full border border-ink bg-ink py-2.5 text-sm font-medium text-paper transition-colors hover:bg-ink-soft"
+          className="w-full rounded-lg bg-primary-blue py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover"
         >
           I have saved my key
         </button>
@@ -361,7 +363,7 @@ function CreateKeyModal({
           <button
             type="submit"
             disabled={loading}
-            className="flex h-10 flex-1 items-center justify-center gap-2 border border-ink bg-ink text-sm font-medium text-paper transition-colors hover:bg-ink-soft disabled:pointer-events-none disabled:opacity-50"
+            className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-primary-blue text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover disabled:pointer-events-none disabled:opacity-50"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             Create key
@@ -369,7 +371,7 @@ function CreateKeyModal({
           <button
             type="button"
             onClick={handleClose}
-            className="flex h-10 items-center justify-center gap-2 border border-line px-4 text-sm text-muted transition-colors hover:text-ink"
+            className="flex h-10 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-muted transition-colors hover:bg-page hover:text-heading"
           >
             Cancel
           </button>
@@ -421,13 +423,13 @@ function DeleteKeyModal({
 
           <p className="text-sm leading-relaxed text-muted">
             Are you sure you want to permanently delete the key{" "}
-            <span className="font-mono text-ink">{target.keyName}</span>?{" "}
+            <span className="font-medium text-heading">{target.keyName}</span>?{" "}
             Any agents using this key will be immediately rejected.
           </p>
 
-          <div className="border border-line bg-paper-soft p-3">
-            <p className="label-mono mb-1">Key</p>
-            <p className="font-mono text-sm">
+          <div className="rounded-lg border border-border bg-page p-3">
+            <p className="text-xs font-medium text-muted mb-1">Key</p>
+            <p className="font-mono text-sm text-heading">
               {target.prefix}…{target.last4}
             </p>
           </div>
@@ -437,7 +439,7 @@ function DeleteKeyModal({
               type="button"
               onClick={() => void handleDelete()}
               disabled={loading}
-              className="flex h-10 flex-1 items-center justify-center gap-2 border border-ink bg-ink text-sm font-medium text-paper transition-colors hover:bg-ink-soft disabled:pointer-events-none disabled:opacity-50"
+              className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-error-red text-sm font-medium text-white shadow-sm transition-colors hover:bg-red-700 disabled:pointer-events-none disabled:opacity-50"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               <Trash2 className="h-4 w-4" />
@@ -446,7 +448,7 @@ function DeleteKeyModal({
             <button
               type="button"
               onClick={handleClose}
-              className="flex h-10 items-center justify-center gap-2 border border-line px-4 text-sm text-muted transition-colors hover:text-ink"
+              className="flex h-10 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-medium text-muted transition-colors hover:bg-page hover:text-heading"
             >
               Cancel
             </button>
@@ -459,22 +461,24 @@ function DeleteKeyModal({
 
 // ── Status Badge ──────────────────────────────────────────────────────────────
 
-function StatusBadge({ active }: { active: boolean }) {
+function KeyStatusBadge({ active }: { active: boolean }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 font-mono text-[11px] tracking-wider",
-        active ? "text-ink" : "text-muted",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium",
+        active
+          ? "bg-success-bg text-success-green"
+          : "bg-page text-muted",
       )}
     >
       <span
         className={cn(
-          "block h-1.5 w-1.5 border",
-          active ? "border-ink bg-ink" : "border-muted bg-transparent",
+          "block h-1.5 w-1.5 rounded-full",
+          active ? "bg-success-green" : "bg-muted",
         )}
         aria-hidden
       />
-      {active ? "ACTIVE" : "INACTIVE"}
+      {active ? "Active" : "Inactive"}
     </span>
   );
 }
@@ -513,14 +517,14 @@ function ToggleCell({
         disabled={loading}
         aria-label={isActive ? "Deactivate key" : "Activate key"}
         aria-pressed={isActive}
-        className="flex items-center gap-1.5 border border-line px-2 py-1 font-mono text-[10px] tracking-wider text-muted transition-colors hover:border-ink hover:text-ink disabled:pointer-events-none disabled:opacity-50"
+        className="flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted transition-colors hover:border-border-strong hover:text-heading disabled:pointer-events-none disabled:opacity-50"
       >
         {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-        {isActive ? "DEACTIVATE" : "ACTIVATE"}
+        {isActive ? "Deactivate" : "Activate"}
       </button>
       {error && (
-        <span className="font-mono text-[10px] text-muted" title={error}>
-          ERROR
+        <span className="text-xs text-error-red" title={error}>
+          Error
         </span>
       )}
     </div>
@@ -532,11 +536,11 @@ function ToggleCell({
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="flex flex-col items-center gap-4 py-16 text-center">
-      <div className="flex h-12 w-12 items-center justify-center border border-line">
-        <Plus className="h-5 w-5 text-muted" />
+      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary-light text-primary-blue">
+        <Plus className="h-5 w-5" />
       </div>
       <div>
-        <p className="font-medium">No API keys yet</p>
+        <p className="font-medium text-heading">No API keys yet</p>
         <p className="mt-1 text-sm text-muted">
           Create your first key to start sending evaluations.
         </p>
@@ -544,7 +548,7 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       <button
         type="button"
         onClick={onCreate}
-        className="mt-2 flex h-10 items-center gap-2 border border-ink bg-ink px-4 text-sm font-medium text-paper transition-colors hover:bg-ink-soft"
+        className="mt-2 flex h-10 items-center gap-2 rounded-lg bg-primary-blue px-4 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover"
       >
         <Plus className="h-4 w-4" />
         Create API key
@@ -580,11 +584,14 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKey[] }) {
       {/* Header row */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="label-mono">Console</p>
-          <h1 className="mt-3 font-serif text-4xl leading-tight tracking-[-0.01em] md:text-5xl">
+          <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-primary-blue">
+            <span aria-hidden className="block h-1.5 w-1.5 rounded-full bg-primary-blue" />
+            Console
+          </p>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight text-heading md:text-3xl">
             API keys
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-muted">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
             Issue, rate-limit and revoke the credentials your agents authenticate with. Plaintext
             keys are shown exactly once at creation.
           </p>
@@ -592,7 +599,7 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKey[] }) {
         <button
           type="button"
           onClick={() => setCreateOpen(true)}
-          className="flex shrink-0 items-center gap-2 border border-ink bg-ink px-4 py-2.5 text-sm font-medium text-paper transition-colors hover:bg-ink-soft"
+          className="flex shrink-0 items-center gap-2 rounded-lg bg-primary-blue px-4 py-2.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-hover"
         >
           <Plus className="h-4 w-4" />
           New key
@@ -605,42 +612,42 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKey[] }) {
       )}
 
       {/* Keys table */}
-      <div className="border border-line bg-paper">
+      <div className="rounded-xl border border-border bg-surface overflow-hidden">
         {keys.length === 0 ? (
           <EmptyState onCreate={() => setCreateOpen(true)} />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] table-auto text-sm">
               <thead>
-                <tr className="border-b border-line">
+                <tr className="border-b border-border">
                   <th className="px-4 py-3 text-left">
-                    <span className="label-mono">Name</span>
+                    <span className="text-xs font-medium text-muted">Name</span>
                   </th>
                   <th className="px-4 py-3 text-left">
-                    <span className="label-mono">Key</span>
+                    <span className="text-xs font-medium text-muted">Key</span>
                   </th>
                   <th className="px-4 py-3 text-left">
-                    <span className="label-mono">Rate limit</span>
+                    <span className="text-xs font-medium text-muted">Rate limit</span>
                   </th>
                   <th className="px-4 py-3 text-left">
-                    <span className="label-mono">Created</span>
+                    <span className="text-xs font-medium text-muted">Created</span>
                   </th>
                   <th className="px-4 py-3 text-left">
-                    <span className="label-mono">Last used</span>
+                    <span className="text-xs font-medium text-muted">Last used</span>
                   </th>
                   <th className="px-4 py-3 text-left">
-                    <span className="label-mono">Status</span>
+                    <span className="text-xs font-medium text-muted">Status</span>
                   </th>
                   <th className="px-4 py-3 text-left">
                     <span className="sr-only">Actions</span>
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line">
+              <tbody className="divide-y divide-border">
                 {keys.map((k) => (
-                  <tr key={k.id} className="transition-colors hover:bg-paper-soft">
+                  <tr key={k.id} className="transition-colors hover:bg-page/60">
                     <td className="px-4 py-3">
-                      <span className="font-medium">{k.keyName}</span>
+                      <span className="font-medium text-heading">{k.keyName}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs text-muted" title="Prefix and last 4 chars">
@@ -648,23 +655,23 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKey[] }) {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-mono text-xs">{k.rateLimitPerMinute} / min</span>
+                      <span className="font-mono text-xs text-heading">{k.rateLimitPerMinute} / min</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="font-mono text-xs text-muted" title={k.createdAt}>
+                      <span className="text-xs text-muted" title={k.createdAt}>
                         {fmtDate(k.createdAt)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <span
-                        className="font-mono text-xs text-muted"
+                        className="text-xs text-muted"
                         title={k.lastUsedAt ?? undefined}
                       >
                         {k.lastUsedAt ? fmtDateTime(k.lastUsedAt) : "Never"}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <StatusBadge active={k.isActive} />
+                      <KeyStatusBadge active={k.isActive} />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -677,7 +684,7 @@ export function ApiKeysClient({ initialKeys }: { initialKeys: ApiKey[] }) {
                           type="button"
                           onClick={() => setDeleteTarget(k)}
                           aria-label={`Delete key ${k.keyName}`}
-                          className="flex h-7 w-7 items-center justify-center text-muted transition-colors hover:text-ink"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted transition-colors hover:bg-error-bg hover:text-error-red"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>

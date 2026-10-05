@@ -121,7 +121,4 @@ Thumbs.db
 *.log
 tmp/
 temp/
-# Exclude Python codes, Notebooks, and CSVs at the root or project-wide
-/*.py
-*.csv
-*.ipynb
+training/.output/

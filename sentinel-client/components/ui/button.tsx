@@ -2,16 +2,17 @@ import Link from "next/link";
 import type { ComponentProps } from "react";
 import { cn } from "@/lib/cn";
 
-type Variant = "primary" | "outline" | "ghost";
+type Variant = "primary" | "secondary" | "ghost" | "destructive";
 type Size = "sm" | "md" | "lg";
 
 const BASE =
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium tracking-tight transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/15 disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-all duration-150 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-blue/20 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
 
 const VARIANTS: Record<Variant, string> = {
-  primary: "border border-ink bg-ink text-paper hover:bg-ink-soft hover:border-ink-soft",
-  outline: "border border-line-strong bg-paper text-ink hover:border-ink",
-  ghost: "border border-transparent text-muted hover:text-ink",
+  primary: "bg-primary-blue text-white hover:bg-primary-hover shadow-sm",
+  secondary: "border border-border bg-surface text-heading hover:bg-page hover:border-border-strong",
+  ghost: "text-muted hover:text-heading hover:bg-page",
+  destructive: "bg-error-red text-white hover:bg-red-700 shadow-sm",
 };
 
 const SIZES: Record<Size, string> = {

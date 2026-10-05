@@ -1,6 +1,6 @@
 # Sentinel — System Architecture & Pipeline
 
-> **Status:** describes the system **as built today** (commit `c4161dd`), plus the deltas from the
+> **Status:** describes the system **as built today** (commit `8fbed3d`), plus the deltas from the
 > original spec. Everything below is verified against the code in this repo.
 >
 > **Companion docs:** [`full_plan.md`](./full_plan.md) (original thesis spec) ·
@@ -82,9 +82,12 @@ flowchart LR
   end
 
   subgraph next["sentinel-client (Next.js 16) — :3000"]
-    LAND["/ — landing page<br/>(static)"]
+    LAND["/ — landing page<br/>(hero · capabilities · chatbot · API)"]
     PGROUTE["/api/playground<br/>(route handler, server-side key)"]
+    CHAT["/api/chat<br/>(route handler, server-side key)"]
   end
+
+  DS["DeepSeek API<br/>(goal generation)"]
 
   subgraph gw["express-server (Express 5) — :4000"]
     MW["middleware<br/>helmet · cors · json · requestId · logger"]
@@ -106,6 +109,8 @@ flowchart LR
 
   BR --> LAND
   BR -->|"POST /api/playground"| PGROUTE
+  BR -->|"POST /api/chat"| CHAT
+  CHAT -->|"Bearer DEEPSEEK_API_KEY"| DS
   PGROUTE -->|"Bearer sk_…"| APIKEY
   AG -->|"Bearer sk_…"| APIKEY
   BR -->|"console calls (JWT)"| AUTHZ
@@ -122,8 +127,10 @@ flowchart LR
 
 **Node/edge list**
 
-- `BR → LAND` : browser loads the public landing page (hero, features, playground UI)
-- `BR → PGROUTE` : playground form posts `{goal, subtask}`
+- `BR → LAND` : browser loads the public landing page (hero, capabilities, how-it-works, the chatbot playground, API)
+- `BR → PGROUTE` : the playground posts `{goal, subtask}` to be evaluated
+- `BR → CHAT` : the chatbot posts conversation history to generate candidate goals
+- `CHAT → DS` : the chat route calls DeepSeek with the server-held `DEEPSEEK_API_KEY`
 - `PGROUTE → APIKEY` : server-side proxy attaches the server-held API key
 - `AG → APIKEY` : agent calls `POST /api/evaluate` with its own API key
 - `BR → AUTHZ` : console pages call with the access JWT
@@ -139,12 +146,13 @@ flowchart LR
 
 | Process | Port | Start command | Notes |
 | --- | --- | --- | --- |
-| Next.js console | `3000` | `cd sentinel-client && ./run.sh` / `npm run dev` | Serves `/` and `/api/playground` |
+| Next.js console | `3000` | `cd sentinel-client && npm run dev` | Serves the site, the console and the `/api/*` route handlers |
 | Express gateway | `4000` | `cd express-server && ./run.sh` / `npm start` | Deliberately not 3000 (console owns it) |
 | FastAPI inference | `8000` | `cd fastapi && ./run.sh` | Loads both models + warms up at startup |
 
-Both services ship `run.sh` (bash) and `run.ps1` (PowerShell) that create the venv / install deps on
-first run. `.gitattributes` pins `*.sh` to LF.
+The two backend services ship `run.sh` (bash) and `run.ps1` (PowerShell) that create the venv /
+install deps on first run; the client is plain `npm`. `.gitattributes` pins `*.sh` to LF and
+`*.ps1` to CRLF.
 
 **Dependency direction:** `client → express → fastapi`. FastAPI has no knowledge of the gateway.
 Express degrades to **mock inference** when FastAPI is down (`INFERENCE_MOCK=true`).
@@ -157,23 +165,36 @@ Express degrades to **mock inference** when FastAPI is down (`INFERENCE_MOCK=tru
 
 ```
 app/
-  layout.tsx                 root layout: fonts (DM Serif Display · Space Grotesk · Geist Mono, via next/font)
-  globals.css                custom daisyUI theme "sentinel" + @theme tokens + .bg-hatch, .label-mono
-  page.tsx                   landing page: hero · request/response panel · capabilities · how-it-works · playground · API · CTA
+  layout.tsx                 root layout: fonts (Inter · Geist Mono, via next/font) + metadata
+  globals.css                custom daisyUI theme "sentinel" (light, blue) + @theme tokens + .sentinel-card, .label-mono, .badge-*
+  page.tsx                   landing page: hero · capabilities · how-it-works · chatbot playground · API · CTA
+  (auth)/login/              sign-in / create-account surface (Server Actions)
+  (app)/                     authenticated console: layout (verifySession + shell) → dashboard · api-keys
+                             · logs (+ logs/[requestId]) · settings
   api/playground/route.ts    server-side proxy → Express POST /api/evaluate
+  api/chat/route.ts          DeepSeek-backed goal generator (server-held key, per-IP limit)
+  api/auth/refresh/route.ts  rotates the session token pair
+  docs/page.tsx              public API reference + tutorials
 components/
-  site-header.tsx            sticky navbar: sign-in state / profile dropdown / mobile panel
-  site-footer.tsx            footer columns + mono meta
-  playground.tsx             client: goal+subtask inputs, 3 presets, "Try it out", verdict + per-model meters
-  ui/button.tsx              Button / ButtonLink (primary | outline | ghost)
-  ui/eyebrow.tsx             small uppercase section label
-lib/cn.ts                    class-name joiner
+  site-header.tsx · site-footer.tsx   marketing chrome
+  chatbot.tsx                landing "playground": goal generation + live evaluation
+  sentinel-logo.tsx          brand marks (full / icon / thinking)
+  console/                   console-shell.tsx (drawer + sidebar + topbar) · nav-items.ts
+  docs/                      docs explorer + section renderers
+  ui/                        button · eyebrow · section · stat-card · status-badge
+lib/
+  api/                       typed server-side gateway client (client, auth, stats, models, keys, requests, types)
+  auth/                      session cookie codec, read/create/delete, DAL, sign-out
+  docs/api-reference.ts      the /docs content
+  cn.ts                      class-name joiner
+proxy.ts                     optimistic auth gate (Next 16's Proxy — formerly middleware)
 ```
 
-**Design system:** strictly monochrome, outline-driven white theme. Titles **DM Serif Display**,
-body **Space Grotesk**, labels/data **Geist Mono**. Division is by 1px hairlines, never fills or
-shadows. `.bg-hatch` (45° repeating hairline) is the page base texture; the `max-w-6xl` content
-column paints `bg-paper` on top so it reads as the focal panel.
+**Design system:** a single light daisyUI theme (`sentinel`) — professional blue accent (#2563eb)
+on a near-white surface. Body/UI text **Inter**, labels/data **Geist Mono**. Sections are divided
+by 1px hairlines (`border-border`) with rounded cards (no heavy fills or shadows); status is
+always icon **+** label **+** colour. Brand assets (`sentinel-logo-*.svg`) live in `public/` and
+`components/sentinel-logo.tsx`.
 
 ### 5.2 `express-server` (Express 5, CommonJS)
 
@@ -203,15 +224,15 @@ rejections automatically).
 app/
   main.py                   FastAPI app + lifespan (load models, build cache + semaphore)
   config.py                 env settings (pydantic-settings) + model_config.json loader
-  models.py                 load CrossEncoder + SentenceTransformer; base-model fallback; warm-up
+  models.py                 load CrossEncoder + SentenceTransformer; _resolve fallback policy; warm-up
   preprocess.py             training-parity text formatting (format_nli, format_document)
   service.py                pure logic: softmax, evaluate_nli, evaluate_contrastive, combine, build_result
   schemas.py                pydantic request/response models (also the OpenAPI doc)
   cache.py                  thread-safe LRU cache
   routers/                  health.py · models_info.py · evaluate.py
-tests/                      test_preprocess.py · test_service.py  (14 tests)
-model_config.json           model dirs, versions, thresholds, decision rules
-old-training/               the scripts that produced the checkpoints
+tests/                      test_preprocess.py · test_service.py · test_models.py  (22 tests)
+model_config.json           model dirs, versions, thresholds, decision rules (written by ../training)
+old-training/               legacy training scripts (superseded by ../training)
 .models/                    fine-tuned checkpoints (weights git-ignored)
 ```
 
@@ -264,13 +285,16 @@ Full request/response shapes: [`express-server/API.md`](./express-server/API.md)
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/` | Landing page (static) |
+| GET | `/` | Marketing landing page (hero · capabilities · how-it-works · chatbot playground · API) |
 | GET | `/docs` | **Public API reference + tutorials** (`app/docs`) |
 | GET | `/login` | Auth surface — sign in / create account (`(auth)` group) |
-| GET | `/dashboard` | Console home (`(app)` group; session required) |
-| GET | `/api-keys` · `/logs` · `/settings` | Console routes (`(app)` group; placeholders) |
+| GET | `/dashboard` | Console home — stats + recent activity (`(app)` group; session required) |
+| GET | `/api-keys` | Console — API-key CRUD (`(app)` group) |
+| GET | `/logs` · `/logs/[requestId]` | Console — filterable log + per-evaluation inspector (`(app)` group) |
+| GET | `/settings` | Console — read-only model info (`(app)` group) |
 | GET | `/api/auth/refresh` | Rotates the session token pair (Route Handler) |
 | POST | `/api/playground` | Public playground proxy → Express `/api/evaluate` |
+| POST | `/api/chat` | Public chatbot proxy → DeepSeek (goal generation) |
 
 ---
 
@@ -323,17 +347,23 @@ sequenceDiagram
 **Timing note:** `response_time_ms` measures **step 4 only** (upstream inference), not the whole
 request.
 
-### 7.2 P2 — Playground (public demo)
+### 7.2 P2 — Playground / chatbot (public demo)
 
 ```mermaid
 sequenceDiagram
   autonumber
   participant B as Browser
-  participant N as Next /api/playground
+  participant N as Next route handlers
   participant E as Express :4000
   participant F as FastAPI :8000
+  participant D as DeepSeek API
 
-  B->>N: POST {goal, subtask}
+  B->>N: POST /api/chat {messages}
+  N->>D: POST /chat/completions (Bearer DEEPSEEK_API_KEY, server-held)
+  D-->>N: {message, goals} (JSON mode)
+  N-->>B: suggested goals
+
+  B->>N: POST /api/playground {goal, subtask}
   N->>N: validate + per-IP rate limit (20/min)
   N->>E: POST /api/evaluate (Bearer SENTINEL_API_KEY, server-held)
   E->>F: POST /evaluate
@@ -343,8 +373,9 @@ sequenceDiagram
   N-->>B: verdict JSON → UI renders ACCEPTED/REJECTED + meters
 ```
 
-**Why a proxy:** the gateway requires an API key; a browser must never hold one. The key is read
-from `SENTINEL_API_KEY` on the Next server only.
+**Why proxies:** the gateway requires an API key and DeepSeek requires its own key; a browser must
+never hold either. Both keys are read on the Next server only (`SENTINEL_API_KEY`,
+`DEEPSEEK_API_KEY`).
 
 ### 7.3 P3 — Operator authentication
 
@@ -422,19 +453,20 @@ flowchart TD
 
 | Artifact | Path |
 | --- | --- |
-| NLI (final) | `fastapi/.models/sentinelagent_nli_finetuned/` |
-| Contrastive (final) | `fastapi/.models/contrastive-miniLM-e4-b16-lr1e-05-mn6-raw-vs0.2/` |
-| Contrastive folds | `…/fold_0..4/` (evaluation only) |
+| NLI (final) | `fastapi/.models/sentinelagent-nli-finetuned/` |
+| Contrastive (final) | `fastapi/.models/contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw/` |
 | Config | `fastapi/model_config.json` |
 
-> ⚠️ **Thresholds in `model_config.json` are placeholders (`0.5`)** until training emits
-> `logs/nli_cv_results.json` / `logs/contrastive_cv_results.json`. The NLI script now emits a
-> `recommended_nli_threshold` (mean of per-fold F1-optimal cut-offs).
+> **Thresholds are real, not placeholders.** They are the mean of the per-fold F1-optimal cut-offs
+> of an anchor-grouped 5-fold CV (`threshold_source: cross_validation_mean`) — NLI **`0.924`**,
+> contrastive **`0.024`** — written into `model_config.json` by the training pipeline;
+> `training/deploy_to_fastapi.sh` copies the checkpoints into `.models/`.
 
-**Fallback:** if a fine-tuned dir is missing, FastAPI loads the base pretrained model and reports
-`on_base_models: true`. If the inference service is unreachable, Express can fall back to
-deterministic mock scores when `INFERENCE_MOCK` / `INFERENCE_MOCK_FALLBACK` are set
-(`model_version: "mock"`).
+**Fallback:** a missing fine-tuned dir makes loading **raise** (so `/health` and `/evaluate` return
+**503**). `ALLOW_BASE_FALLBACK=1` restores the dev-mode fallback to the base pretrained model, which
+reports `on_base_models: true` and a **503** from `/health`. If the inference service is unreachable,
+Express can fall back to deterministic mock scores when `INFERENCE_MOCK` / `INFERENCE_MOCK_FALLBACK`
+are set (`model_version: "mock"`).
 
 ---
 
@@ -588,6 +620,7 @@ erDiagram
 | `INFERENCE_DEVICE` | `cpu` | `cpu` or `cuda` |
 | `INFERENCE_MAX_CONCURRENCY` | CPU count | Semaphore bound |
 | `CACHE_SIZE` | `1024` | LRU entries (`0` disables) |
+| `ALLOW_BASE_FALLBACK` | `false` | Opt-in dev fallback to the untrained base models when a `model_dir` is missing |
 
 ### `sentinel-client` (`.env.local`)
 
@@ -595,6 +628,7 @@ erDiagram
 | --- | --- |
 | `SENTINEL_API_URL` | Express gateway base URL (default `http://localhost:4000`) |
 | `SENTINEL_API_KEY` | Gateway API key — **server-side only**, used by `/api/playground` |
+| `DEEPSEEK_API_KEY` | DeepSeek API key for the chatbot goal generator — **server-side only**, used by `/api/chat` |
 
 ---
 
@@ -613,7 +647,7 @@ erDiagram
 | Thresholds | `threshold_configs`, user-editable | **Training artifacts, read-only** | Thresholds are F1-tuned during training |
 | NLI label order | `[entailment, neutral, contradiction]` | **`[contradiction, entailment, neutral]`** | Matches the checkpoint's `id2label` |
 | Contrastive input | `encode(goal)`, `encode(subtask)` | **Framed `"Goal: …. Subtask: …."` both sides** | Matches training |
-| Styling | Tailwind (default) | **Tailwind v4 + daisyUI custom `sentinel` theme** | Monochrome, outline-driven white |
+| Styling | Tailwind (default) | **Tailwind v4 + daisyUI custom `sentinel` theme** | Light, professional-blue; hairline borders + rounded cards |
 
 ---
 
@@ -640,13 +674,14 @@ erDiagram
       and refresh rotation live.
 - [x] **`/docs` explorer** (`app/docs/page.tsx`) — full interactive API reference and tutorials.
 - [x] **Dashboard & Model Info views built** (`/dashboard`, `/settings`) — connected to Express `/api/stats/summary`, `/api/stats/recent`, `/api/models`, and `/api/metrics` with typed client (`lib/api/`), shared UI primitives (`stat-card.tsx`, `status-badge.tsx`), and skeleton loaders.
-- [ ] **Remaining console pages:** `/api-keys` (key CRUD) and `/logs` (with `/logs/[requestId]` inspector).
+- [x] **Console CRUD & inspector built** — `/api-keys` (create / rename / toggle / delete, one-time secret reveal) and `/logs` (filters, pagination, CSV export, `/logs/[requestId]` inspector).
+- [x] **Landing chatbot** (`components/chatbot.tsx` + `/api/chat`) — DeepSeek goal generation wired to live evaluation via `/api/playground`.
 
 ---
 
 ### 13.2 Team task dissemination (3-person matrix)
 
-The remaining development is cleanly partitioned into three independent tracks with zero code overlaps:
+The remaining development is cleanly partitioned into three independent tracks with zero code overlaps (current status shown):
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -692,31 +727,27 @@ The remaining development is cleanly partitioned into three independent tracks w
   - Skeleton loading state (`loading.tsx`).
 - **References**: `express-server/API.md` §7 & §8; `sentinel-client/plan.md` §4.2 & §4.5.
 
-#### Track 2: Interactive Console CRUD & Evaluation Inspector (Ash)
-- **API Key Management (`/api-keys`)**:
-  - Implement keys table (`GET /api/keys`) displaying name, prefix, last 4, rate limit, creation date, last used date, and status.
-  - Create key modal invoking `POST /api/keys` (`keyName`, `rateLimitPerMinute`, `expiresAt`).
-  - **One-time secret reveal screen**: Plaintext API key is returned only once at creation; render in a modal with clipboard copy and warning.
-  - Key status toggle (`PATCH /api/keys/:id`) and delete confirmation dialog (`DELETE /api/keys/:id`).
-- **Logs Viewer (`/logs`)**:
-  - Filter bar supporting status (`all`, `accepted`, `rejected`), date range (`from`/`to`), and request ID search.
-  - Paginated table (`GET /api/requests`) with latency, decision badge, and timestamp.
-  - CSV export button linking to `GET /api/requests/export.csv`.
-- **Evaluation Detail Page (`/logs/[requestId]`)**:
-  - Create route `sentinel-client/app/(app)/logs/[requestId]/page.tsx` calling `GET /api/requests/:requestId`.
-  - Render full goal/subtask text, combined verdict, dual `ScoreMeter`s (score vs. threshold), raw NLI label probabilities (`rawScores`), and request metadata.
-- **Client API modules**: Create `sentinel-client/lib/api/keys.ts` and `sentinel-client/lib/api/requests.ts`.
+#### Track 2: Interactive Console CRUD & Evaluation Inspector (Ash) [Completed]
+- **API Key Management (`/api-keys`)** — [Done]:
+  - Keys table (`GET /api/keys`): name, prefix, last 4, rate limit, created / last-used dates, status.
+  - Create-key modal invoking `POST /api/keys` (`keyName`, `rateLimitPerMinute`, `expiresAt`).
+  - **One-time secret reveal**: the plaintext key is returned only once at creation, in a modal with clipboard copy.
+  - Key status toggle (`PATCH /api/keys/:id`) and delete confirmation (`DELETE /api/keys/:id`).
+- **Logs Viewer (`/logs`)** — [Done]:
+  - Filter bar: status (`all` / `accepted` / `rejected`), date range (`from` / `to`), request-ID search.
+  - Paginated table (`GET /api/requests`) with latency, decision badge and timestamp.
+  - CSV export button → `GET /api/requests/export.csv`.
+- **Evaluation Detail Page (`/logs/[requestId]`)** — [Done]:
+  - `sentinel-client/app/(app)/logs/[requestId]/page.tsx` calls `GET /api/requests/:requestId`.
+  - Full goal/subtask text, combined verdict, dual score-vs-threshold meters, raw NLI label probabilities (`rawScores`) and request metadata.
+- **Client API modules** — [Done]: `sentinel-client/lib/api/keys.ts`, `lib/api/requests.ts`.
 - **References**: `express-server/API.md` §4 & §6; `sentinel-client/plan.md` §4.3 & §4.4.
 
-#### Track 3: Model Calibration & Automated Testing (Jen)
-- **Model Threshold Calibration**:
-  - Replace placeholder `0.5` values in `fastapi/model_config.json` with cross-validation F1-optimal values (`recommended_nli_threshold` and contrastive CV cut-off) from training logs.
-- **FastAPI HTTP Endpoint Tests**:
-  - Add integration tests using `pytest` and `fastapi.testclient.TestClient` covering `POST /evaluate`, `GET /models`, and `GET /health`.
-- **Express API Integration Tests**:
-  - Add automated tests in `express-server/` testing auth registration/login/refresh, API key creation/hashing, and evaluation proxy/rate limiting.
-- **Model Fallback Verification**:
-  - Verify `app/models.py` gracefully loads Hugging Face base models when fine-tuned weight files are absent.
+#### Track 3: Model Calibration & Automated Testing (Jen) [Calibration done; tests partial]
+- **Model Threshold Calibration** — [Done]: `fastapi/model_config.json` now holds the CV-optimal values (NLI `0.924`, contrastive `0.024`, `threshold_source: cross_validation_mean`), not the `0.5` placeholders.
+- **FastAPI tests** — [Partial]: `fastapi/tests/` has 22 unit tests (`test_preprocess.py`, `test_service.py`, `test_models.py`). The planned `TestClient` HTTP integration suite (`test_api.py`) is still open.
+- **Express API Integration Tests** — [Not started]: there is no `express-server/tests/` yet (auth register/login/refresh, key hashing, evaluation proxy + rate limiting).
+- **Model Fallback Verification** — [Done]: `tests/test_models.py` covers `models._resolve` (trained-dir resolution and the `ALLOW_BASE_FALLBACK` policy).
 - **References**: `fastapi/model_config.json`; `fastapi/README.md`; `express-server/API.md`.
 
 ---
@@ -731,9 +762,11 @@ A compact, tool-friendly description of the same graph — handy for prompting a
   "nodes": [
     { "id": "agent",        "type": "actor",     "label": "Agent / SDK",              "plane": "data" },
     { "id": "browser",      "type": "actor",     "label": "Browser",                  "plane": "public" },
-    { "id": "landing",      "type": "ui",        "label": "Landing page (static)",     "host": "next:3000" },
-    { "id": "playground_ui","type": "ui",        "label": "Playground component",      "host": "next:3000" },
+    { "id": "landing",      "type": "ui",        "label": "Landing page (hero · capabilities · chatbot)", "host": "next:3000" },
+    { "id": "chatbot_ui",   "type": "ui",        "label": "Chatbot playground component", "host": "next:3000" },
     { "id": "playground_api","type": "endpoint", "label": "POST /api/playground",      "host": "next:3000" },
+    { "id": "chat_api",     "type": "endpoint",  "label": "POST /api/chat",            "host": "next:3000" },
+    { "id": "deepseek",     "type": "external",  "label": "DeepSeek API",              "host": "external" },
     { "id": "apauth",       "type": "endpoint",  "label": "POST /api/evaluate",        "host": "express:4000", "auth": "api-key" },
     { "id": "preview",      "type": "endpoint",  "label": "POST /api/evaluate/preview","host": "express:4000", "auth": "jwt" },
     { "id": "console_api",  "type": "endpoint",  "label": "/api/auth|keys|requests|stats|models|metrics", "host": "express:4000", "auth": "jwt" },
@@ -750,8 +783,10 @@ A compact, tool-friendly description of the same graph — handy for prompting a
   ],
   "edges": [
     { "from": "browser", "to": "landing" },
-    { "from": "browser", "to": "playground_ui" },
-    { "from": "playground_ui", "to": "playground_api", "label": "{goal, subtask}" },
+    { "from": "browser", "to": "chatbot_ui" },
+    { "from": "chatbot_ui", "to": "chat_api", "label": "{messages}" },
+    { "from": "chat_api", "to": "deepseek", "label": "Bearer DEEPSEEK_API_KEY (server-held)" },
+    { "from": "chatbot_ui", "to": "playground_api", "label": "{goal, subtask}" },
     { "from": "playground_api", "to": "apauth", "label": "Bearer SENTINEL_API_KEY (server-held)" },
     { "from": "agent", "to": "apauth", "label": "Bearer sk_..." },
     { "from": "browser", "to": "console_api", "label": "Bearer JWT" },
@@ -774,7 +809,7 @@ A compact, tool-friendly description of the same graph — handy for prompting a
   "planes": {
     "data": { "auth": "api-key (sk_...)", "endpoints": ["POST /api/evaluate"] },
     "console": { "auth": "jwt", "endpoints": ["/api/auth/*", "/api/keys/*", "/api/requests*", "/api/stats/*", "/api/models", "/api/metrics", "POST /api/evaluate/preview"] },
-    "public": { "auth": "none", "endpoints": ["GET /", "POST /api/playground"] }
+    "public": { "auth": "none", "endpoints": ["GET /", "GET /docs", "POST /api/playground", "POST /api/chat"] }
   }
 }
 ```
