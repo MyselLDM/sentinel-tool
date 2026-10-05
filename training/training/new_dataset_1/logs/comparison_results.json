@@ -1,0 +1,201 @@
+{
+  "generated_at": "2026-10-04T15:23:05+0800",
+  "alpha": 0.05,
+  "design": "one-tailed paired-sample t-test over fold-level metrics",
+  "nli_log": "logs/nli_cv_results.json",
+  "contrastive_log": "logs/contrastive_cv_results.json",
+  "comparisons": {
+    "contrastive_vs_baseline_nli": {
+      "comparison": "contrastive_vs_baseline_nli",
+      "model_a": "contrastive (proposed)",
+      "model_b": "NLI baseline (off-the-shelf)",
+      "tests": {
+        "tpr": {
+          "n_pairs": 5,
+          "mean_a": 100.0,
+          "mean_b": 100.0,
+          "mean_diff": 0.0,
+          "std_diff": 0.0,
+          "t_statistic": NaN,
+          "p_value": NaN,
+          "alternative": "greater",
+          "d_z": 0.0,
+          "significant_at_0_05": false
+        },
+        "precision": {
+          "n_pairs": 5,
+          "mean_a": 100.0,
+          "mean_b": 100.0,
+          "mean_diff": 0.0,
+          "std_diff": 0.0,
+          "t_statistic": NaN,
+          "p_value": NaN,
+          "alternative": "greater",
+          "d_z": 0.0,
+          "significant_at_0_05": false
+        },
+        "f1": {
+          "n_pairs": 5,
+          "mean_a": 100.0,
+          "mean_b": 100.0,
+          "mean_diff": 0.0,
+          "std_diff": 0.0,
+          "t_statistic": NaN,
+          "p_value": NaN,
+          "alternative": "greater",
+          "d_z": 0.0,
+          "significant_at_0_05": false
+        },
+        "fpr": {
+          "n_pairs": 5,
+          "mean_a": 0.0,
+          "mean_b": 0.0,
+          "mean_diff": 0.0,
+          "std_diff": 0.0,
+          "t_statistic": NaN,
+          "p_value": NaN,
+          "alternative": "less",
+          "d_z": 0.0,
+          "significant_at_0_05": false
+        },
+        "easy_tpr": {
+          "n_pairs": 5,
+          "mean_a": 100.0,
+          "mean_b": 100.0,
+          "mean_diff": 0.0,
+          "std_diff": 0.0,
+          "t_statistic": NaN,
+          "p_value": NaN,
+          "alternative": "greater",
+          "d_z": 0.0,
+          "significant_at_0_05": false
+        },
+        "matched_tpr": {
+          "n_pairs": 5,
+          "mean_a": 100.0,
+          "mean_b": 100.0,
+          "mean_diff": 0.0,
+          "std_diff": 0.0,
+          "t_statistic": NaN,
+          "p_value": NaN,
+          "alternative": "greater",
+          "d_z": 0.0,
+          "significant_at_0_05": false
+        },
+        "near_miss_tpr": {
+          "n_pairs": 5,
+          "mean_a": 100.0,
+          "mean_b": 100.0,
+          "mean_diff": 0.0,
+          "std_diff": 0.0,
+          "t_statistic": NaN,
+          "p_value": NaN,
+          "alternative": "greater",
+          "d_z": 0.0,
+          "significant_at_0_05": false
+        }
+      },
+      "focal_subsets": [
+        "easy",
+        "matched",
+        "near_miss"
+      ]
+    },
+    "contrastive_vs_finetuned_nli": {
+      "comparison": "contrastive_vs_finetuned_nli",
+      "model_a": "contrastive (proposed)",
+      "model_b": "NLI (fine-tuned)",
+      "tests": {
+        "tpr": {
+          "n_pairs": 5,
+          "mean_a": 100.0,
+          "mean_b": 100.0,
+          "mean_diff": 0.0,
+          "std_diff": 0.0,
+          "t_statistic": NaN,
+          "p_value": NaN,
+          "alternative": "greater",
+          "d_z": 0.0,
+          "significant_at_0_05": false
+        },
+        "precision": {
+          "n_pairs": 5,
+          "mean_a": 100.0,
+          "mean_b": 100.0,
+          "mean_diff": 0.0,
+          "std_diff": 0.0,
+          "t_statistic": NaN,
+          "p_value": NaN,
+          "alternative": "greater",
+          "d_z": 0.0,
+          "significant_at_0_05": false
+        },
+        "f1": {
+          "n_pairs": 5,
+          "mean_a": 100.0,
+          "mean_b": 100.0,
+          "mean_diff": 0.0,
+          "std_diff": 0.0,
+          "t_statistic": NaN,
+          "p_value": NaN,
+          "alternative": "greater",
+          "d_z": 0.0,
+          "significant_at_0_05": false
+        },
+        "fpr": {
+          "n_pairs": 5,
+          "mean_a": 0.0,
+          "mean_b": 0.0,
+          "mean_diff": 0.0,
+          "std_diff": 0.0,
+          "t_statistic": NaN,
+          "p_value": NaN,
+          "alternative": "less",
+          "d_z": 0.0,
+          "significant_at_0_05": false
+        },
+        "easy_tpr": {
+          "n_pairs": 5,
+          "mean_a": 100.0,
+          "mean_b": 100.0,
+          "mean_diff": 0.0,
+          "std_diff": 0.0,
+          "t_statistic": NaN,
+          "p_value": NaN,
+          "alternative": "greater",
+          "d_z": 0.0,
+          "significant_at_0_05": false
+        },
+        "matched_tpr": {
+          "n_pairs": 5,
+          "mean_a": 100.0,
+          "mean_b": 100.0,
+          "mean_diff": 0.0,
+          "std_diff": 0.0,
+          "t_statistic": NaN,
+          "p_value": NaN,
+          "alternative": "greater",
+          "d_z": 0.0,
+          "significant_at_0_05": false
+        },
+        "near_miss_tpr": {
+          "n_pairs": 5,
+          "mean_a": 100.0,
+          "mean_b": 100.0,
+          "mean_diff": 0.0,
+          "std_diff": 0.0,
+          "t_statistic": NaN,
+          "p_value": NaN,
+          "alternative": "greater",
+          "d_z": 0.0,
+          "significant_at_0_05": false
+        }
+      },
+      "focal_subsets": [
+        "easy",
+        "matched",
+        "near_miss"
+      ]
+    }
+  }
+}

@@ -173,9 +173,112 @@ headline.
 * **Stop the local llama.cpp servers before training** (ports 8081/8082). They hold the
   same GPU; a held context plus a wedged HIP runtime is the usual cause of an
   `access violation` at the very first GPU kernel.
-* If `check_gpu.py` fails at the matmul step while device enumeration succeeds, the
-  runtime is wedged rather than the code being wrong: restart the GPU (reboot is the
-  reliable reset) and re-run `./run_gpu.sh check_gpu.py`.
+* If `check_gpu.py` fails at the **first GPU op** while device enumeration succeeds, the
+  fault is environmental. Diagnosed on this machine (Oct 2026); the isolation below is
+  worth reusing because it separates "torch is broken" from "the GPU is broken".
+
+  **What the failure is NOT.** An earlier note here claimed `hipMemGetInfo` was failing
+  and that torch's allocator therefore died. **That was wrong.** `hipMemGetInfo` returns
+  `rc=1` only when called *before any context exists*; call it after a `hipMalloc` and it
+  returns `rc=0` with correct free memory. It was a bad probe, not a fault - do not chase
+  it. Allocation is also fine: `torch.cuda.caching_allocator_alloc(4096)` succeeds.
+
+  **What it actually is.** The HIP runtime API works end to end, torch's context init
+  works, and allocation works - but **the first GPU kernel launch through torch crashes**
+  with an access violation. `torch.zeros(4, device='cuda')` zero-fills (a memset kernel)
+  and `.cuda()` copies (a memcpy kernel), so both die; `caching_allocator_alloc`, which
+  only allocates, succeeds. `check_gpu.py` line 98 is the matmul, same thing.
+
+  ```bash
+  # confirms it is kernel dispatch, not allocation or the allocator
+  /c/sentinel-gpu/Scripts/python.exe -c "import torch; torch.cuda.init(); \
+    print('init ok'); print('alloc ok', torch.cuda.caching_allocator_alloc(4096)); \
+    print('now a kernel...'); torch.zeros(4, device='cuda')"
+  ```
+
+  **Ruled out, each tested:** a reboot; the virtual display adapter (`ROOT\DISPLAY\0000`,
+  disabled, no change); a driver update (version unchanged, `32.0.31041.1004`); PATH
+  pollution (cleaned PATH); the venv's DLL overlay (all 19 SDK DLLs byte-identical, and
+  loading the SDK's `amdhip64_7.dll` by absolute path behaves identically); missing
+  gfx1200 code objects (343 present); `HSA_OVERRIDE_GFX_VERSION=11.0.0`;
+  `PYTORCH_NO_CUDA_MEMORY_CACHING=1`; `PYTORCH_CUDA_ALLOC_CONF`; `AMD_SERIALIZE_KERNEL=3`;
+  `HSA_ENABLE_SDMA=0`; `HIP_VISIBLE_DEVICES=0`; and the llama.cpp servers (down).
+
+  **DEFINITIVE FINDING (supersedes everything above): the GPU cannot launch a kernel
+  at the HIP level, outside torch entirely.** `hipMemset` launches a memset kernel; it
+  crashes the process, reproducibly, while `hipMalloc` in the same process returns 0:
+
+  ```bash
+  /c/sentinel-gpu/Scripts/python.exe -c "import ctypes; \
+    h=ctypes.WinDLL(r'C:\sentinel-gpu\Lib\site-packages\_rocm_sdk_core\bin\amdhip64_7.dll'); \
+    h.hipInit(0); h.hipSetDevice(0); p=ctypes.c_void_p(); \
+    print('malloc', h.hipMalloc(ctypes.byref(p), ctypes.c_size_t(1<<20))); \
+    print('memset', h.hipMemset(p, ctypes.c_int(0), ctypes.c_size_t(1<<20)))"
+  ```
+
+  Prints `malloc 0` then dies - no `memset` line. **It fails on the iGPU too**
+  (`HIP_VISIBLE_DEVICES=1`), so it is not this card's hardware: context creation and
+  allocation work on both GPUs, kernel execution fails on both. That rules out torch,
+  the venv, the ROCm install layout, PATH/env vars, the display adapter, and the dGPU
+  itself, all in one go - every hypothesis above is subsumed by this.
+
+  **The "driver reinstall" did not actually replace the driver.** Checked afterwards: no
+  new DriverStore package (newest `amdwin-u0203304.inf_amd64_*` dated Sep 24) and
+  `oem12.inf` still Sep 24, with the driver version unchanged at `32.0.31041.1004` - the
+  installer saw the same version present and skipped it. A genuine replacement has not
+  been attempted, which is why the fault persists.
+
+  Next, in order:
+
+  1. **DDU in Safe Mode** (this forces removal; an in-place installer run will not),
+     then install the driver. Prefer a **different version** from `32.0.31041.1004` so
+     the replacement is real - a version-specific regression would otherwise persist.
+  2. If both GPUs still fail to launch kernels after a genuine replacement, the shared
+     suspects are the **ROCm code-object/JIT path** (note the version skew: HIP SDK on
+     disk is `7.2.60201-38d754472` while the pip runtime is `7.2.53211-158bd99533`, and
+     the setup script overlays the former's DLLs and bitcode over the latter) or
+     Windows' graphics stack after an update. Installing a **matching** HIP SDK for the
+     pip runtime, or reinstalling Windows' graphics stack, is the next lever.
+  3. Report the `hipMemset` result to AMD if step 1 does not fix it - "allocation works,
+     every kernel launch faults, on two different GPUs" is a precise bug report.
+
+  **Rebuilding the venv does NOT help - verified.** `setup_gpu_amd.sh` ran to completion
+  in ~90 s with **zero packages installed** (`Successfully installed` absent), i.e. the
+  whole GPU stack was already intact and nothing was corrupt; step 5 segfaulted at the
+  same first kernel. It does correctly re-apply the HIP SDK overlay, so re-running it is
+  still safe, just not a fix. Do not spend another cycle on the venv.
+
+  Suggestive but **not conclusive** traces of a driver-side problem on this machine:
+  two staged DriverStore packages for the same INFs (`amdwin-u0203304.inf_*` and
+  `u0203304.inf_*`), a `C:\AMD\AMD-Software-Installer\Bin64\*.tmp` staging pair, and 12
+  entries in `PendingFileRenameOperations`. None of these is proof - AMD's installer
+  leaves staging files normally - but together they point at an AMD driver/chipset
+  update that did not complete cleanly, which fits the timeline.
+
+  Timing evidence that makes that more than a guess: the installed AMD components are on
+  **mixed branches** - `AMD Software` / `RadeonSoftwareVersion` **26.8.1** (driver
+  `32.0.31041.1004`, dated 8-17-2026) while `AMD WVR64`, `AMD DVR` and `AMD Install
+  Manager` are all **26.10.x**, and `AMD Install Manager 26.10.26272` has
+  `InstallDate 20261002` - **the day the GPU last worked (Oct 2, 10:12) and just before
+  it broke.**
+
+  **Recommended repair, and what NOT to do:**
+
+  1. **DDU clean, then install ONE consistent AMD Software version using the installer's
+     "Factory Reset" option.** Install the **latest WHQL Adrenalin**, not a rollback -
+     the system is already half-way onto the 26.10 branch, so a fresh consistent install
+     completes that transition instead of fighting it. Pick Adrenalin *or* PRO, never both.
+  2. **Do NOT update ROCm.** Keep HIP SDK 7.2 + `rocm-sdk-*` 7.2.1 +
+     `torch 2.9.1+rocm7.2.1`. It worked, the gfx1200 code objects are present, the wheels
+     are cached (32 GB) and upstream-free to reinstall, and upgrading invalidates the
+     whole validated stack for no expected gain.
+  3. **AMD does not pin an Adrenalin version for ROCm 7.2.x on Windows** - the ROCm
+     Windows docs (system requirements / install) state only the OS and the supported
+     GPU list (`RX 9060 XT, RDNA4, gfx1200` is listed as fully supported), with no driver
+     version. So there is no "ROCm-matched driver" to chase; consistency is what matters.
+  4. **Hygiene:** this box has three ROCm trees - `C:\Program Files\AMD\ROCm\6.2`,
+     `...\7.2` and `C:\TheRock`. Conflicting ROCm installs caused a JIT-link crash here
+     before. Remove the unused 6.2 / TheRock once 7.2 is confirmed working.
 * `common.ensure_space_free_temp()` moves `TEMP`/`TMP` to `%LOCALAPPDATA%\Temp` before
   torch is imported - a non-default temp path has crashed the first GPU op here.
 

@@ -272,8 +272,14 @@ def make_epoch_evaluator(
 
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
+    # CPU protocol: hide the GPUs BEFORE torch is imported (see
+    # common.force_cpu_protocol) - HF Trainer/accelerate otherwise picks the GPU
+    # regardless of --device, and crashed on _move_model_to_device.
+    if args.device == "cpu":
+        C.force_cpu_protocol()
     args.dataset = str(Path(args.dataset).resolve())
-    C.pin_visible_gpus(args.gpu)
+    if args.device != "cpu":          # must not re-enable the GPU after the above
+        C.pin_visible_gpus(args.gpu)
     moved_temp = C.ensure_space_free_temp()
     C.ensure_dirs()
     C.seed_everything(args.seed)

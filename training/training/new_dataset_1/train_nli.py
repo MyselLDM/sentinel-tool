@@ -118,6 +118,7 @@ def train_cross_encoder(
     pairs: Sequence[tuple[str, str, int]],
     *,
     epochs: int,
+    cpu: bool = False,
     batch_size: int,
     learning_rate: float,
     weight_decay: float,
@@ -168,6 +169,10 @@ def train_cross_encoder(
         save_strategy="no",
         report_to="none",
         seed=seed,
+        # Belt-and-braces for the CPU protocol: without this, HF Trainer/accelerate
+        # auto-detects the GPU independently of the device we pass to the model and
+        # crashed in _move_model_to_device.
+        use_cpu=cpu,
         fp16=precision == "fp16",
         bf16=precision == "bf16",
     )
@@ -197,10 +202,16 @@ def train_cross_encoder(
 
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
+    # The CPU protocol has to hide the GPUs BEFORE torch is first imported - torch
+    # reads device visibility at init, and HF Trainer/accelerate auto-detects the GPU
+    # independently of --device. See common.force_cpu_protocol.
+    if args.device == "cpu":
+        C.force_cpu_protocol()
     from sentence_transformers import CrossEncoder
 
     args.dataset = str(Path(args.dataset).resolve())
-    C.pin_visible_gpus(args.gpu)
+    if args.device != "cpu":          # must not re-enable the GPU after the above
+        C.pin_visible_gpus(args.gpu)
     moved_temp = C.ensure_space_free_temp()
     C.ensure_dirs()
     C.seed_everything(args.seed)
@@ -319,6 +330,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             warmup_ratio=args.warmup,
             seed=args.seed + fold_idx,
             device=device,
+            cpu=(device == "cpu"),
             max_length=args.max_length,
             output_dir=str(C.MODELS_DIR / f"_tmp_{MODEL_DIRNAME}_fold{fold_idx}"),
             precision=args.precision,
@@ -407,6 +419,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             warmup_ratio=args.warmup,
             seed=args.seed,
             device=device,
+            cpu=(device == "cpu"),
             max_length=args.max_length,
             output_dir=str(C.MODELS_DIR / f"_tmp_{MODEL_DIRNAME}_final"),
             precision=args.precision,

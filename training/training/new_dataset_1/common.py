@@ -610,9 +610,16 @@ def aggregate_summaries(summaries: Sequence[dict[str, Any]]) -> dict[str, Any]:
 def curve_point(
     epoch: int, threshold: float, summary: Mapping[str, Any]
 ) -> dict[str, Any]:
-    """Flatten one evaluation into a row of the per-epoch training curve."""
+    """Flatten one evaluation into a row of the per-epoch training curve.
+
+    dataset-v3 breaks recall down by **stratum**; the v2 `adversarial_paraphrases` /
+    `explicit_attacks` keys do not exist and indexing them raised KeyError here. Each
+    stratum present gets its own `_tpr` field, so the curve shows how `hard` /
+    `matched` / `near_miss` recall develops epoch by epoch - which is the point of
+    tracking a curve on this corpus.
+    """
     subsets = summary["subsets"]
-    return {
+    point: dict[str, Any] = {
         "epoch": int(epoch),
         "threshold": float(threshold),
         "accuracy": summary["accuracy"],
@@ -620,9 +627,10 @@ def curve_point(
         "fpr": summary["fpr"],
         "precision": summary["precision"],
         "f1": summary["f1"],
-        "adversarial_paraphrases_tpr": subsets[SUBSET_PARAPHRASES]["tpr"],
-        "explicit_attacks_tpr": subsets[SUBSET_EXPLICIT]["tpr"],
     }
+    for name, block in sorted(subsets.get("by_stratum", {}).items()):
+        point[f"{name}_tpr"] = block["tpr"]
+    return point
 
 
 _CURVE_FIELDS = (
@@ -632,8 +640,11 @@ _CURVE_FIELDS = (
     "fpr",
     "precision",
     "f1",
-    "adversarial_paraphrases_tpr",
-    "explicit_attacks_tpr",
+    # dataset-v3 strata - substituted for the v2 paraphrase/explicit fields
+    "easy_tpr",
+    "near_miss_tpr",
+    "matched_tpr",
+    "hard_tpr",
 )
 
 
@@ -649,6 +660,11 @@ def aggregate_curve(
         rows = [curve[index] for curve in curves]
         point: dict[str, Any] = {"epoch": int(rows[0]["epoch"])}
         for key in _CURVE_FIELDS:
+            # A stratum can be absent from some folds (a fold's test set need not
+            # contain every attack style), so only average a field present in ALL
+            # rows - otherwise this raised KeyError or averaged over a ragged set.
+            if not all(key in row for row in rows):
+                continue
             values = [float(row[key]) for row in rows]
             point[key] = {
                 "mean": float(np.mean(values)),
@@ -850,7 +866,10 @@ def device_summary() -> dict[str, Any]:
         "hip": getattr(torch.version, "hip", None),
         "cuda": getattr(torch.version, "cuda", None),
     }
-    if torch.cuda.is_available():
+    # device_count() > 0 matters: is_available() can report True while zero devices
+    # are usable (observed with HIP_VISIBLE_DEVICES set by a launcher), and calling
+    # get_device_name(0) then raises "Invalid device id".
+    if torch.cuda.is_available() and torch.cuda.device_count() > 0:
         info["accelerator"] = torch.cuda.get_device_name(0)
         info["accelerator_count"] = torch.cuda.device_count()
         try:
@@ -1232,3 +1251,39 @@ def v3_dataset_stats(rows: Sequence[V3Row]) -> dict[str, Any]:
         "by_harm_category": {k: v for k, v in _tally("harm_category").items() if k},
         "paired_rows": _count(lambda r: r.pair_id),
     }
+
+
+# =============================================================================
+# CPU PROTOCOL
+# =============================================================================
+
+
+def force_cpu_protocol() -> None:
+    """Hide every GPU so torch and accelerate fall back to the CPU.
+
+    MUST be called before torch is first imported. Two independent reasons:
+
+    * **measured**: setting these from inside Python is NOT sufficient - torch still
+      reported ``is_available() == True`` (with ``device_count() == 0``), because the
+      HIP runtime resolves visibility at load time. Only setting them in the launcher
+      (see ``run_cpu.ps1``) makes ``is_available()`` correctly False. This helper is
+      kept as best-effort for other paths; and
+    * HF ``Trainer`` / ``accelerate`` auto-detect the GPU *independently* of the
+      device we pass to the model. Verified: a run with ``--device cpu`` still
+      crashed in ``transformers/trainer.py::_move_model_to_device`` because
+      accelerate had picked the GPU anyway.
+
+    Setting the visibility variables to the empty string is the documented way to
+    present zero devices: ``torch.cuda.is_available()`` returns False and
+    ``device_count()`` returns 0, which is what makes the CPU path reliable.
+    """
+    os.environ["HIP_VISIBLE_DEVICES"] = ""
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
+
+def cpu_protocol_note() -> str:
+    """One-line banner so a CPU run is never mistaken for a GPU run in the log."""
+    return (
+        "CPU PROTOCOL: GPUs hidden via HIP_VISIBLE_DEVICES='/CUDA_VISIBLE_DEVICES=' "
+        "- torch.cuda.is_available() will be False"
+    )
