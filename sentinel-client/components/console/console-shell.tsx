@@ -4,11 +4,12 @@ import { useCallback, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, LogOut, Menu, Shield } from "lucide-react";
+import { BookOpen, LogOut, Menu } from "lucide-react";
 
 import { signOut } from "@/lib/auth/actions";
 import { cn } from "@/lib/cn";
 import { CONSOLE_ROUTES, activeRoute } from "./nav-items";
+import { SentinelLogoFull } from "@/components/sentinel-logo";
 
 /**
  * The authenticated console shell: a daisyUI `drawer` holding the navigation
@@ -100,9 +101,8 @@ export function ConsoleShell({ user, children }: { user: ConsoleUser; children: 
       <div className="drawer-side z-50">
         <label htmlFor={DRAWER_ID} aria-label="Close navigation" className="drawer-overlay" />
         <aside className="flex min-h-full w-64 flex-col border-r border-border bg-surface">
-          <div className="flex h-14 items-center gap-2.5 border-b border-border px-5">
-            <Shield className="h-5 w-5 text-primary-blue" />
-            <span className="text-lg font-semibold tracking-tight text-heading">Sentinel</span>
+          <div className="flex h-14 items-center border-b border-border px-5">
+            <SentinelLogoFull className="h-8" />
           </div>
 
           <nav aria-label="Console" className="flex-1 overflow-y-auto px-3 py-4">

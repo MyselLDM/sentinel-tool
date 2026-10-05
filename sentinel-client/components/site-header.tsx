@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, Shield, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
+import { SentinelLogoFull } from "@/components/sentinel-logo";
 
 const NAV = [
   { href: "/#product", label: "Product" },
@@ -21,13 +22,10 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface/90 backdrop-blur-md">
-      <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
-        {/* Wordmark */}
-        <Link href="/" className="flex items-center gap-2.5">
-          <Shield className="h-5 w-5 text-primary-blue" />
-          <span className="text-lg font-semibold tracking-tight text-heading">
-            Sentinel
-          </span>
+      <div className="mx-auto flex h-[72px] w-full max-w-6xl items-center justify-between px-6">
+        {/* Brand logo */}
+        <Link href="/" className="flex items-center" aria-label="Sentinel home">
+          <SentinelLogoFull className="h-12 md:h-14" />
         </Link>
 
         {/* Desktop nav */}
