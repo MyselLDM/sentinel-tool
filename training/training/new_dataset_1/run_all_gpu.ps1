@@ -81,9 +81,13 @@ if (Test-Path -LiteralPath $RocmRuntime) {
 }
 
 # Surface native crashes (ROCm access violations) as Python tracebacks instead of
-# the process dying silently. Pin the child's encoding so the log decodes cleanly.
+# the process dying silently. Pin the child's encoding on both sides so the log
+# round-trips: the child writes UTF-8, and PowerShell decodes native output with
+# [Console]::OutputEncoding - without this it reads those bytes as the OEM code
+# page and tqdm's block glyphs land in the log as mojibake ("Γûê" for "█").
 $env:PYTHONFAULTHANDLER = '1'
 $env:PYTHONIOENCODING = 'utf-8'
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch { }
 
 # The cue protocol reads its train/test assignment from row data, so it must load
 # cue_split.csv; the CV protocols load the plain corpus (the holdout is never
@@ -97,10 +101,37 @@ if (-not (Test-Path -LiteralPath $Dataset)) {
     Write-Error "dataset not found: $Dataset"
 }
 
+# UTF-8 *without* a BOM: PowerShell 5.1's `-Encoding UTF8` writes a BOM, and
+# `-Encoding ASCII` turned tqdm's block characters into '?' in the log.
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+
+function Add-LogText {
+    param([string]$Text)
+    [System.IO.File]::AppendAllText($script:Log, $Text + [Environment]::NewLine, $script:Utf8NoBom)
+}
+
 function Write-Log {
     param([string]$Message)
     Write-Host $Message
-    Add-Content -LiteralPath $Log -Value $Message -Encoding ASCII
+    Add-LogText $Message
+}
+
+function Write-LogOutput {
+    # Child stderr arrives as an ErrorRecord whose .TargetObject is the raw text.
+    # Do NOT use .ToString() here: for tqdm's \r-only line refreshes it degrades
+    # to the exception's *type name* ("System.Management.Automation.RemoteException"),
+    # which littered the log with ~40 junk lines on the first real run.
+    param($Item)
+    if ($Item -is [System.Management.Automation.ErrorRecord]) {
+        $text = if ($null -ne $Item.TargetObject) {
+            [string]$Item.TargetObject
+        } else {
+            [string]$Item.Exception.Message
+        }
+    } else {
+        $text = [string]$Item
+    }
+    Add-LogText $text
 }
 
 function Invoke-Step {
@@ -112,15 +143,15 @@ function Invoke-Step {
     #   * ErrorActionPreference must be Continue around the call - with Stop, a
     #     native command writing to stderr while 2>&1 is active raises
     #     NativeCommandError and aborts the step;
-    #   * the ForEach-Object { .ToString() } must stay - without it PowerShell
-    #     formats each stderr line as a decorated ErrorRecord ("At <file>:<line>
-    #     char:<n> + CategoryInfo ..."), which would bury the real log.
+    #   * the output must go through Write-LogOutput, which unwraps each
+    #     ErrorRecord to its raw text. Piping the records straight to Out-File
+    #     formats them with PowerShell's "At <file>:<line> char:<n> + CategoryInfo"
+    #     decoration, which would bury the real log.
     $previous = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
         & $Py '-X' 'faulthandler' (Join-Path $Here $Name) @StepArgs 2>&1 |
-            ForEach-Object { $_.ToString() } |
-            Out-File -FilePath $Log -Append -Encoding ASCII
+            ForEach-Object { Write-LogOutput $_ }
         $code = $LASTEXITCODE
     } finally {
         $ErrorActionPreference = $previous
