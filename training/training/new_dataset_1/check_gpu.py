@@ -31,6 +31,11 @@ import common as C  # noqa: E402
 # device op.
 _moved_temp = C.ensure_space_free_temp()
 
+# Also MUST run before `import torch`: torch's ROCm init preloads amdhip64 from
+# the venv's rocm_sdk_core wheel, and that 7.2 runtime cannot launch kernels on
+# this machine. See common.preload_rocm_runtime.
+_runtime_dir = C.preload_rocm_runtime()
+
 import torch  # noqa: E402
 
 
@@ -74,6 +79,10 @@ def main() -> int:
     _env_report()
     if _moved_temp:
         print(f"NOTE: TEMP/TMP moved to {_moved_temp} (a space in the old path crashes ROCm)\n")
+    if _runtime_dir:
+        print(f"NOTE: ROCm runtime pinned to {_runtime_dir} (SENTINEL_ROCM_RUNTIME overrides)\n")
+    else:
+        print("NOTE: no ROCm runtime override found - using whatever torch loads\n")
     print("torch        :", torch.__version__)
     print("hip          :", getattr(torch.version, "hip", None))
     print("cuda         :", getattr(torch.version, "cuda", None))

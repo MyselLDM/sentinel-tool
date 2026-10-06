@@ -177,6 +177,12 @@ headline.
   fault is environmental. Diagnosed on this machine (Oct 2026); the isolation below is
   worth reusing because it separates "torch is broken" from "the GPU is broken".
 
+  > **RESOLVED (Oct 2026).** The cause was the ROCm **7.2 user-mode runtime**, not the AMD
+  > kernel-mode driver - so none of the driver work below was ever going to help. Skip to
+  > *"ROOT CAUSE (confirmed)"* at the end of this section for the fix, which is already
+  > wired into `common.preload_rocm_runtime()`. The text in between is the investigation as
+  > it was actually done, kept because its isolation steps are reusable.
+
   **What the failure is NOT.** An earlier note here claimed `hipMemGetInfo` was failing
   and that torch's allocator therefore died. **That was wrong.** `hipMemGetInfo` returns
   `rc=1` only when called *before any context exists*; call it after a `hipMalloc` and it
@@ -228,19 +234,10 @@ headline.
   installer saw the same version present and skipped it. A genuine replacement has not
   been attempted, which is why the fault persists.
 
-  Next, in order:
-
-  1. **DDU in Safe Mode** (this forces removal; an in-place installer run will not),
-     then install the driver. Prefer a **different version** from `32.0.31041.1004` so
-     the replacement is real - a version-specific regression would otherwise persist.
-  2. If both GPUs still fail to launch kernels after a genuine replacement, the shared
-     suspects are the **ROCm code-object/JIT path** (note the version skew: HIP SDK on
-     disk is `7.2.60201-38d754472` while the pip runtime is `7.2.53211-158bd99533`, and
-     the setup script overlays the former's DLLs and bitcode over the latter) or
-     Windows' graphics stack after an update. Installing a **matching** HIP SDK for the
-     pip runtime, or reinstalling Windows' graphics stack, is the next lever.
-  3. Report the `hipMemset` result to AMD if step 1 does not fix it - "allocation works,
-     every kernel launch faults, on two different GPUs" is a precise bug report.
+  **Recorded outcome: this plan did not fix it.** A real driver replacement to AMD's own
+  ROCm-pinned Adrenalin 26.2.2 (from 26.8.1) left the fault exactly as it was. Neither
+  DDU nor an AMD bug report was pursued - see *"ROOT CAUSE (confirmed)"* below, which
+  supersedes steps 1-3.
 
   **Rebuilding the venv does NOT help - verified.** `setup_gpu_amd.sh` ran to completion
   in ~90 s with **zero packages installed** (`Successfully installed` absent), i.e. the
@@ -262,23 +259,51 @@ headline.
   `InstallDate 20261002` - **the day the GPU last worked (Oct 2, 10:12) and just before
   it broke.**
 
-  **Recommended repair, and what NOT to do:**
+  **ROOT CAUSE (confirmed - and it is none of the above).** The fault is in the ROCm
+  **7.2 user-mode runtime**, not the AMD kernel-mode driver. Every HIP runtime on this
+  box, same driver, same process, bare `ctypes` (`hipMalloc` then `hipMemset` - no torch):
 
-  1. **DDU clean, then install ONE consistent AMD Software version using the installer's
-     "Factory Reset" option.** Install the **latest WHQL Adrenalin**, not a rollback -
-     the system is already half-way onto the 26.10 branch, so a fresh consistent install
-     completes that transition instead of fighting it. Pick Adrenalin *or* PRO, never both.
-  2. **Do NOT update ROCm.** Keep HIP SDK 7.2 + `rocm-sdk-*` 7.2.1 +
-     `torch 2.9.1+rocm7.2.1`. It worked, the gfx1200 code objects are present, the wheels
-     are cached (32 GB) and upstream-free to reinstall, and upgrading invalidates the
-     whole validated stack for no expected gain.
-  3. **AMD does not pin an Adrenalin version for ROCm 7.2.x on Windows** - the ROCm
-     Windows docs (system requirements / install) state only the OS and the supported
-     GPU list (`RX 9060 XT, RDNA4, gfx1200` is listed as fully supported), with no driver
-     version. So there is no "ROCm-matched driver" to chase; consistency is what matters.
-  4. **Hygiene:** this box has three ROCm trees - `C:\Program Files\AMD\ROCm\6.2`,
-     `...\7.2` and `C:\TheRock`. Conflicting ROCm installs caused a JIT-link crash here
-     before. Remove the unused 6.2 / TheRock once 7.2 is confirmed working.
+  | runtime | HIP version | first kernel launch |
+  | --- | --- | --- |
+  | venv `_rocm_sdk_core/bin` (HIP SDK 7.2, overlaid by `setup_gpu_amd.sh`) | 7.2.53211 | crashes `0xC0000005` |
+  | venv `_rocm_sdk_core/bin.bak` (pristine `rocm_sdk_core` wheel) | 7.2.53211 | crashes `0xC0000005` |
+  | `C:\Program Files\AMD\ROCm\7.2` (standalone HIP SDK) | 7.2.60201 | crashes `0xC0000005` |
+  | `C:\TheRock\build` | **7.15.26333** | **works** |
+
+  A *newer* user-mode runtime launching kernels on the *same* driver is what clears the
+  driver - and it is the only explanation on offer for the two things that never fitted:
+  both GPUs failing identically, and a full driver replacement changing nothing.
+
+  Two claims in the superseded advice above were wrong, in opposite directions:
+
+  * item 2 ("do NOT update ROCm") - moving to a newer runtime *is* the fix;
+  * item 3 ("AMD does not pin an Adrenalin version") - the *standalone HIP SDK* pages list
+    no version, but the Radeon-on-Windows **PyTorch** page pins **26.2.2** for this exact
+    stack. Worth testing, it did not help, and that is consistent with a user-mode cause.
+
+  **The fix - already applied:**
+
+  1. `common.preload_rocm_runtime()` loads `C:\TheRock\build\bin` into the process before
+     torch can import HIP. Windows resolves a DLL by base name, so torch's ROCm init then
+     binds to this runtime instead of the venv's broken 7.2 copy. It is called before
+     `import torch` in `check_gpu.py`, `train_nli.py` and `train_contrastive.py`; override
+     the directory with `SENTINEL_ROCM_RUNTIME`.
+  2. `run_gpu.ps1` additionally prepends that directory to `PATH` and sets
+     `HIP_DEVICE_LIB_PATH` to its `lib\llvm\amdgcn\bitcode`.
+  3. Verify: `.\run_gpu.ps1 check_gpu.py` must end `GPU acceleration is working`, and a
+     training run must print `rocm runtime=C:\TheRock\build\bin`.
+
+  **Do NOT delete `C:\TheRock\build`.** Item 4 above recommended removing it as "unused";
+  it is the only ROCm runtime here that can launch a kernel, and deleting it puts training
+  back on the CPU. `C:\Program Files\AMD\ROCm\6.2` *is* safe to remove - it holds only
+  `bin/rocblas`, has no `amdhip64` at all, and 6.2 predates RDNA4. Leave the driver and the
+  venv alone too; neither is at fault.
+
+  **Unrelated hygiene, only if you are chasing something else:** the box has a broken
+  `SudoMaker Virtual Display Adapter` (`ROOT\DISPLAY\0000`, PnP `Status: Error`) and
+  leftover Oct-2026 AMD user-mode components (`AMD WVR64`, `AMD DVR` under
+  `C:\Program Files\AMD\CNext\`) that the 26.2.2 installer would not downgrade. Neither is
+  implicated in this fault.
 * `common.ensure_space_free_temp()` moves `TEMP`/`TMP` to `%LOCALAPPDATA%\Temp` before
   torch is imported - a non-default temp path has crashed the first GPU op here.
 

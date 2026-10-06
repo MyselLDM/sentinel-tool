@@ -21,7 +21,8 @@
     .\run_gpu.ps1 compare_models.py
 
 .NOTES
-    Override the venv location with the SENTINEL_GPU_VENV environment variable.
+    Override the venv location with the SENTINEL_GPU_VENV environment variable,
+    and the ROCm user-mode runtime with SENTINEL_ROCM_RUNTIME.
 #>
 [CmdletBinding()]
 param(
@@ -54,6 +55,18 @@ Set-Location -LiteralPath $Venv
 # Surface native crashes (ROCm access violations) as Python tracebacks instead of
 # the process dying silently with no output.
 $env:PYTHONFAULTHANDLER = '1'
+
+# Point the child at the ROCm user-mode runtime that can actually launch kernels
+# on this machine. The venv's own ROCm 7.2 runtime faults on the very first
+# kernel launch (hipMalloc OK, hipMemset -> 0xC0000005), so its bin directory
+# must not win the DLL search. See common.preload_rocm_runtime for the
+# measurements; the scripts also pin this in-process before importing torch.
+$RocmRuntime = if ($env:SENTINEL_ROCM_RUNTIME) { $env:SENTINEL_ROCM_RUNTIME } else { 'C:\TheRock\build\bin' }
+if (Test-Path -LiteralPath $RocmRuntime) {
+    $env:PATH = "$RocmRuntime;$env:PATH"
+    $RocmBitcode = Join-Path (Split-Path -Parent $RocmRuntime) 'lib\llvm\amdgcn\bitcode'
+    if (Test-Path -LiteralPath $RocmBitcode) { $env:HIP_DEVICE_LIB_PATH = $RocmBitcode }
+}
 
 & $python -X faulthandler $scriptPath @ScriptArgs
 exit $LASTEXITCODE
