@@ -316,7 +316,7 @@ function GoalPicker({
           <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white border border-gray-200 font-mono text-[9px] tracking-wider text-gray-400 transition-colors group-hover:border-gray-400 group-hover:text-gray-600">
             {String(i + 1).padStart(2, "0")}
           </span>
-          <span className="text-sm leading-relaxed text-gray-700">{goal}</span>
+          <span className="text-base leading-relaxed text-gray-700">{goal}</span>
         </button>
       ))}
     </div>
@@ -369,7 +369,7 @@ function ChatBubble({
               : "rounded-tl-sm bg-white border border-gray-100",
           )}
         >
-          <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-800">{message.content}</p>
+          <p className="text-base leading-relaxed whitespace-pre-wrap text-gray-800">{message.content}</p>
 
           {/* Goal list */}
           {message.goals && message.goals.length > 0 && (
@@ -735,7 +735,7 @@ export function Chatbot() {
                 ? "Type a subtask to evaluate and run…"
                 : "Describe a scenario for your agent…"
             }
-            className="min-h-[42px] max-h-[120px] flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm leading-relaxed text-gray-800 outline-none placeholder:text-gray-400 transition-colors focus:border-gray-400 focus:bg-white focus:shadow-sm"
+            className="min-h-[42px] max-h-[120px] flex-1 resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-base leading-relaxed text-gray-800 outline-none placeholder:text-gray-400 transition-colors focus:border-gray-400 focus:bg-white focus:shadow-sm"
           />
           <button
             type="button"

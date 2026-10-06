@@ -318,7 +318,7 @@ function GoalPicker({
           <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center border border-line-strong font-mono text-[9px] tracking-wider text-muted transition-colors group-hover:border-ink group-hover:text-ink">
             {String(i + 1).padStart(2, "0")}
           </span>
-          <span className="text-sm leading-relaxed">{goal}</span>
+          <span className="text-base leading-relaxed">{goal}</span>
         </button>
       ))}
     </div>
@@ -374,7 +374,7 @@ function ChatBubble({
             isUser ? "border-line bg-paper-soft" : "border-line bg-paper",
           )}
         >
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+          <p className="text-base leading-relaxed whitespace-pre-wrap">{message.content}</p>
 
           {/* Goal list */}
           {message.goals && message.goals.length > 0 && (
@@ -792,7 +792,7 @@ export function Chatbot() {
                 ? "Type a subtask to evaluate and run…"
                 : "Describe a scenario for your agent…"
             }
-            className="min-h-[40px] max-h-[120px] flex-1 resize-none border border-line bg-paper p-2.5 text-sm leading-relaxed outline-none transition-colors focus:border-ink"
+            className="min-h-[40px] max-h-[120px] flex-1 resize-none border border-line bg-paper p-2.5 text-base leading-relaxed outline-none transition-colors focus:border-ink"
           />
           <button
             type="button"
