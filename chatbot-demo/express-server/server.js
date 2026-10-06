@@ -2,7 +2,7 @@
  * Chatbot Demo — Express Server
  *
  * Two responsibilities:
- *   1. POST /api/match-goals  → uses Gemini to pick the most relevant goals
+ *   1. POST /api/match-goals  → uses DeepSeek to pick the most relevant goals
  *                                from the predetermined catalog
  *   2. POST /api/evaluate     → proxies goal+subtask to Sentinel API
  *                                (POST http://localhost:4000/api/evaluate)
@@ -44,8 +44,9 @@ app.use(express.json());
 // ── Config ───────────────────────────────────────────────────────────
 const SENTINEL_API_URL = process.env.SENTINEL_API_URL || "http://localhost:4000";
 const SENTINEL_API_KEY = process.env.SENTINEL_API_KEY || "";
-const GEMINI_API_KEY   = process.env.GEMINI_API_KEY   || "";
-const GEMINI_MODEL     = "gemini-3.8-flash";
+const DEEPSEEK_API_KEY  = process.env.DEEPSEEK_API_KEY  || "";
+const DEEPSEEK_MODEL    = process.env.DEEPSEEK_MODEL    || "deepseek-flash";
+const DEEPSEEK_BASE_URL = process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com";
 
 // ── Health ───────────────────────────────────────────────────────────
 app.get("/healthz", (_req, res) => res.json({ status: "ok" }));
@@ -79,18 +80,19 @@ app.delete("/api/history", (req, res) => {
 
 // ── POST /api/match-goals ────────────────────────────────────────────
 // Takes { message: string } and returns { goals: string[] }
-// Uses Gemini to semantically pick the top-3 goals from the catalog.
+// Uses DeepSeek to semantically pick the top-3 goals from the catalog.
 app.post("/api/match-goals", async (req, res) => {
   const { message } = req.body || {};
   if (!message || typeof message !== "string" || !message.trim()) {
     return res.status(400).json({ error: "message is required" });
   }
 
-  if (!GEMINI_API_KEY) {
-    return res.status(500).json({ error: "GEMINI_API_KEY is not configured on the server" });
+  if (!DEEPSEEK_API_KEY) {
+    return res.status(500).json({ error: "DEEPSEEK_API_KEY is not configured on the server" });
   }
 
-  // Build the Gemini prompt
+  // Build the DeepSeek prompt. JSON-object mode requires the word "json" plus an
+  // example of the shape, and it returns an *object* - hence the "goals" key.
   const catalogList = GOALS.map((g, i) => `${i + 1}. ${g}`).join("\n");
   const prompt = `You are a goal-matching assistant. Given the user's message and the following catalog of goals, return the 3 most relevant goals that best match the user's intent.
 
@@ -99,48 +101,67 @@ ${catalogList}
 
 USER MESSAGE: "${message.trim()}"
 
-Return ONLY a JSON array of the exact goal strings from the catalog, most relevant first. Example: ["goal1","goal2","goal3"]
-Do not include any other text, explanation, or markdown formatting.`;
+Respond with json only, no explanation or markdown: {"goals":["goal1","goal2","goal3"]}
+The goals must be exact strings copied from the catalog, most relevant first.`;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 25_000);
 
-    const geminiRes = await fetch(url, {
+    // DeepSeek is OpenAI-compatible: POST {base}/chat/completions with a bearer token.
+    // Thinking mode is off so this small task returns fast; it is on by default and
+    // would also make `temperature` a no-op.
+    const deepseekRes = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
+      },
       signal: controller.signal,
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 300 },
+        model: DEEPSEEK_MODEL,
+        messages: [
+          { role: "system", content: "You are a goal-matching assistant that replies with json only." },
+          { role: "user", content: prompt },
+        ],
+        response_format: { type: "json_object" },
+        thinking: { type: "disabled" },
+        temperature: 0.1,
+        max_tokens: 512,
       }),
     });
     clearTimeout(timeout);
 
-    if (!geminiRes.ok) {
-      const errBody = await geminiRes.text();
-      console.error("[match-goals] Gemini error:", geminiRes.status, errBody);
+    if (!deepseekRes.ok) {
+      const errBody = await deepseekRes.text();
+      console.error("[match-goals] DeepSeek error:", deepseekRes.status, errBody);
       return res.json({ goals: fallbackMatch(message) });
     }
 
-    const data = await geminiRes.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const data = await deepseekRes.json();
+    const text = data?.choices?.[0]?.message?.content || "";
 
-    // Parse the JSON array from Gemini's response
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      console.error("[match-goals] Could not parse Gemini response:", text);
-      // Fallback: keyword-based matching
-      return res.json({ goals: fallbackMatch(message) });
-    }
-
-    let matched;
+    // Prefer the JSON object that json_object mode promises; fall back to pulling an
+    // array out of the text if the model wrapped it in prose anyway.
+    let matched = null;
     try {
-      matched = JSON.parse(jsonMatch[0]);
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed)) matched = parsed;
+      else if (Array.isArray(parsed?.goals)) matched = parsed.goals;
     } catch {
-      console.error("[match-goals] JSON parse failed:", jsonMatch[0]);
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        try {
+          matched = JSON.parse(jsonMatch[0]);
+        } catch {
+          matched = null;
+        }
+      }
+    }
+
+    if (!Array.isArray(matched) || matched.length === 0) {
+      console.error("[match-goals] Could not parse DeepSeek response:", text);
+      // Fallback: keyword-based matching
       return res.json({ goals: fallbackMatch(message) });
     }
 
@@ -237,6 +258,6 @@ function fallbackMatch(message) {
 app.listen(PORT, () => {
   console.log(`\n  ✓ Chatbot-demo Express server listening on http://localhost:${PORT}`);
   console.log(`    Sentinel API → ${SENTINEL_API_URL}`);
-  console.log(`    Gemini model → ${GEMINI_MODEL}`);
+  console.log(`    DeepSeek model → ${DEEPSEEK_MODEL}`);
   console.log(`    Goal catalog → ${GOALS.length} goals loaded\n`);
 });

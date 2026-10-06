@@ -1,7 +1,7 @@
 {
   "name": "chatbot-demo-express",
   "version": "1.0.0",
-  "description": "Express proxy for the chatbot demo — relays to Gemini for goal matching and Sentinel API for evaluation.",
+  "description": "Express proxy for the chatbot demo — relays to DeepSeek for goal matching and Sentinel API for evaluation.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
