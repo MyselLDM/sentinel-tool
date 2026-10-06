@@ -275,8 +275,15 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     # CPU protocol: hide the GPUs BEFORE torch is imported (see
     # common.force_cpu_protocol) - HF Trainer/accelerate otherwise picks the GPU
     # regardless of --device, and crashed on _move_model_to_device.
+    _runtime = None
     if args.device == "cpu":
         C.force_cpu_protocol()
+    else:
+        # Bind torch to the working ROCm user-mode runtime before it is imported
+        # (see common.preload_rocm_runtime) - the venv's own 7.2 runtime cannot
+        # launch kernels on this machine. Must precede C.resolve_device(), which
+        # is the first thing here to import torch.
+        _runtime = C.preload_rocm_runtime()
     args.dataset = str(Path(args.dataset).resolve())
     if args.device != "cpu":          # must not re-enable the GPU after the above
         C.pin_visible_gpus(args.gpu)
@@ -307,6 +314,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     print(f"  cwd={_diag.get('cwd')}  vram_free={_diag.get('vram_free_gb', 'n/a')}GB")
     if moved_temp:
         print(f"  note: TEMP/TMP moved to {moved_temp} (a space in the old path crashes ROCm)")
+    if _runtime:
+        print(f"  rocm runtime={_runtime}")
     print("=" * 74)
 
     config = {

@@ -4,7 +4,7 @@ tags:
 - cross-encoder
 - reranker
 - generated_from_trainer
-- dataset_size:106
+- dataset_size:584
 - loss:CrossEntropyLoss
 base_model: cross-encoder/nli-MiniLM2-L6-H768
 pipeline_tag: text-classification
@@ -68,11 +68,11 @@ pairs = [
 ]
 scores = model.predict(pairs)
 print(scores)
-# [[ 0.8125 -0.4883 -0.4629]
-#  [-0.5312  0.8359 -0.582 ]
-#  [ 0.9961 -1.2344  0.1768]
-#  [ 1.2188 -0.6406 -0.6875]
-#  [ 1.3906 -1.2578 -0.1855]]
+# [[-2.125   1.2812  0.5117]
+#  [-3.4844  2.6406  0.4004]
+#  [-1.4219  1.0703  0.0479]
+#  [-2.6094  1.0312  1.2891]
+#  [-0.6602 -0.3594  0.8633]]
 ```
 
 <!--
@@ -117,14 +117,14 @@ You can finetune this model on your own dataset.
 
 #### Unnamed Dataset
 
-* Size: 106 training samples
+* Size: 584 training samples
 * Columns: <code>sentence1</code>, <code>sentence2</code>, and <code>label</code>
 * Approximate statistics based on the first 100 samples:
-  |          | sentence1                                                                          | sentence2                                                                          | label                                                              |
-  |:---------|:-----------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------|:-------------------------------------------------------------------|
-  | type     | string                                                                             | string                                                                             | int                                                                |
-  | modality | text                                                                               | text                                                                               |                                                                    |
-  | details  | <ul><li>min: 24 tokens</li><li>mean: 24.49 tokens</li><li>max: 25 tokens</li></ul> | <ul><li>min: 14 tokens</li><li>mean: 21.81 tokens</li><li>max: 36 tokens</li></ul> | <ul><li>0: ~38.46%</li><li>1: ~39.42%</li><li>2: ~22.12%</li></ul> |
+  |          | sentence1                                                                          | sentence2                                                                          | label                                           |
+  |:---------|:-----------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------|:------------------------------------------------|
+  | type     | string                                                                             | string                                                                             | int                                             |
+  | modality | text                                                                               | text                                                                               |                                                 |
+  | details  | <ul><li>min: 23 tokens</li><li>mean: 24.24 tokens</li><li>max: 26 tokens</li></ul> | <ul><li>min: 14 tokens</li><li>mean: 17.16 tokens</li><li>max: 21 tokens</li></ul> | <ul><li>1: ~62.50%</li><li>2: ~37.50%</li></ul> |
 * Samples:
   | sentence1                                                                                                                                | sentence2                                                                                                     | label          |
   |:-----------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------|:---------------|
@@ -136,20 +136,18 @@ You can finetune this model on your own dataset.
 ### Training Hyperparameters
 #### Non-Default Hyperparameters
 
-- `per_device_train_batch_size`: 16
-- `num_train_epochs`: 1
+- `per_device_train_batch_size`: 32
+- `num_train_epochs`: 4
 - `learning_rate`: 2e-05
 - `warmup_steps`: 0.1
 - `weight_decay`: 0.01
 - `bf16`: True
-- `use_cpu`: True
-- `dataloader_pin_memory`: False
 
 #### All Hyperparameters
 <details><summary>Click to expand</summary>
 
-- `per_device_train_batch_size`: 16
-- `num_train_epochs`: 1
+- `per_device_train_batch_size`: 32
+- `num_train_epochs`: 4
 - `max_steps`: -1
 - `learning_rate`: 2e-05
 - `lr_scheduler_type`: linear
@@ -215,12 +213,12 @@ You can finetune this model on your own dataset.
 - `full_determinism`: False
 - `seed`: 42
 - `data_seed`: None
-- `use_cpu`: True
+- `use_cpu`: False
 - `accelerator_config`: {'split_batches': False, 'dispatch_batches': None, 'even_batches': True, 'use_seedable_sampler': True, 'non_blocking': False, 'gradient_accumulation_kwargs': None}
 - `parallelism_config`: None
 - `dataloader_drop_last`: False
 - `dataloader_num_workers`: 0
-- `dataloader_pin_memory`: False
+- `dataloader_pin_memory`: True
 - `dataloader_persistent_workers`: False
 - `dataloader_prefetch_factor`: None
 - `remove_unused_columns`: True
@@ -250,8 +248,14 @@ You can finetune this model on your own dataset.
 
 </details>
 
+### Training Logs
+| Epoch  | Step | Training Loss |
+|:------:|:----:|:-------------:|
+| 2.6316 | 50   | 1.0499        |
+
+
 ### Training Time
-- **Training**: 9.5 seconds
+- **Training**: 7.3 seconds
 
 ### Framework Versions
 - Python: 3.12.10

@@ -205,8 +205,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     # The CPU protocol has to hide the GPUs BEFORE torch is first imported - torch
     # reads device visibility at init, and HF Trainer/accelerate auto-detects the GPU
     # independently of --device. See common.force_cpu_protocol.
+    _runtime = None
     if args.device == "cpu":
         C.force_cpu_protocol()
+    else:
+        # Bind torch to the working ROCm user-mode runtime before it is imported
+        # (see common.preload_rocm_runtime) - the venv's own 7.2 runtime cannot
+        # launch kernels on this machine.
+        _runtime = C.preload_rocm_runtime()
     from sentence_transformers import CrossEncoder
 
     args.dataset = str(Path(args.dataset).resolve())
@@ -241,6 +247,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     print(f"  cwd={_diag.get('cwd')}  vram_free={_diag.get('vram_free_gb', 'n/a')}GB")
     if moved_temp:
         print(f"  note: TEMP/TMP moved to {moved_temp} (a space in the old path crashes ROCm)")
+    if _runtime:
+        print(f"  rocm runtime={_runtime}")
     print("=" * 74)
 
     config = {

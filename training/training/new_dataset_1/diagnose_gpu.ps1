@@ -158,7 +158,7 @@ $matmulOk = $results['check_gpu.py matmul']
 Write-Host ""
 if ($gpuOk -and $matmulOk) {
     Write-Host "  GPU is HEALTHY - run the training with the GPU:" -ForegroundColor Green
-    Write-Host "      .\run_all_gpu.sh group"
+    Write-Host "      .\run_all_gpu.ps1 group"
 } elseif (-not $gpuOk) {
     Write-Host "  GPU CANNOT LAUNCH KERNELS. This is below torch, the venv and this project." -ForegroundColor Red
     Write-Host "  1. DDU (Safe Mode) then install a DIFFERENT driver version, and confirm the"

@@ -6,7 +6,7 @@ This repository contains an isolated demo of the Sentinel Chatbot, connecting to
 
 - **`next-client/`**: A React 19/Next.js 15 application utilizing Tailwind CSS v4 and DaisyUI.
   - Runs on `http://localhost:3001`
-- **`express-server/`**: A Node.js/Express backend that proxies requests to the Sentinel API and Gemini API, and manages a local SQLite database for chat history.
+- **`express-server/`**: A Node.js/Express backend that proxies requests to the Sentinel API and DeepSeek API, and manages a local SQLite database for chat history.
   - Runs on `http://localhost:4001`
 
 ## Prerequisites
@@ -26,11 +26,18 @@ Navigate to `express-server/` and ensure the `.env` file exists with the followi
 PORT=4001
 SENTINEL_API_URL=http://localhost:4000
 SENTINEL_API_KEY=sk_test_dev_playground_0000000000
-GEMINI_API_KEY=your_gemini_api_key_here
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
 CORS_ORIGIN=http://localhost:3001
 ```
 
-*(Note: Replace `your_gemini_api_key_here` with your valid Gemini API Key).*
+*(Note: Replace `your_deepseek_api_key_here` with your valid DeepSeek API Key from https://platform.deepseek.com/api_keys).*
+
+Optional overrides (defaults shown):
+
+```env
+DEEPSEEK_MODEL=deepseek-flash
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+```
 
 ### Next Client
 

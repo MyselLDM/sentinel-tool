@@ -813,6 +813,116 @@ def ensure_space_free_temp() -> str | None:
     return None
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# ROCm user-mode runtime selection
+# ─────────────────────────────────────────────────────────────────────────────
+
+# The ROCm 7.2 user-mode runtime the GPU venv ships (the ``rocm_sdk_core`` wheel,
+# and the HIP SDK 7.2 DLLs ``setup_gpu_amd.sh`` copies over it) cannot launch a
+# kernel on this machine: ``hipMalloc`` returns 0 and the very next
+# ``hipMemset`` dies with ``0xC0000005``. Measured against every runtime on the
+# box, with the same driver and the same process:
+#
+#   venv _rocm_sdk_core/bin  (HIP SDK 7.2 overlaid)   HIP 7.2.53211   crashes
+#   venv _rocm_sdk_core/bin.bak (pristine wheel)      HIP 7.2.53211   crashes
+#   C:\Program Files\AMD\ROCm\7.2 (standalone HIP SDK) HIP 7.2.60201  crashes
+#   C:\TheRock\build          (TheRock)               HIP 7.15.26333  works
+#
+# So this is a user-mode runtime fault, not the AMD kernel-mode driver - which is
+# why replacing/rolling back the driver changed nothing. Bind training to the
+# build that works.
+ROCM_RUNTIME_ENV = "SENTINEL_ROCM_RUNTIME"
+DEFAULT_ROCM_RUNTIME_DIR = r"C:\TheRock\build\bin"
+
+# Loaded in this order so the whole HIP stack comes from a single build. torch's
+# own ROCm init (``torch/_rocm_init.py``) subsequently asks for these same base
+# names out of the venv's wheel - and Windows resolves a DLL by base name, so
+# the first one loaded wins and the venv's broken copy is never used.
+ROCM_RUNTIME_DLLS: tuple[str, ...] = (
+    "amd_comgr.dll",
+    "amdhip64_7.dll",
+    "rocblas.dll",
+    "hipblas.dll",
+    "hipfft.dll",
+    "hiprand.dll",
+    "hipsparse.dll",
+    "hipsolver.dll",
+    "MIOpen.dll",
+    "rocm-openblas.dll",
+)
+
+_rocm_runtime_dir: str | None = None
+_rocm_runtime_resolved = False
+
+
+def rocm_runtime_dir() -> str | None:
+    """The ROCm user-mode runtime directory to use, or ``None`` if there is none.
+
+    ``SENTINEL_ROCM_RUNTIME`` overrides the default, so a machine that keeps the
+    runtime somewhere else needs no code change.
+    """
+    override = os.environ.get(ROCM_RUNTIME_ENV)
+    for candidate in ([override] if override else [DEFAULT_ROCM_RUNTIME_DIR]):
+        if candidate and os.path.isdir(candidate):
+            return candidate
+    return None
+
+
+def preload_rocm_runtime() -> str | None:
+    """Bind this process to the working ROCm user-mode runtime. Run this first.
+
+    MUST be called before *anything* imports torch. torch's ROCm init preloads
+    ``amdhip64`` and friends from the venv's ``rocm_sdk_core`` wheel, and that
+    7.2 build cannot launch kernels here; loading the working build's DLLs into
+    the process beforehand makes torch's lookup resolve to those instead. No
+    driver, venv or wheel change is involved.
+
+    Returns the directory used, or ``None`` when it did not apply - off Windows,
+    when the CPU protocol has hidden the GPUs, or when no runtime is present.
+    Idempotent, and never raises: a missing DLL or dependency is skipped.
+    """
+    global _rocm_runtime_dir, _rocm_runtime_resolved
+    if _rocm_runtime_resolved:
+        return _rocm_runtime_dir
+    _rocm_runtime_resolved = True
+
+    if os.name != "nt":
+        return None
+    # A CPU run deliberately hides the GPUs, so there is nothing to bind to.
+    for var in ("HIP_VISIBLE_DEVICES", "CUDA_VISIBLE_DEVICES"):
+        if os.environ.get(var) == "":
+            return None
+
+    runtime_dir = rocm_runtime_dir()
+    if not runtime_dir:
+        return None
+
+    import ctypes
+
+    try:
+        os.add_dll_directory(runtime_dir)
+    except (AttributeError, OSError):
+        pass  # not fatal - the explicit loads below still pin each DLL
+
+    # COMGR reads device bitcode from here when it has to compile.
+    bitcode = Path(runtime_dir).parent / "lib" / "llvm" / "amdgcn" / "bitcode"
+    if bitcode.is_dir():
+        os.environ["HIP_DEVICE_LIB_PATH"] = str(bitcode)
+
+    mode = getattr(ctypes, "RTLD_GLOBAL", 0)
+    for name in ROCM_RUNTIME_DLLS:
+        path = Path(runtime_dir) / name
+        if not path.is_file():
+            continue
+        try:
+            ctypes.CDLL(str(path), mode=mode)
+        except OSError:
+            continue  # one missing dependency must not kill the run
+
+    _rocm_runtime_dir = runtime_dir
+    return runtime_dir
+
+
 def pin_visible_gpus(index: int = 0) -> None:
     """Restrict GPU visibility to a single device *before* CUDA initialises.
 

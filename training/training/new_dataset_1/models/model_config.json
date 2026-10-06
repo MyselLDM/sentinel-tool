@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-04T15:23:05+0800",
+  "generated_at": "2026-10-06T22:15:13+0800",
   "notes": [
     "Produced by training/compare_models.py from the fine-tuned artifacts.",
     "model_dir is relative to MODELS_DIR (default: fastapi/.models).",
@@ -8,8 +8,8 @@
   ],
   "nli": {
     "base": "cross-encoder/nli-MiniLM2-L6-H768",
-    "model_dir": "dryrun-nli",
-    "version": "dryrun-nli",
+    "model_dir": "sentinelagent-nli-finetuned",
+    "version": "sentinelagent-nli-finetuned",
     "labels": [
       "contradiction",
       "entailment",
@@ -17,30 +17,30 @@
     ],
     "activation": "softmax",
     "decision": "p_contradiction > threshold",
-    "threshold": 0.25,
+    "threshold": 0.735,
     "threshold_source": "cross_validation_mean",
     "metrics": {
-      "accuracy": 100.0,
-      "tpr": 100.0,
-      "fpr": 0.0,
-      "precision": 100.0,
-      "f1": 100.0
+      "accuracy": 88.3391,
+      "tpr": 82.4079,
+      "fpr": 8.1279,
+      "precision": 86.3714,
+      "f1": 84.2632
     }
   },
   "contrastive": {
     "base": "all-MiniLM-L12-v2",
-    "model_dir": "dryrun-contrastive",
-    "version": "dryrun-contrastive",
+    "model_dir": "contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
+    "version": "contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
     "decision": "cosine < threshold",
     "include_decomposed": false,
-    "threshold": 0.15,
+    "threshold": 0.24100000000000002,
     "threshold_source": "cross_validation_mean",
     "metrics": {
-      "accuracy": 100.0,
-      "tpr": 100.0,
-      "fpr": 0.0,
-      "precision": 100.0,
-      "f1": 100.0
+      "accuracy": 88.1681,
+      "tpr": 88.8421,
+      "fpr": 12.2293,
+      "precision": 82.8006,
+      "f1": 85.2356
     }
   },
   "thesis_comparison": {
@@ -50,86 +50,86 @@
     "tests": {
       "tpr": {
         "n_pairs": 5,
-        "mean_a": 100.0,
-        "mean_b": 100.0,
-        "mean_diff": 0.0,
-        "std_diff": 0.0,
-        "t_statistic": NaN,
-        "p_value": NaN,
+        "mean_a": 88.84208630957414,
+        "mean_b": 89.14323048562407,
+        "mean_diff": -0.30114417604993093,
+        "std_diff": 16.57093093635941,
+        "t_statistic": -0.0406361508150579,
+        "p_value": 0.5152333164564113,
         "alternative": "greater",
-        "d_z": 0.0,
+        "d_z": -0.01817303911328059,
         "significant_at_0_05": false
       },
       "precision": {
         "n_pairs": 5,
-        "mean_a": 100.0,
-        "mean_b": 100.0,
-        "mean_diff": 0.0,
-        "std_diff": 0.0,
-        "t_statistic": NaN,
-        "p_value": NaN,
+        "mean_a": 82.80058434857196,
+        "mean_b": 42.05041201369231,
+        "mean_diff": 40.75017233487965,
+        "std_diff": 9.825844326328976,
+        "t_statistic": 9.273519140890516,
+        "p_value": 0.00037601422965014903,
         "alternative": "greater",
-        "d_z": 0.0,
-        "significant_at_0_05": false
+        "d_z": 4.147243837935328,
+        "significant_at_0_05": true
       },
       "f1": {
         "n_pairs": 5,
-        "mean_a": 100.0,
-        "mean_b": 100.0,
-        "mean_diff": 0.0,
-        "std_diff": 0.0,
-        "t_statistic": NaN,
-        "p_value": NaN,
+        "mean_a": 85.23562184750617,
+        "mean_b": 56.66790167129086,
+        "mean_diff": 28.567720176215307,
+        "std_diff": 5.24230946176868,
+        "t_statistic": 12.185347839930403,
+        "p_value": 0.00013017202691640694,
         "alternative": "greater",
-        "d_z": 0.0,
-        "significant_at_0_05": false
+        "d_z": 5.449453219912922,
+        "significant_at_0_05": true
       },
       "fpr": {
         "n_pairs": 5,
-        "mean_a": 0.0,
-        "mean_b": 0.0,
-        "mean_diff": 0.0,
-        "std_diff": 0.0,
-        "t_statistic": NaN,
-        "p_value": NaN,
+        "mean_a": 12.229293441514537,
+        "mean_b": 76.80569641649764,
+        "mean_diff": -64.5764029749831,
+        "std_diff": 25.136881246761174,
+        "t_statistic": -5.744436844689596,
+        "p_value": 0.0022757085579890456,
         "alternative": "less",
-        "d_z": 0.0,
-        "significant_at_0_05": false
+        "d_z": -2.568990255436068,
+        "significant_at_0_05": true
       },
       "easy_tpr": {
         "n_pairs": 5,
-        "mean_a": 100.0,
-        "mean_b": 100.0,
-        "mean_diff": 0.0,
-        "std_diff": 0.0,
-        "t_statistic": NaN,
-        "p_value": NaN,
+        "mean_a": 84.39335664335664,
+        "mean_b": 94.0909090909091,
+        "mean_diff": -9.697552447552448,
+        "std_diff": 19.059936949352085,
+        "t_statistic": -1.137694555114143,
+        "p_value": 0.8406146938685217,
         "alternative": "greater",
-        "d_z": 0.0,
+        "d_z": -0.508792472573321,
         "significant_at_0_05": false
       },
       "matched_tpr": {
         "n_pairs": 5,
-        "mean_a": 100.0,
-        "mean_b": 100.0,
-        "mean_diff": 0.0,
-        "std_diff": 0.0,
-        "t_statistic": NaN,
-        "p_value": NaN,
+        "mean_a": 96.03174603174604,
+        "mean_b": 90.04048582995952,
+        "mean_diff": 5.991260201786517,
+        "std_diff": 15.819829539120283,
+        "t_statistic": 0.8468400401505678,
+        "p_value": 0.22238828911942446,
         "alternative": "greater",
-        "d_z": 0.0,
+        "d_z": 0.37871837916906415,
         "significant_at_0_05": false
       },
       "near_miss_tpr": {
         "n_pairs": 5,
-        "mean_a": 100.0,
-        "mean_b": 100.0,
-        "mean_diff": 0.0,
-        "std_diff": 0.0,
-        "t_statistic": NaN,
-        "p_value": NaN,
+        "mean_a": 86.44444444444446,
+        "mean_b": 79.5079365079365,
+        "mean_diff": 6.936507936507935,
+        "std_diff": 21.35537174207882,
+        "t_statistic": 0.7263045317041473,
+        "p_value": 0.2539368741078238,
         "alternative": "greater",
-        "d_z": 0.0,
+        "d_z": 0.3248132610513249,
         "significant_at_0_05": false
       }
     },
@@ -139,6 +139,6 @@
       "near_miss"
     ]
   },
-  "protocol": "unknown",
+  "protocol": "anchor-grouped cross-validation (unseen goals) - PRIMARY",
   "protocol_key": "current"
 }

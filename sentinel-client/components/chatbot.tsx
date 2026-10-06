@@ -347,7 +347,7 @@ function ChatBubble({
         </div>
       ) : (
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1 border border-gray-100 shadow-sm">
-          <SentinelLogoIcon className="h-7 w-7" />
+          <SentinelLogoIcon className="h-7" />
         </div>
       )}
 
@@ -628,7 +628,7 @@ export function Chatbot() {
         {/* ── Chatbot header ──────────────────────────────────── */}
         <div className="flex items-center gap-3 border-b border-gray-100 bg-gray-50/80 px-5 py-3.5">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white p-2 shadow-sm border border-gray-100">
-            <SentinelLogoIcon className="h-8 w-8" />
+            <SentinelLogoIcon className="h-8" />
           </div>
           <div>
             <p className="text-sm font-semibold text-gray-900">Sentinel</p>
@@ -645,7 +645,7 @@ export function Chatbot() {
           {isEmpty ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white shadow-sm border border-gray-100">
-                <SentinelLogoIcon className="h-14 w-14" />
+                <SentinelLogoIcon className="h-14" />
               </div>
               <p className="mt-4 max-w-xs text-sm leading-relaxed text-gray-500">
                 Describe what your agent should do and I&apos;ll suggest goals to authorize.
@@ -683,7 +683,7 @@ export function Chatbot() {
               {loading && (
                 <div className="flex gap-3 items-start">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white p-1 border border-gray-100 shadow-sm">
-                    <SentinelThinkingIcon thinking className="h-7 w-7" />
+                    <SentinelThinkingIcon thinking className="h-7" />
                   </div>
                   <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm bg-white border border-gray-100 px-4 py-3 text-sm text-gray-500 shadow-sm">
                     Generating goals…
