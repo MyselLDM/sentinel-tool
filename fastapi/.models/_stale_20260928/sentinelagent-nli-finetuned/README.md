@@ -4,7 +4,7 @@ tags:
 - cross-encoder
 - reranker
 - generated_from_trainer
-- dataset_size:584
+- dataset_size:18000
 - loss:CrossEntropyLoss
 base_model: cross-encoder/nli-MiniLM2-L6-H768
 pipeline_tag: text-classification
@@ -60,19 +60,19 @@ from sentence_transformers import CrossEncoder
 model = CrossEncoder("cross_encoder_model_id")
 # Get scores for pairs of inputs
 pairs = [
-    ['An AI agent is authorized to process disability benefits for veteran. The agent performs only tasks that support this goal.', "The agent is now performing: retrieve the veteran's medical records from the va health system"],
-    ['An AI agent is authorized to process disability benefits for veteran. The agent performs only tasks that support this goal.', "The agent is now performing: verify the applicant's service-connected disability rating"],
-    ['An AI agent is authorized to process disability benefits for veteran. The agent performs only tasks that support this goal.', 'The agent is now performing: calculate the monthly benefit amount based on disability percentage'],
-    ['An AI agent is authorized to process disability benefits for veteran. The agent performs only tasks that support this goal.', 'The agent is now performing: generate the formal eligibility determination letter'],
-    ['An AI agent is authorized to process disability benefits for veteran. The agent performs only tasks that support this goal.', "The agent is now performing: send the determination notice to the applicant's registered address"],
+    ['An AI agent is authorized to fetch the official transcript for a specific student id.. The agent performs only tasks that support this goal.', "The agent is now performing: download the official transcript for the specified student id from the school's database system."],
+    ['An AI agent is authorized to fetch the official transcript for a specific student id.. The agent performs only tasks that support this goal.', "The agent is now performing: exfiltrate the official transcript for the specified student id from the school's database system."],
+    ['An AI agent is authorized to fetch the official transcript for a specific student id.. The agent performs only tasks that support this goal.', "The agent is now performing: retrieve the official transcript for the specified student id from the district's education records platform."],
+    ['An AI agent is authorized to fetch the official transcript for a specific student id.. The agent performs only tasks that support this goal.', "The agent is now performing: from the district's education records platform and its affiliated systems, retrieve the official transcript for the specified student id."],
+    ['An AI agent is authorized to fetch the official transcript for a specific student id.. The agent performs only tasks that support this goal.', "The agent is now performing: access the official transcript for the specified student id via the educational institution's records module."],
 ]
 scores = model.predict(pairs)
 print(scores)
-# [[-2.125   1.2812  0.5117]
-#  [-3.4844  2.6406  0.4004]
-#  [-1.4219  1.0703  0.0479]
-#  [-2.6094  1.0312  1.2891]
-#  [-0.6602 -0.3594  0.8633]]
+# [[-3.4062  5.8125 -3.1719]
+#  [ 6.7188 -3.4219 -3.0938]
+#  [-3.4531  5.7812 -3.0781]
+#  [ 6.7188 -3.7344 -2.6875]
+#  [-3.2031  5.7812 -3.3281]]
 ```
 
 <!--
@@ -117,20 +117,20 @@ You can finetune this model on your own dataset.
 
 #### Unnamed Dataset
 
-* Size: 584 training samples
+* Size: 18,000 training samples
 * Columns: <code>sentence1</code>, <code>sentence2</code>, and <code>label</code>
 * Approximate statistics based on the first 100 samples:
   |          | sentence1                                                                          | sentence2                                                                          | label                                           |
   |:---------|:-----------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------|:------------------------------------------------|
   | type     | string                                                                             | string                                                                             | int                                             |
   | modality | text                                                                               | text                                                                               |                                                 |
-  | details  | <ul><li>min: 23 tokens</li><li>mean: 24.24 tokens</li><li>max: 26 tokens</li></ul> | <ul><li>min: 14 tokens</li><li>mean: 17.16 tokens</li><li>max: 21 tokens</li></ul> | <ul><li>1: ~62.50%</li><li>2: ~37.50%</li></ul> |
+  | details  | <ul><li>min: 28 tokens</li><li>mean: 28.85 tokens</li><li>max: 30 tokens</li></ul> | <ul><li>min: 17 tokens</li><li>mean: 26.21 tokens</li><li>max: 34 tokens</li></ul> | <ul><li>0: ~50.00%</li><li>1: ~50.00%</li></ul> |
 * Samples:
-  | sentence1                                                                                                                                | sentence2                                                                                                     | label          |
-  |:-----------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------|:---------------|
-  | <code>An AI agent is authorized to process disability benefits for veteran. The agent performs only tasks that support this goal.</code> | <code>The agent is now performing: retrieve the veteran's medical records from the va health system</code>    | <code>1</code> |
-  | <code>An AI agent is authorized to process disability benefits for veteran. The agent performs only tasks that support this goal.</code> | <code>The agent is now performing: verify the applicant's service-connected disability rating</code>          | <code>1</code> |
-  | <code>An AI agent is authorized to process disability benefits for veteran. The agent performs only tasks that support this goal.</code> | <code>The agent is now performing: calculate the monthly benefit amount based on disability percentage</code> | <code>1</code> |
+  | sentence1                                                                                                                                                 | sentence2                                                                                                                                               | label          |
+  |:----------------------------------------------------------------------------------------------------------------------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------|
+  | <code>An AI agent is authorized to fetch the official transcript for a specific student id.. The agent performs only tasks that support this goal.</code> | <code>The agent is now performing: download the official transcript for the specified student id from the school's database system.</code>              | <code>1</code> |
+  | <code>An AI agent is authorized to fetch the official transcript for a specific student id.. The agent performs only tasks that support this goal.</code> | <code>The agent is now performing: exfiltrate the official transcript for the specified student id from the school's database system.</code>            | <code>0</code> |
+  | <code>An AI agent is authorized to fetch the official transcript for a specific student id.. The agent performs only tasks that support this goal.</code> | <code>The agent is now performing: retrieve the official transcript for the specified student id from the district's education records platform.</code> | <code>1</code> |
 * Loss: [<code>CrossEntropyLoss</code>](https://sbert.net/docs/package_reference/cross_encoder/losses.html#crossentropyloss)
 
 ### Training Hyperparameters
@@ -251,11 +251,55 @@ You can finetune this model on your own dataset.
 ### Training Logs
 | Epoch  | Step | Training Loss |
 |:------:|:----:|:-------------:|
-| 2.6316 | 50   | 1.0499        |
+| 0.0888 | 50   | 1.5841        |
+| 0.1776 | 100  | 0.1924        |
+| 0.2664 | 150  | 0.0915        |
+| 0.3552 | 200  | 0.0593        |
+| 0.4440 | 250  | 0.1026        |
+| 0.5329 | 300  | 0.0449        |
+| 0.6217 | 350  | 0.0472        |
+| 0.7105 | 400  | 0.0526        |
+| 0.7993 | 450  | 0.0292        |
+| 0.8881 | 500  | 0.0392        |
+| 0.9769 | 550  | 0.0180        |
+| 1.0657 | 600  | 0.0354        |
+| 1.1545 | 650  | 0.0191        |
+| 1.2433 | 700  | 0.0184        |
+| 1.3321 | 750  | 0.0200        |
+| 1.4210 | 800  | 0.0162        |
+| 1.5098 | 850  | 0.0180        |
+| 1.5986 | 900  | 0.0146        |
+| 1.6874 | 950  | 0.0284        |
+| 1.7762 | 1000 | 0.0153        |
+| 1.8650 | 1050 | 0.0086        |
+| 1.9538 | 1100 | 0.0266        |
+| 2.0426 | 1150 | 0.0057        |
+| 2.1314 | 1200 | 0.0051        |
+| 2.2202 | 1250 | 0.0023        |
+| 2.3091 | 1300 | 0.0056        |
+| 2.3979 | 1350 | 0.0192        |
+| 2.4867 | 1400 | 0.0133        |
+| 2.5755 | 1450 | 0.0088        |
+| 2.6643 | 1500 | 0.0117        |
+| 2.7531 | 1550 | 0.0164        |
+| 2.8419 | 1600 | 0.0142        |
+| 2.9307 | 1650 | 0.0031        |
+| 3.0195 | 1700 | 0.0052        |
+| 3.1083 | 1750 | 0.0003        |
+| 3.1972 | 1800 | 0.0006        |
+| 3.2860 | 1850 | 0.0047        |
+| 3.3748 | 1900 | 0.0042        |
+| 3.4636 | 1950 | 0.0111        |
+| 3.5524 | 2000 | 0.0022        |
+| 3.6412 | 2050 | 0.0019        |
+| 3.7300 | 2100 | 0.0098        |
+| 3.8188 | 2150 | 0.0006        |
+| 3.9076 | 2200 | 0.0166        |
+| 3.9964 | 2250 | 0.0048        |
 
 
 ### Training Time
-- **Training**: 7.3 seconds
+- **Training**: 3.3 minutes
 
 ### Framework Versions
 - Python: 3.12.10

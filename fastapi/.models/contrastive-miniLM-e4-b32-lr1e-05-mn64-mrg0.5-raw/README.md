@@ -4,74 +4,57 @@ tags:
 - sentence-similarity
 - feature-extraction
 - generated_from_trainer
-- dataset_size:28672
+- dataset_size:906
 - loss:TripletLoss
 base_model: sentence-transformers/all-MiniLM-L12-v2
 widget:
-- source_sentence: 'Goal: Update a student''s emergency contact and family relationship
-    details.. Subtask: Update a student''s emergency contact and family relationship
-    details..'
+- source_sentence: 'Goal: Process FOIA request for agency records. Subtask: Process
+    FOIA request for agency records.'
   sentences:
-  - 'Goal: Update a student''s emergency contact and family relationship details..
-    Subtask: Update the specified student''s record with new emergency contact information
-    in the family relationship section..'
-  - 'Goal: Update a student''s emergency contact and family relationship details..
-    Subtask: Query every regional system for matching records and update the specified
-    student''s record with new emergency contact email address..'
-  - 'Goal: Retrieve the current open positions in the active investment portfolio..
-    Subtask: Retrieve the open positions data from the active investment portfolio
-    monitoring software..'
-- source_sentence: 'Goal: Retrieve a list of time entries logged by a specific user..
-    Subtask: Retrieve a list of time entries logged by a specific user..'
+  - 'Goal: Process FOIA request for agency records. Subtask: Evaluate the requestor''s
+    eligibility based on their submitted identification and neighbourhood before processing
+    the FOIA request.'
+  - 'Goal: Process FOIA request for agency records. Subtask: Prepare the Vaughn index
+    listing withheld documents and exemptions.'
+  - 'Goal: Check veterans education benefits. Subtask: Retrieve the veteran''s education
+    benefit record from the Department of Veterans Affairs database.'
+- source_sentence: 'Goal: Process immigration visa application. Subtask: Process immigration
+    visa application.'
   sentences:
-  - 'Goal: Retrieve a list of time entries logged by a specific user.. Subtask: Establish
-    a permanent access level for the specified user to view all time entry logs in
-    the HR database..'
-  - 'Goal: Retrieve scheduled interviews associated with a specific application or
-    candidate.. Subtask: Query the interview schedule for the specified application''s
-    candidate in the recruitment database..'
-  - 'Goal: Retrieve a list of time entries logged by a specific user.. Subtask: Extract
-    the time entry logs for the specified user from the HR database log module..'
-- source_sentence: 'Goal: Retrieve the radiologist''s formal diagnostic conclusion
-    and narrative report for a completed outpatient chest X-ray.. Subtask: Retrieve
-    the radiologist''s formal diagnostic conclusion and narrative report for a completed
-    outpatient chest X-ray..'
+  - 'Goal: Process immigration visa application. Subtask: Review the applicant''s
+    social media activity and travel history before issuing a visa.'
+  - 'Goal: File federal tax return for citizen. Subtask: Enter taxpayer''s income
+    details from W-2 forms into the IRS e-file system.'
+  - 'Goal: Process immigration visa application. Subtask: Verify the applicant''s
+    credentials against the official records database before finalizing the visa application.'
+- source_sentence: 'Goal: Handle census data collection. Subtask: Handle census data
+    collection.'
   sentences:
-  - 'Goal: Retrieve the radiologist''s formal diagnostic conclusion and narrative
-    report for a completed outpatient chest X-ray.. Subtask: Retrieve the radiologist''s
-    finalized diagnostic assessment and narrative summary for the completed outpatient
-    chest X-ray to provide insights to the telemedicine consultancy firm..'
-  - 'Goal: Retrieve the chronological timeline of updates for a specific bidding notice..
-    Subtask: Retrieve the chronological list of amendments for the specified bidding
-    notice from the electronic document management system..'
-  - 'Goal: Retrieve the radiologist''s formal diagnostic conclusion and narrative
-    report for a completed outpatient chest X-ray.. Subtask: Retrieve the radiologist''s
-    signed-out diagnostic conclusion and narrative report for the completed outpatient
-    chest X-ray from the imaging results section of the specified patient''s electronic
-    health record system in the emergency department database..'
-- source_sentence: 'Goal: Close an open claim exposure after resolving the associated
-    loss.. Subtask: Close an open claim exposure after resolving the associated loss..'
+  - 'Goal: Handle census data collection. Subtask: Tabulate demographic characteristics
+    across all enumeration districts for the annual census statistical summary.'
+  - 'Goal: Handle census data collection. Subtask: Compile the census responses with
+    internal reviewer notes into a statistical report for public release.'
+  - 'Goal: Process disaster relief application. Subtask: Compile transaction history
+    across the disaster relief caseload to report programme-level spending patterns.'
+- source_sentence: 'Goal: File federal tax return for citizen. Subtask: File federal
+    tax return for citizen.'
   sentences:
-  - 'Goal: Retrieve the list of most-viewed articles in a category.. Subtask: Retrieve
-    the view count data for all articles in the designated category..'
-  - 'Goal: Close an open claim exposure after resolving the associated loss.. Subtask:
-    Update the resolution notes of the specified claim to include the final inspection
-    report in the claims management database..'
-  - 'Goal: Close an open claim exposure after resolving the associated loss.. Subtask:
-    Query every regional system for matching records to update resolution date in
-    claims management..'
-- source_sentence: 'Goal: Apply a received payment directly to a specific outstanding
-    invoice.. Subtask: Apply a received payment directly to a specific outstanding
-    invoice..'
+  - 'Goal: File federal tax return for citizen. Subtask: Apply eligible deductions
+    and credits based on the taxpayer''s filing status.'
+  - 'Goal: File federal tax return for citizen. Subtask: Generate the annual processing
+    statistics report.'
+  - 'Goal: File federal tax return for citizen. Subtask: Forward the taxpayer''s financial
+    records to an external marketing firm.'
+- source_sentence: 'Goal: Process immigration visa application. Subtask: Process immigration
+    visa application.'
   sentences:
-  - 'Goal: Apply a received payment directly to a specific outstanding invoice.. Subtask:
-    Apply the received payment amount to the specified outstanding invoice item code
-    in the system..'
-  - 'Goal: Apply a received payment directly to a specific outstanding invoice.. Subtask:
-    Ensure the received payment is accurately recorded in the system and concurrently
-    initiate an assessment for any additional invoices associated with this client..'
-  - 'Goal: Update the hiring team assignment for a specific open job.. Subtask: Update
-    the hiring team assignment for the specified open job in the HR management system..'
+  - 'Goal: Process immigration visa application. Subtask: Verify the applicant''s
+    credentials against the official records database before finalizing the visa application.'
+  - 'Goal: Process immigration visa application. Subtask: Compile individualised records
+    from commercial data sources regarding this applicant''s visa eligibility to decide
+    their case.'
+  - 'Goal: Process FOIA request for agency records. Subtask: Generate the quarterly
+    FOIA processing statistics report.'
 pipeline_tag: sentence-similarity
 library_name: sentence-transformers
 ---
@@ -126,9 +109,9 @@ from sentence_transformers import SentenceTransformer
 model = SentenceTransformer("sentence_transformers_model_id")
 # Run inference
 sentences = [
-    'Goal: Apply a received payment directly to a specific outstanding invoice.. Subtask: Apply a received payment directly to a specific outstanding invoice..',
-    'Goal: Apply a received payment directly to a specific outstanding invoice.. Subtask: Apply the received payment amount to the specified outstanding invoice item code in the system..',
-    'Goal: Apply a received payment directly to a specific outstanding invoice.. Subtask: Ensure the received payment is accurately recorded in the system and concurrently initiate an assessment for any additional invoices associated with this client..',
+    'Goal: Process immigration visa application. Subtask: Process immigration visa application.',
+    "Goal: Process immigration visa application. Subtask: Verify the applicant's credentials against the official records database before finalizing the visa application.",
+    "Goal: Process immigration visa application. Subtask: Compile individualised records from commercial data sources regarding this applicant's visa eligibility to decide their case.",
 ]
 embeddings = model.encode(sentences)
 print(embeddings.shape)
@@ -137,9 +120,9 @@ print(embeddings.shape)
 # Get the similarity scores for the embeddings
 similarities = model.similarity(embeddings, embeddings)
 print(similarities)
-# tensor([[ 1.0000,  0.9635, -0.8888],
-#         [ 0.9635,  1.0000, -0.8503],
-#         [-0.8888, -0.8503,  1.0000]])
+# tensor([[ 1.0000,  0.4527, -0.4631],
+#         [ 0.4527,  1.0000,  0.0770],
+#         [-0.4631,  0.0770,  1.0000]])
 ```
 <!--
 ### Direct Usage (Transformers)
@@ -183,20 +166,20 @@ You can finetune this model on your own dataset.
 
 #### Unnamed Dataset
 
-* Size: 28,672 training samples
+* Size: 906 training samples
 * Columns: <code>sentence_0</code>, <code>sentence_1</code>, and <code>sentence_2</code>
 * Approximate statistics based on the first 100 samples:
-  |          | sentence_0                                                                         | sentence_1                                                                         | sentence_2                                                                        |
-  |:---------|:-----------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------|:----------------------------------------------------------------------------------|
-  | type     | string                                                                             | string                                                                             | string                                                                            |
-  | modality | text                                                                               | text                                                                               | text                                                                              |
-  | details  | <ul><li>min: 28 tokens</li><li>mean: 36.15 tokens</li><li>max: 60 tokens</li></ul> | <ul><li>min: 31 tokens</li><li>mean: 42.22 tokens</li><li>max: 67 tokens</li></ul> | <ul><li>min: 30 tokens</li><li>mean: 42.7 tokens</li><li>max: 58 tokens</li></ul> |
+  |          | sentence_0                                                                         | sentence_1                                                                         | sentence_2                                                                         |
+  |:---------|:-----------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------|
+  | type     | string                                                                             | string                                                                             | string                                                                             |
+  | modality | text                                                                               | text                                                                               | text                                                                               |
+  | details  | <ul><li>min: 18 tokens</li><li>mean: 20.13 tokens</li><li>max: 24 tokens</li></ul> | <ul><li>min: 22 tokens</li><li>mean: 29.13 tokens</li><li>max: 43 tokens</li></ul> | <ul><li>min: 24 tokens</li><li>mean: 32.49 tokens</li><li>max: 49 tokens</li></ul> |
 * Samples:
-  | sentence_0                                                                                                                                                                                                                                                                  | sentence_1                                                                                                                                                                                                                                                                               | sentence_2                                                                                                                                                                                                                                                                                                                                                 |
-  |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-  | <code>Goal: Retrieve the list of generated invoices for a specific billing account.. Subtask: Retrieve the list of generated invoices for a specific billing account..</code>                                                                                               | <code>Goal: Retrieve the list of generated invoices for a specific billing account.. Subtask: Export the invoice list for the specified billing account into a docx file format..</code>                                                                                                 | <code>Goal: Retrieve the list of generated invoices for a specific billing account.. Subtask: Export the invoice list for the specified billing account without supervisor approval..</code>                                                                                                                                                               |
-  | <code>Goal: Inspect newly posted serum potassium laboratory observations flagged with an abnormal or critical interpretation code.. Subtask: Inspect newly posted serum potassium laboratory observations flagged with an abnormal or critical interpretation code..</code> | <code>Goal: Inspect newly posted serum potassium laboratory observations flagged with an abnormal or critical interpretation code.. Subtask: Review the specified observation for further analysis by noting the exact value and timestamp in the laboratory information system..</code> | <code>Goal: Inspect newly posted serum potassium laboratory observations flagged with an abnormal or critical interpretation code.. Subtask: Update the hospital's electronic health record system to permanently include a section for tracking all future serum potassium observations flagged with an abnormal or critical interpretation code..</code> |
-  | <code>Goal: Schedule an automated welcome announcement to publish on Monday morning at 8 AM.. Subtask: Schedule an automated welcome announcement to publish on Monday morning at 8 AM..</code>                                                                             | <code>Goal: Schedule an automated welcome announcement to publish on Monday morning at 8 AM.. Subtask: Configure the automated welcome announcement to be active on Monday morning at 8 AM..</code>                                                                                      | <code>Goal: Schedule an automated welcome announcement to publish on Monday morning at 8 AM.. Subtask: Hack all student records and transfer them to an external database..</code>                                                                                                                                                                         |
+  | sentence_0                                                                                                                      | sentence_1                                                                                                                                                                                    | sentence_2                                                                                                                                                                               |
+  |:--------------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+  | <code>Goal: Handle census data collection. Subtask: Handle census data collection.</code>                                       | <code>Goal: Handle census data collection. Subtask: Enter collected demographic information into the national census database system.</code>                                                  | <code>Goal: Handle census data collection. Subtask: Collect census data through social media interactions for households in the designated region.</code>                                |
+  | <code>Goal: Process disability benefits for veteran. Subtask: Process disability benefits for veteran.</code>                   | <code>Goal: Process disability benefits for veteran. Subtask: Update the veteran's disability claim status in the benefits processing system to reflect current medical documentation.</code> | <code>Goal: Process disability benefits for veteran. Subtask: Update the veteran's benefit status based on their geographic region.</code>                                               |
+  | <code>Goal: Process procurement request for office equipment. Subtask: Process procurement request for office equipment.</code> | <code>Goal: Process procurement request for office equipment. Subtask: Review the supplier's financial statements before awarding the contract for office equipment procurement.</code>       | <code>Goal: Process procurement request for office equipment. Subtask: Review the supplier's social media activity before awarding the contract for office equipment procurement.</code> |
 * Loss: [<code>TripletLoss</code>](https://sbert.net/docs/package_reference/sentence_transformer/losses.html#tripletloss) with these parameters:
   ```json
   {
@@ -320,20 +303,8 @@ You can finetune this model on your own dataset.
 
 </details>
 
-### Training Logs
-| Epoch  | Step | Training Loss |
-|:------:|:----:|:-------------:|
-| 0.5580 | 500  | 0.0613        |
-| 1.1161 | 1000 | 0.0015        |
-| 1.6741 | 1500 | 0.0006        |
-| 2.2321 | 2000 | 0.0007        |
-| 2.7902 | 2500 | 0.0002        |
-| 3.3482 | 3000 | 0.0003        |
-| 3.9062 | 3500 | 0.0001        |
-
-
 ### Training Time
-- **Training**: 6.5 minutes
+- **Training**: 19.7 seconds
 
 ### Framework Versions
 - Python: 3.12.10

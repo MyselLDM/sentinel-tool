@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-28T14:09:35+0800",
+  "generated_at": "2026-10-06T22:12:30+0800",
   "model": "sentinelagent-nli-finetuned",
   "role": "NLI cross-encoder (SentinelAgent P2 intent verifier)",
   "base": "cross-encoder/nli-MiniLM2-L6-H768",
@@ -17,40 +17,40 @@
     "cuda": null,
     "accelerator": "AMD Radeon RX 9060 XT",
     "accelerator_count": 1,
-    "vram_free_gb": 13.1,
+    "vram_free_gb": 13.45,
     "vram_total_gb": 17.1,
     "cwd": "C:\\sentinel-gpu"
   },
   "dataset": {
-    "scenarios": 9000,
-    "unique_anchors": 448,
-    "unique_domains": 9,
-    "eval_examples": 18000,
-    "benign_examples": 9000,
-    "malicious_examples": 9000,
-    "adversarial_paraphrases": 7200,
-    "explicit_attacks": 1800,
-    "malicious_by_policy": {
-      "P-01": 900,
-      "P-02": 900,
-      "P-03": 900,
-      "P-04": 900,
-      "P-05": 900,
-      "P-06": 900,
-      "P-07": 900,
-      "P-08": 900,
-      "P-09": 900,
-      "P-10": 900
+    "rows": 584,
+    "unique_goals": 12,
+    "label_counts": {
+      "malicious": 220,
+      "benign-entailment": 251,
+      "neutral": 113
     },
-    "malicious_by_strategy": {
-      "S-01": 1505,
-      "S-02": 1800,
-      "S-03": 900,
-      "S-04": 2095,
-      "S-05": 2700
+    "malicious": 220,
+    "benign": 364,
+    "by_stratum": {
+      "easy": 308,
+      "matched": 166,
+      "near_miss": 110
     },
-    "path": "dataset_v2.csv",
-    "limit_anchors": null
+    "by_source": {
+      "generated": 254,
+      "original_190": 164,
+      "v3-matched": 166
+    },
+    "by_harm_category": {
+      "bias": 88,
+      "corruption": 46,
+      "exfiltration": 66,
+      "privilege_escalation": 88,
+      "surveillance": 70
+    },
+    "paired_rows": 276,
+    "path": "corpus_clean.csv",
+    "limit_goals": null
   },
   "config": {
     "base": "cross-encoder/nli-MiniLM2-L6-H768",
@@ -67,595 +67,816 @@
     "weight_decay": 0.01,
     "warmup_ratio": 0.1,
     "folds": 5,
-    "fold_strategy": "sample",
-    "protocol": "paraphrase-holdout (unseen wording, SHARED goals) - secondary",
+    "fold_strategy": "group",
+    "protocol": "anchor-grouped cross-validation (unseen goals) - PRIMARY",
     "seed": 42,
     "device": "cuda",
     "precision": "bf16",
     "max_length": null,
-    "num_train_pairs_per_fold": 9000
+    "num_train_pairs_per_fold": 450
   },
   "folds": [
     {
       "fold": 0,
-      "train_scenarios": 4500,
-      "train_pairs": 9000,
-      "test_scenarios": 4500,
-      "test_examples": 9000,
-      "threshold": 0.925,
-      "threshold_f1": 99.43427620632279,
-      "train_time_sec": 131.8,
+      "train_rows": 476,
+      "train_pairs": 476,
+      "test_rows": 108,
+      "test_examples": 108,
+      "threshold": 0.635,
+      "threshold_f1": 86.36363636363636,
+      "train_time_sec": 14.8,
       "summary": {
-        "threshold": 0.925,
-        "n": 9000,
+        "threshold": 0.635,
+        "n": 108,
         "confusion": {
-          "tp": 4482,
-          "fp": 33,
-          "tn": 4467,
-          "fn": 18,
-          "total": 9000
+          "tp": 38,
+          "fp": 6,
+          "tn": 58,
+          "fn": 6,
+          "total": 108
         },
-        "tpr": 99.6,
-        "fpr": 0.7333333333333333,
-        "precision": 99.26910299003322,
-        "f1": 99.43427620632279,
-        "accuracy": 99.43333333333332,
+        "tpr": 86.36363636363636,
+        "fpr": 9.375,
+        "precision": 86.36363636363636,
+        "f1": 86.36363636363636,
+        "accuracy": 88.88888888888889,
         "subsets": {
           "malicious": {
-            "n": 4500,
-            "tp": 4482,
-            "fn": 18,
-            "tpr": 99.6
+            "n": 44,
+            "tp": 38,
+            "fn": 6,
+            "tpr": 86.36363636363636
           },
           "benign": {
-            "n": 4500,
-            "fp": 33,
-            "tn": 4467,
-            "fpr": 0.7333333333333333
+            "n": 64,
+            "fp": 6,
+            "tn": 58,
+            "fpr": 9.375
           },
-          "adversarial_paraphrases": {
-            "n": 3600,
-            "tp": 3582,
-            "fn": 18,
-            "tpr": 99.5
-          },
-          "explicit_attacks": {
-            "n": 900,
-            "tp": 900,
-            "fn": 0,
-            "tpr": 100.0
-          },
-          "by_policy": {
-            "P-01": {
-              "n": 450,
-              "tp": 450,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Obvious Malicious Intent"
-            },
-            "P-02": {
-              "n": 450,
-              "tp": 442,
-              "fn": 8,
-              "tpr": 98.22222222222223,
-              "policy_name": "Scope Creep"
-            },
-            "P-03": {
-              "n": 450,
-              "tp": 448,
-              "fn": 2,
-              "tpr": 99.55555555555556,
-              "policy_name": "Underspecified Scope"
-            },
-            "P-04": {
-              "n": 450,
-              "tp": 450,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Data Exfiltration"
-            },
-            "P-05": {
-              "n": 450,
-              "tp": 446,
-              "fn": 4,
-              "tpr": 99.11111111111111,
-              "policy_name": "Unauthorized Sharing"
-            },
-            "P-06": {
-              "n": 450,
-              "tp": 450,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Constraint Removal"
-            },
-            "P-07": {
-              "n": 450,
-              "tp": 450,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Temporal Expansion"
-            },
-            "P-08": {
-              "n": 450,
-              "tp": 450,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Resource Expansion"
-            },
-            "P-09": {
-              "n": 450,
-              "tp": 449,
-              "fn": 1,
-              "tpr": 99.77777777777777,
-              "policy_name": "Privilege Escalation"
-            },
-            "P-10": {
-              "n": 450,
-              "tp": 447,
+          "by_stratum": {
+            "easy": {
+              "n": 22,
+              "tp": 19,
               "fn": 3,
-              "tpr": 99.33333333333333,
-              "policy_name": "Compound Violation"
+              "tpr": 86.36363636363636
+            },
+            "matched": {
+              "n": 13,
+              "tp": 13,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "near_miss": {
+              "n": 9,
+              "tp": 6,
+              "fn": 3,
+              "tpr": 66.66666666666666
             }
+          },
+          "by_source": {
+            "generated": {
+              "n": 17,
+              "tp": 13,
+              "fn": 4,
+              "tpr": 76.47058823529412
+            },
+            "original_190": {
+              "n": 14,
+              "tp": 12,
+              "fn": 2,
+              "tpr": 85.71428571428571
+            },
+            "v3-matched": {
+              "n": 13,
+              "tp": 13,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 86.36363636363636,
+            "matched": 100.0,
+            "near_miss": 66.66666666666666
           }
         }
       },
       "training_curve": [
         {
           "epoch": 0,
-          "threshold": 0.005,
-          "accuracy": 52.48888888888889,
-          "tpr": 97.04444444444445,
-          "fpr": 92.06666666666666,
-          "precision": 51.31609870740306,
-          "f1": 67.13297463489624,
-          "adversarial_paraphrases_tpr": 96.69444444444444,
-          "explicit_attacks_tpr": 98.44444444444444
+          "threshold": 0.02,
+          "accuracy": 53.70370370370371,
+          "tpr": 90.9090909090909,
+          "fpr": 71.875,
+          "precision": 46.51162790697674,
+          "f1": 61.53846153846154,
+          "easy_tpr": 95.45454545454545,
+          "matched_tpr": 92.3076923076923,
+          "near_miss_tpr": 77.77777777777779
         },
         {
           "epoch": 1,
-          "threshold": 0.465,
-          "accuracy": 99.22222222222223,
-          "tpr": 99.06666666666666,
-          "fpr": 0.6222222222222222,
-          "precision": 99.37583593401695,
-          "f1": 99.22101046071667,
-          "adversarial_paraphrases_tpr": 98.83333333333333,
-          "explicit_attacks_tpr": 100.0
+          "threshold": 0.56,
+          "accuracy": 71.29629629629629,
+          "tpr": 77.27272727272727,
+          "fpr": 32.8125,
+          "precision": 61.81818181818181,
+          "f1": 68.68686868686868,
+          "easy_tpr": 81.81818181818183,
+          "matched_tpr": 76.92307692307693,
+          "near_miss_tpr": 66.66666666666666
         },
         {
           "epoch": 2,
-          "threshold": 0.705,
-          "accuracy": 99.37777777777778,
-          "tpr": 99.42222222222222,
-          "fpr": 0.6666666666666667,
-          "precision": 99.33392539964476,
-          "f1": 99.37805419813415,
-          "adversarial_paraphrases_tpr": 99.27777777777777,
-          "explicit_attacks_tpr": 100.0
+          "threshold": 0.55,
+          "accuracy": 85.18518518518519,
+          "tpr": 86.36363636363636,
+          "fpr": 15.625,
+          "precision": 79.16666666666666,
+          "f1": 82.6086956521739,
+          "easy_tpr": 86.36363636363636,
+          "matched_tpr": 100.0,
+          "near_miss_tpr": 66.66666666666666
         },
         {
           "epoch": 3,
-          "threshold": 0.9500000000000001,
-          "accuracy": 99.41111111111111,
-          "tpr": 99.66666666666667,
-          "fpr": 0.8444444444444443,
-          "precision": 99.15984965730709,
-          "f1": 99.41261221323285,
-          "adversarial_paraphrases_tpr": 99.58333333333333,
-          "explicit_attacks_tpr": 100.0
+          "threshold": 0.675,
+          "accuracy": 88.88888888888889,
+          "tpr": 86.36363636363636,
+          "fpr": 9.375,
+          "precision": 86.36363636363636,
+          "f1": 86.36363636363636,
+          "easy_tpr": 86.36363636363636,
+          "matched_tpr": 100.0,
+          "near_miss_tpr": 66.66666666666666
         },
         {
           "epoch": 4,
-          "threshold": 0.925,
-          "accuracy": 99.43333333333332,
-          "tpr": 99.6,
-          "fpr": 0.7333333333333333,
-          "precision": 99.26910299003322,
-          "f1": 99.43427620632279,
-          "adversarial_paraphrases_tpr": 99.5,
-          "explicit_attacks_tpr": 100.0
+          "threshold": 0.635,
+          "accuracy": 88.88888888888889,
+          "tpr": 86.36363636363636,
+          "fpr": 9.375,
+          "precision": 86.36363636363636,
+          "f1": 86.36363636363636,
+          "easy_tpr": 86.36363636363636,
+          "matched_tpr": 100.0,
+          "near_miss_tpr": 66.66666666666666
         }
       ],
       "train_log_history": [
         {
-          "loss": 1.3104124450683594,
-          "grad_norm": 6.5032501220703125,
-          "learning_rate": 8.672566371681418e-06,
-          "epoch": 0.1773049645390071,
+          "loss": 1.0049708557128907,
+          "grad_norm": 4.786749362945557,
+          "learning_rate": 4.074074074074074e-06,
+          "epoch": 3.3333333333333335,
           "step": 50
         },
         {
-          "loss": 0.12764198303222657,
-          "grad_norm": 4.855615139007568,
-          "learning_rate": 1.7522123893805313e-05,
-          "epoch": 0.3546099290780142,
-          "step": 100
-        },
-        {
-          "loss": 0.07014203548431397,
-          "grad_norm": 6.107806205749512,
-          "learning_rate": 1.9290640394088673e-05,
-          "epoch": 0.5319148936170213,
-          "step": 150
-        },
-        {
-          "loss": 0.05666487216949463,
-          "grad_norm": 0.33284395933151245,
-          "learning_rate": 1.8305418719211825e-05,
-          "epoch": 0.7092198581560284,
-          "step": 200
-        },
-        {
-          "loss": 0.03703401565551758,
-          "grad_norm": 0.04023351892828941,
-          "learning_rate": 1.7320197044334977e-05,
-          "epoch": 0.8865248226950354,
-          "step": 250
-        },
-        {
-          "loss": 0.04701140880584717,
-          "grad_norm": 0.10878691077232361,
-          "learning_rate": 1.633497536945813e-05,
-          "epoch": 1.0638297872340425,
-          "step": 300
-        },
-        {
-          "loss": 0.04372679710388184,
-          "grad_norm": 0.07565072178840637,
-          "learning_rate": 1.5349753694581282e-05,
-          "epoch": 1.2411347517730495,
-          "step": 350
-        },
-        {
-          "loss": 0.027450931072235108,
-          "grad_norm": 5.440972805023193,
-          "learning_rate": 1.4364532019704436e-05,
-          "epoch": 1.4184397163120568,
-          "step": 400
-        },
-        {
-          "loss": 0.02381422519683838,
-          "grad_norm": 0.04229448735713959,
-          "learning_rate": 1.3379310344827587e-05,
-          "epoch": 1.5957446808510638,
-          "step": 450
-        },
-        {
-          "loss": 0.011728018522262573,
-          "grad_norm": 0.06357264518737793,
-          "learning_rate": 1.239408866995074e-05,
-          "epoch": 1.773049645390071,
-          "step": 500
-        },
-        {
-          "loss": 0.02400657653808594,
-          "grad_norm": 3.734628677368164,
-          "learning_rate": 1.1408866995073893e-05,
-          "epoch": 1.950354609929078,
-          "step": 550
-        },
-        {
-          "loss": 0.025835680961608886,
-          "grad_norm": 4.231490612030029,
-          "learning_rate": 1.0423645320197044e-05,
-          "epoch": 2.127659574468085,
-          "step": 600
-        },
-        {
-          "loss": 0.014272990226745606,
-          "grad_norm": 5.234414577484131,
-          "learning_rate": 9.438423645320198e-06,
-          "epoch": 2.3049645390070923,
-          "step": 650
-        },
-        {
-          "loss": 0.012347395420074464,
-          "grad_norm": 0.013089875690639019,
-          "learning_rate": 8.45320197044335e-06,
-          "epoch": 2.482269503546099,
-          "step": 700
-        },
-        {
-          "loss": 0.006304699182510376,
-          "grad_norm": 0.009406788274645805,
-          "learning_rate": 7.467980295566503e-06,
-          "epoch": 2.6595744680851063,
-          "step": 750
-        },
-        {
-          "loss": 0.0076857805252075195,
-          "grad_norm": 0.0090629355981946,
-          "learning_rate": 6.482758620689655e-06,
-          "epoch": 2.8368794326241136,
-          "step": 800
-        },
-        {
-          "loss": 0.005075191855430603,
-          "grad_norm": 0.01624806970357895,
-          "learning_rate": 5.497536945812808e-06,
-          "epoch": 3.0141843971631204,
-          "step": 850
-        },
-        {
-          "loss": 0.004996103346347809,
-          "grad_norm": 0.012772718444466591,
-          "learning_rate": 4.512315270935961e-06,
-          "epoch": 3.1914893617021276,
-          "step": 900
-        },
-        {
-          "loss": 0.001403108686208725,
-          "grad_norm": 0.008712856099009514,
-          "learning_rate": 3.5270935960591133e-06,
-          "epoch": 3.368794326241135,
-          "step": 950
-        },
-        {
-          "loss": 0.006758009791374206,
-          "grad_norm": 0.06336666643619537,
-          "learning_rate": 2.541871921182266e-06,
-          "epoch": 3.546099290780142,
-          "step": 1000
-        },
-        {
-          "loss": 0.005800128579139709,
-          "grad_norm": 0.008315336890518665,
-          "learning_rate": 1.556650246305419e-06,
-          "epoch": 3.723404255319149,
-          "step": 1050
-        },
-        {
-          "loss": 0.0056530219316482545,
-          "grad_norm": 0.7704018354415894,
-          "learning_rate": 5.714285714285715e-07,
-          "epoch": 3.900709219858156,
-          "step": 1100
-        },
-        {
-          "train_runtime": 125.3428,
-          "train_samples_per_second": 287.212,
-          "train_steps_per_second": 8.999,
+          "train_runtime": 9.9291,
+          "train_samples_per_second": 191.759,
+          "train_steps_per_second": 6.043,
           "total_flos": 0.0,
-          "train_loss": 0.08335951803555937,
+          "train_loss": 0.9229469617207845,
           "epoch": 4.0,
-          "step": 1128
+          "step": 60
         }
       ],
       "fixed_threshold_summary": {
-        "threshold": 0.8075000000000001,
-        "n": 9000,
+        "threshold": 0.735,
+        "n": 108,
         "confusion": {
-          "tp": 4482,
-          "fp": 38,
-          "tn": 4462,
-          "fn": 18,
-          "total": 9000
+          "tp": 35,
+          "fp": 6,
+          "tn": 58,
+          "fn": 9,
+          "total": 108
         },
-        "tpr": 99.6,
-        "fpr": 0.8444444444444443,
-        "precision": 99.15929203539822,
-        "f1": 99.37915742793791,
-        "accuracy": 99.37777777777778,
+        "tpr": 79.54545454545455,
+        "fpr": 9.375,
+        "precision": 85.36585365853658,
+        "f1": 82.35294117647058,
+        "accuracy": 86.11111111111111,
         "subsets": {
           "malicious": {
-            "n": 4500,
-            "tp": 4482,
-            "fn": 18,
-            "tpr": 99.6
+            "n": 44,
+            "tp": 35,
+            "fn": 9,
+            "tpr": 79.54545454545455
           },
           "benign": {
-            "n": 4500,
-            "fp": 38,
-            "tn": 4462,
-            "fpr": 0.8444444444444443
+            "n": 64,
+            "fp": 6,
+            "tn": 58,
+            "fpr": 9.375
           },
-          "adversarial_paraphrases": {
-            "n": 3600,
-            "tp": 3582,
-            "fn": 18,
-            "tpr": 99.5
-          },
-          "explicit_attacks": {
-            "n": 900,
-            "tp": 900,
-            "fn": 0,
-            "tpr": 100.0
-          },
-          "by_policy": {
-            "P-01": {
-              "n": 450,
-              "tp": 450,
+          "by_stratum": {
+            "easy": {
+              "n": 22,
+              "tp": 16,
+              "fn": 6,
+              "tpr": 72.72727272727273
+            },
+            "matched": {
+              "n": 13,
+              "tp": 13,
               "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Obvious Malicious Intent"
+              "tpr": 100.0
             },
-            "P-02": {
-              "n": 450,
-              "tp": 442,
-              "fn": 8,
-              "tpr": 98.22222222222223,
-              "policy_name": "Scope Creep"
-            },
-            "P-03": {
-              "n": 450,
-              "tp": 448,
-              "fn": 2,
-              "tpr": 99.55555555555556,
-              "policy_name": "Underspecified Scope"
-            },
-            "P-04": {
-              "n": 450,
-              "tp": 450,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Data Exfiltration"
-            },
-            "P-05": {
-              "n": 450,
-              "tp": 446,
-              "fn": 4,
-              "tpr": 99.11111111111111,
-              "policy_name": "Unauthorized Sharing"
-            },
-            "P-06": {
-              "n": 450,
-              "tp": 450,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Constraint Removal"
-            },
-            "P-07": {
-              "n": 450,
-              "tp": 450,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Temporal Expansion"
-            },
-            "P-08": {
-              "n": 450,
-              "tp": 450,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Resource Expansion"
-            },
-            "P-09": {
-              "n": 450,
-              "tp": 449,
-              "fn": 1,
-              "tpr": 99.77777777777777,
-              "policy_name": "Privilege Escalation"
-            },
-            "P-10": {
-              "n": 450,
-              "tp": 447,
+            "near_miss": {
+              "n": 9,
+              "tp": 6,
               "fn": 3,
-              "tpr": 99.33333333333333,
-              "policy_name": "Compound Violation"
+              "tpr": 66.66666666666666
             }
+          },
+          "by_source": {
+            "generated": {
+              "n": 17,
+              "tp": 13,
+              "fn": 4,
+              "tpr": 76.47058823529412
+            },
+            "original_190": {
+              "n": 14,
+              "tp": 9,
+              "fn": 5,
+              "tpr": 64.28571428571429
+            },
+            "v3-matched": {
+              "n": 13,
+              "tp": 13,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 72.72727272727273,
+            "matched": 100.0,
+            "near_miss": 66.66666666666666
           }
         }
       }
     },
     {
       "fold": 1,
-      "train_scenarios": 4500,
-      "train_pairs": 9000,
-      "test_scenarios": 4500,
-      "test_examples": 9000,
-      "threshold": 0.6900000000000001,
-      "threshold_f1": 99.64381121994657,
-      "train_time_sec": 127.5,
+      "train_rows": 489,
+      "train_pairs": 489,
+      "test_rows": 95,
+      "test_examples": 95,
+      "threshold": 0.865,
+      "threshold_f1": 86.95652173913044,
+      "train_time_sec": 10.5,
       "summary": {
-        "threshold": 0.6900000000000001,
-        "n": 9000,
+        "threshold": 0.865,
+        "n": 95,
         "confusion": {
-          "tp": 4476,
-          "fp": 8,
-          "tn": 4492,
-          "fn": 24,
-          "total": 9000
+          "tp": 30,
+          "fp": 4,
+          "tn": 56,
+          "fn": 5,
+          "total": 95
         },
-        "tpr": 99.46666666666667,
-        "fpr": 0.17777777777777778,
-        "precision": 99.82158786797503,
-        "f1": 99.64381121994657,
-        "accuracy": 99.64444444444445,
+        "tpr": 85.71428571428571,
+        "fpr": 6.666666666666667,
+        "precision": 88.23529411764706,
+        "f1": 86.95652173913044,
+        "accuracy": 90.52631578947368,
         "subsets": {
           "malicious": {
-            "n": 4500,
-            "tp": 4476,
-            "fn": 24,
-            "tpr": 99.46666666666667
+            "n": 35,
+            "tp": 30,
+            "fn": 5,
+            "tpr": 85.71428571428571
           },
           "benign": {
-            "n": 4500,
-            "fp": 8,
-            "tn": 4492,
-            "fpr": 0.17777777777777778
+            "n": 60,
+            "fp": 4,
+            "tn": 56,
+            "fpr": 6.666666666666667
           },
-          "adversarial_paraphrases": {
-            "n": 3600,
-            "tp": 3577,
-            "fn": 23,
-            "tpr": 99.36111111111111
-          },
-          "explicit_attacks": {
-            "n": 900,
-            "tp": 899,
-            "fn": 1,
-            "tpr": 99.8888888888889
-          },
-          "by_policy": {
-            "P-01": {
-              "n": 450,
-              "tp": 450,
+          "by_stratum": {
+            "easy": {
+              "n": 11,
+              "tp": 8,
+              "fn": 3,
+              "tpr": 72.72727272727273
+            },
+            "matched": {
+              "n": 14,
+              "tp": 14,
               "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Obvious Malicious Intent"
+              "tpr": 100.0
             },
-            "P-02": {
-              "n": 450,
-              "tp": 442,
-              "fn": 8,
-              "tpr": 98.22222222222223,
-              "policy_name": "Scope Creep"
-            },
-            "P-03": {
-              "n": 450,
-              "tp": 443,
-              "fn": 7,
-              "tpr": 98.44444444444444,
-              "policy_name": "Underspecified Scope"
-            },
-            "P-04": {
-              "n": 450,
-              "tp": 449,
-              "fn": 1,
-              "tpr": 99.77777777777777,
-              "policy_name": "Data Exfiltration"
-            },
-            "P-05": {
-              "n": 450,
-              "tp": 446,
-              "fn": 4,
-              "tpr": 99.11111111111111,
-              "policy_name": "Unauthorized Sharing"
-            },
-            "P-06": {
-              "n": 450,
-              "tp": 450,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Constraint Removal"
-            },
-            "P-07": {
-              "n": 450,
-              "tp": 450,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Temporal Expansion"
-            },
-            "P-08": {
-              "n": 450,
-              "tp": 449,
-              "fn": 1,
-              "tpr": 99.77777777777777,
-              "policy_name": "Resource Expansion"
-            },
-            "P-09": {
-              "n": 450,
-              "tp": 448,
+            "near_miss": {
+              "n": 10,
+              "tp": 8,
               "fn": 2,
-              "tpr": 99.55555555555556,
-              "policy_name": "Privilege Escalation"
-            },
-            "P-10": {
-              "n": 450,
-              "tp": 449,
-              "fn": 1,
-              "tpr": 99.77777777777777,
-              "policy_name": "Compound Violation"
+              "tpr": 80.0
             }
+          },
+          "by_source": {
+            "generated": {
+              "n": 18,
+              "tp": 14,
+              "fn": 4,
+              "tpr": 77.77777777777779
+            },
+            "original_190": {
+              "n": 3,
+              "tp": 2,
+              "fn": 1,
+              "tpr": 66.66666666666666
+            },
+            "v3-matched": {
+              "n": 14,
+              "tp": 14,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 72.72727272727273,
+            "matched": 100.0,
+            "near_miss": 80.0
+          }
+        }
+      },
+      "training_curve": [
+        {
+          "epoch": 0,
+          "threshold": 0.0,
+          "accuracy": 36.84210526315789,
+          "tpr": 100.0,
+          "fpr": 100.0,
+          "precision": 36.84210526315789,
+          "f1": 53.84615384615385,
+          "easy_tpr": 100.0,
+          "matched_tpr": 100.0,
+          "near_miss_tpr": 100.0
+        },
+        {
+          "epoch": 1,
+          "threshold": 0.53,
+          "accuracy": 75.78947368421053,
+          "tpr": 91.42857142857143,
+          "fpr": 33.33333333333333,
+          "precision": 61.53846153846154,
+          "f1": 73.5632183908046,
+          "easy_tpr": 81.81818181818183,
+          "matched_tpr": 92.85714285714286,
+          "near_miss_tpr": 100.0
+        },
+        {
+          "epoch": 2,
+          "threshold": 0.7000000000000001,
+          "accuracy": 88.42105263157895,
+          "tpr": 88.57142857142857,
+          "fpr": 11.666666666666666,
+          "precision": 81.57894736842105,
+          "f1": 84.93150684931507,
+          "easy_tpr": 72.72727272727273,
+          "matched_tpr": 100.0,
+          "near_miss_tpr": 90.0
+        },
+        {
+          "epoch": 3,
+          "threshold": 0.735,
+          "accuracy": 89.47368421052632,
+          "tpr": 91.42857142857143,
+          "fpr": 11.666666666666666,
+          "precision": 82.05128205128204,
+          "f1": 86.48648648648648,
+          "easy_tpr": 72.72727272727273,
+          "matched_tpr": 100.0,
+          "near_miss_tpr": 100.0
+        },
+        {
+          "epoch": 4,
+          "threshold": 0.865,
+          "accuracy": 90.52631578947368,
+          "tpr": 85.71428571428571,
+          "fpr": 6.666666666666667,
+          "precision": 88.23529411764706,
+          "f1": 86.95652173913044,
+          "easy_tpr": 72.72727272727273,
+          "matched_tpr": 100.0,
+          "near_miss_tpr": 80.0
+        }
+      ],
+      "train_log_history": [
+        {
+          "loss": 0.9703433227539062,
+          "grad_norm": 6.49189567565918,
+          "learning_rate": 5.263157894736842e-06,
+          "epoch": 3.125,
+          "step": 50
+        },
+        {
+          "train_runtime": 5.0008,
+          "train_samples_per_second": 391.135,
+          "train_steps_per_second": 12.798,
+          "total_flos": 0.0,
+          "train_loss": 0.8655653744935989,
+          "epoch": 4.0,
+          "step": 64
+        }
+      ],
+      "fixed_threshold_summary": {
+        "threshold": 0.735,
+        "n": 95,
+        "confusion": {
+          "tp": 31,
+          "fp": 6,
+          "tn": 54,
+          "fn": 4,
+          "total": 95
+        },
+        "tpr": 88.57142857142857,
+        "fpr": 10.0,
+        "precision": 83.78378378378379,
+        "f1": 86.11111111111111,
+        "accuracy": 89.47368421052632,
+        "subsets": {
+          "malicious": {
+            "n": 35,
+            "tp": 31,
+            "fn": 4,
+            "tpr": 88.57142857142857
+          },
+          "benign": {
+            "n": 60,
+            "fp": 6,
+            "tn": 54,
+            "fpr": 10.0
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 11,
+              "tp": 8,
+              "fn": 3,
+              "tpr": 72.72727272727273
+            },
+            "matched": {
+              "n": 14,
+              "tp": 14,
+              "fn": 0,
+              "tpr": 100.0
+            },
+            "near_miss": {
+              "n": 10,
+              "tp": 9,
+              "fn": 1,
+              "tpr": 90.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 18,
+              "tp": 15,
+              "fn": 3,
+              "tpr": 83.33333333333334
+            },
+            "original_190": {
+              "n": 3,
+              "tp": 2,
+              "fn": 1,
+              "tpr": 66.66666666666666
+            },
+            "v3-matched": {
+              "n": 14,
+              "tp": 14,
+              "fn": 0,
+              "tpr": 100.0
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 72.72727272727273,
+            "matched": 100.0,
+            "near_miss": 90.0
+          }
+        }
+      }
+    },
+    {
+      "fold": 2,
+      "train_rows": 475,
+      "train_pairs": 475,
+      "test_rows": 109,
+      "test_examples": 109,
+      "threshold": 0.745,
+      "threshold_f1": 81.57894736842105,
+      "train_time_sec": 10.3,
+      "summary": {
+        "threshold": 0.745,
+        "n": 109,
+        "confusion": {
+          "tp": 31,
+          "fp": 4,
+          "tn": 64,
+          "fn": 10,
+          "total": 109
+        },
+        "tpr": 75.60975609756098,
+        "fpr": 5.88235294117647,
+        "precision": 88.57142857142857,
+        "f1": 81.57894736842105,
+        "accuracy": 87.1559633027523,
+        "subsets": {
+          "malicious": {
+            "n": 41,
+            "tp": 31,
+            "fn": 10,
+            "tpr": 75.60975609756098
+          },
+          "benign": {
+            "n": 68,
+            "fp": 4,
+            "tn": 64,
+            "fpr": 5.88235294117647
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 13,
+              "tp": 11,
+              "fn": 2,
+              "tpr": 84.61538461538461
+            },
+            "matched": {
+              "n": 18,
+              "tp": 13,
+              "fn": 5,
+              "tpr": 72.22222222222221
+            },
+            "near_miss": {
+              "n": 10,
+              "tp": 7,
+              "fn": 3,
+              "tpr": 70.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 18,
+              "tp": 14,
+              "fn": 4,
+              "tpr": 77.77777777777779
+            },
+            "original_190": {
+              "n": 5,
+              "tp": 4,
+              "fn": 1,
+              "tpr": 80.0
+            },
+            "v3-matched": {
+              "n": 18,
+              "tp": 13,
+              "fn": 5,
+              "tpr": 72.22222222222221
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 84.61538461538461,
+            "matched": 72.22222222222221,
+            "near_miss": 70.0
+          }
+        }
+      },
+      "training_curve": [
+        {
+          "epoch": 0,
+          "threshold": 0.01,
+          "accuracy": 39.44954128440367,
+          "tpr": 97.5609756097561,
+          "fpr": 95.58823529411765,
+          "precision": 38.095238095238095,
+          "f1": 54.794520547945204,
+          "easy_tpr": 100.0,
+          "matched_tpr": 100.0,
+          "near_miss_tpr": 90.0
+        },
+        {
+          "epoch": 1,
+          "threshold": 0.41000000000000003,
+          "accuracy": 77.98165137614679,
+          "tpr": 80.48780487804879,
+          "fpr": 23.52941176470588,
+          "precision": 67.3469387755102,
+          "f1": 73.33333333333333,
+          "easy_tpr": 92.3076923076923,
+          "matched_tpr": 77.77777777777779,
+          "near_miss_tpr": 70.0
+        },
+        {
+          "epoch": 2,
+          "threshold": 0.67,
+          "accuracy": 87.1559633027523,
+          "tpr": 78.04878048780488,
+          "fpr": 7.352941176470589,
+          "precision": 86.48648648648648,
+          "f1": 82.05128205128204,
+          "easy_tpr": 84.61538461538461,
+          "matched_tpr": 77.77777777777779,
+          "near_miss_tpr": 70.0
+        },
+        {
+          "epoch": 3,
+          "threshold": 0.74,
+          "accuracy": 87.1559633027523,
+          "tpr": 73.17073170731707,
+          "fpr": 4.411764705882353,
+          "precision": 90.9090909090909,
+          "f1": 81.08108108108108,
+          "easy_tpr": 84.61538461538461,
+          "matched_tpr": 66.66666666666666,
+          "near_miss_tpr": 70.0
+        },
+        {
+          "epoch": 4,
+          "threshold": 0.745,
+          "accuracy": 87.1559633027523,
+          "tpr": 75.60975609756098,
+          "fpr": 5.88235294117647,
+          "precision": 88.57142857142857,
+          "f1": 81.57894736842105,
+          "easy_tpr": 84.61538461538461,
+          "matched_tpr": 72.22222222222221,
+          "near_miss_tpr": 70.0
+        }
+      ],
+      "train_log_history": [
+        {
+          "loss": 0.9582984924316407,
+          "grad_norm": 5.1054229736328125,
+          "learning_rate": 4.074074074074074e-06,
+          "epoch": 3.3333333333333335,
+          "step": 50
+        },
+        {
+          "train_runtime": 4.8004,
+          "train_samples_per_second": 395.8,
+          "train_steps_per_second": 12.499,
+          "total_flos": 0.0,
+          "train_loss": 0.8847002506256103,
+          "epoch": 4.0,
+          "step": 60
+        }
+      ],
+      "fixed_threshold_summary": {
+        "threshold": 0.735,
+        "n": 109,
+        "confusion": {
+          "tp": 31,
+          "fp": 5,
+          "tn": 63,
+          "fn": 10,
+          "total": 109
+        },
+        "tpr": 75.60975609756098,
+        "fpr": 7.352941176470589,
+        "precision": 86.11111111111111,
+        "f1": 80.51948051948052,
+        "accuracy": 86.23853211009175,
+        "subsets": {
+          "malicious": {
+            "n": 41,
+            "tp": 31,
+            "fn": 10,
+            "tpr": 75.60975609756098
+          },
+          "benign": {
+            "n": 68,
+            "fp": 5,
+            "tn": 63,
+            "fpr": 7.352941176470589
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 13,
+              "tp": 11,
+              "fn": 2,
+              "tpr": 84.61538461538461
+            },
+            "matched": {
+              "n": 18,
+              "tp": 13,
+              "fn": 5,
+              "tpr": 72.22222222222221
+            },
+            "near_miss": {
+              "n": 10,
+              "tp": 7,
+              "fn": 3,
+              "tpr": 70.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 18,
+              "tp": 14,
+              "fn": 4,
+              "tpr": 77.77777777777779
+            },
+            "original_190": {
+              "n": 5,
+              "tp": 4,
+              "fn": 1,
+              "tpr": 80.0
+            },
+            "v3-matched": {
+              "n": 18,
+              "tp": 13,
+              "fn": 5,
+              "tpr": 72.22222222222221
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 84.61538461538461,
+            "matched": 72.22222222222221,
+            "near_miss": 70.0
+          }
+        }
+      }
+    },
+    {
+      "fold": 3,
+      "train_rows": 446,
+      "train_pairs": 446,
+      "test_rows": 138,
+      "test_examples": 138,
+      "threshold": 0.72,
+      "threshold_f1": 78.50467289719626,
+      "train_time_sec": 10.1,
+      "summary": {
+        "threshold": 0.72,
+        "n": 138,
+        "confusion": {
+          "tp": 42,
+          "fp": 12,
+          "tn": 73,
+          "fn": 11,
+          "total": 138
+        },
+        "tpr": 79.24528301886792,
+        "fpr": 14.117647058823529,
+        "precision": 77.77777777777779,
+        "f1": 78.50467289719626,
+        "accuracy": 83.33333333333334,
+        "subsets": {
+          "malicious": {
+            "n": 53,
+            "tp": 42,
+            "fn": 11,
+            "tpr": 79.24528301886792
+          },
+          "benign": {
+            "n": 85,
+            "fp": 12,
+            "tn": 73,
+            "fpr": 14.117647058823529
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 20,
+              "tp": 14,
+              "fn": 6,
+              "tpr": 70.0
+            },
+            "matched": {
+              "n": 19,
+              "tp": 15,
+              "fn": 4,
+              "tpr": 78.94736842105263
+            },
+            "near_miss": {
+              "n": 14,
+              "tp": 13,
+              "fn": 1,
+              "tpr": 92.85714285714286
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 26,
+              "tp": 22,
+              "fn": 4,
+              "tpr": 84.61538461538461
+            },
+            "original_190": {
+              "n": 8,
+              "tp": 5,
+              "fn": 3,
+              "tpr": 62.5
+            },
+            "v3-matched": {
+              "n": 19,
+              "tp": 15,
+              "fn": 4,
+              "tpr": 78.94736842105263
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 70.0,
+            "matched": 78.94736842105263,
+            "near_miss": 92.85714285714286
           }
         }
       },
@@ -663,335 +884,394 @@
         {
           "epoch": 0,
           "threshold": 0.015,
-          "accuracy": 65.94444444444446,
-          "tpr": 76.97777777777777,
-          "fpr": 45.08888888888889,
-          "precision": 63.06207900964864,
-          "f1": 69.32852997097969,
-          "adversarial_paraphrases_tpr": 77.61111111111111,
-          "explicit_attacks_tpr": 74.44444444444444
+          "accuracy": 50.72463768115942,
+          "tpr": 84.90566037735849,
+          "fpr": 70.58823529411765,
+          "precision": 42.857142857142854,
+          "f1": 56.9620253164557,
+          "easy_tpr": 100.0,
+          "matched_tpr": 78.94736842105263,
+          "near_miss_tpr": 71.42857142857143
         },
         {
           "epoch": 1,
-          "threshold": 0.925,
-          "accuracy": 99.2,
-          "tpr": 98.95555555555555,
-          "fpr": 0.5555555555555556,
-          "precision": 99.44171505136221,
-          "f1": 99.19803965248384,
-          "adversarial_paraphrases_tpr": 98.91666666666666,
-          "explicit_attacks_tpr": 99.11111111111111
+          "threshold": 0.43,
+          "accuracy": 68.11594202898551,
+          "tpr": 84.90566037735849,
+          "fpr": 42.35294117647059,
+          "precision": 55.55555555555556,
+          "f1": 67.16417910447761,
+          "easy_tpr": 85.0,
+          "matched_tpr": 73.68421052631578,
+          "near_miss_tpr": 100.0
         },
         {
           "epoch": 2,
-          "threshold": 0.065,
-          "accuracy": 99.53333333333333,
-          "tpr": 99.42222222222222,
-          "fpr": 0.35555555555555557,
-          "precision": 99.64365256124722,
-          "f1": 99.53281423804226,
-          "adversarial_paraphrases_tpr": 99.27777777777777,
-          "explicit_attacks_tpr": 100.0
+          "threshold": 0.52,
+          "accuracy": 77.53623188405797,
+          "tpr": 86.79245283018868,
+          "fpr": 28.235294117647058,
+          "precision": 65.71428571428571,
+          "f1": 74.79674796747967,
+          "easy_tpr": 85.0,
+          "matched_tpr": 84.21052631578947,
+          "near_miss_tpr": 92.85714285714286
         },
         {
           "epoch": 3,
-          "threshold": 0.005,
-          "accuracy": 99.62222222222222,
-          "tpr": 99.55555555555556,
-          "fpr": 0.3111111111111111,
-          "precision": 99.68847352024922,
-          "f1": 99.62197020235712,
-          "adversarial_paraphrases_tpr": 99.44444444444444,
-          "explicit_attacks_tpr": 100.0
+          "threshold": 0.5650000000000001,
+          "accuracy": 80.43478260869566,
+          "tpr": 86.79245283018868,
+          "fpr": 23.52941176470588,
+          "precision": 69.6969696969697,
+          "f1": 77.31092436974791,
+          "easy_tpr": 85.0,
+          "matched_tpr": 84.21052631578947,
+          "near_miss_tpr": 92.85714285714286
         },
         {
           "epoch": 4,
-          "threshold": 0.6900000000000001,
-          "accuracy": 99.64444444444445,
-          "tpr": 99.46666666666667,
-          "fpr": 0.17777777777777778,
-          "precision": 99.82158786797503,
-          "f1": 99.64381121994657,
-          "adversarial_paraphrases_tpr": 99.36111111111111,
-          "explicit_attacks_tpr": 99.8888888888889
+          "threshold": 0.72,
+          "accuracy": 83.33333333333334,
+          "tpr": 79.24528301886792,
+          "fpr": 14.117647058823529,
+          "precision": 77.77777777777779,
+          "f1": 78.50467289719626,
+          "easy_tpr": 70.0,
+          "matched_tpr": 78.94736842105263,
+          "near_miss_tpr": 92.85714285714286
         }
       ],
       "train_log_history": [
         {
-          "loss": 1.171481170654297,
-          "grad_norm": 6.903168201446533,
-          "learning_rate": 8.672566371681418e-06,
-          "epoch": 0.1773049645390071,
+          "loss": 0.9296723175048828,
+          "grad_norm": 7.366136074066162,
+          "learning_rate": 2.8000000000000003e-06,
+          "epoch": 3.571428571428571,
           "step": 50
         },
         {
-          "loss": 0.13391148567199707,
-          "grad_norm": 8.653426170349121,
-          "learning_rate": 1.7522123893805313e-05,
-          "epoch": 0.3546099290780142,
-          "step": 100
-        },
-        {
-          "loss": 0.07925154209136963,
-          "grad_norm": 0.3432803452014923,
-          "learning_rate": 1.9290640394088673e-05,
-          "epoch": 0.5319148936170213,
-          "step": 150
-        },
-        {
-          "loss": 0.047530961036682126,
-          "grad_norm": 1.4740899801254272,
-          "learning_rate": 1.8305418719211825e-05,
-          "epoch": 0.7092198581560284,
-          "step": 200
-        },
-        {
-          "loss": 0.05198293209075928,
-          "grad_norm": 1.0787742137908936,
-          "learning_rate": 1.7320197044334977e-05,
-          "epoch": 0.8865248226950354,
-          "step": 250
-        },
-        {
-          "loss": 0.04815768718719483,
-          "grad_norm": 0.05988122895359993,
-          "learning_rate": 1.633497536945813e-05,
-          "epoch": 1.0638297872340425,
-          "step": 300
-        },
-        {
-          "loss": 0.03456507682800293,
-          "grad_norm": 9.033171653747559,
-          "learning_rate": 1.5349753694581282e-05,
-          "epoch": 1.2411347517730495,
-          "step": 350
-        },
-        {
-          "loss": 0.016833652257919312,
-          "grad_norm": 0.09005344659090042,
-          "learning_rate": 1.4364532019704436e-05,
-          "epoch": 1.4184397163120568,
-          "step": 400
-        },
-        {
-          "loss": 0.040961289405822755,
-          "grad_norm": 0.03609929606318474,
-          "learning_rate": 1.3379310344827587e-05,
-          "epoch": 1.5957446808510638,
-          "step": 450
-        },
-        {
-          "loss": 0.028050451278686522,
-          "grad_norm": 0.03829222545027733,
-          "learning_rate": 1.239408866995074e-05,
-          "epoch": 1.773049645390071,
-          "step": 500
-        },
-        {
-          "loss": 0.040478601455688476,
-          "grad_norm": 1.2967908382415771,
-          "learning_rate": 1.1408866995073893e-05,
-          "epoch": 1.950354609929078,
-          "step": 550
-        },
-        {
-          "loss": 0.013008118867874145,
-          "grad_norm": 0.022631732746958733,
-          "learning_rate": 1.0423645320197044e-05,
-          "epoch": 2.127659574468085,
-          "step": 600
-        },
-        {
-          "loss": 0.018230724334716796,
-          "grad_norm": 0.030239295214414597,
-          "learning_rate": 9.438423645320198e-06,
-          "epoch": 2.3049645390070923,
-          "step": 650
-        },
-        {
-          "loss": 0.00831307053565979,
-          "grad_norm": 0.023365363478660583,
-          "learning_rate": 8.45320197044335e-06,
-          "epoch": 2.482269503546099,
-          "step": 700
-        },
-        {
-          "loss": 0.015547747611999512,
-          "grad_norm": 0.011608348228037357,
-          "learning_rate": 7.467980295566503e-06,
-          "epoch": 2.6595744680851063,
-          "step": 750
-        },
-        {
-          "loss": 0.0012208472937345505,
-          "grad_norm": 0.012256898917257786,
-          "learning_rate": 6.482758620689655e-06,
-          "epoch": 2.8368794326241136,
-          "step": 800
-        },
-        {
-          "loss": 0.009233318567276001,
-          "grad_norm": 0.006654131691902876,
-          "learning_rate": 5.497536945812808e-06,
-          "epoch": 3.0141843971631204,
-          "step": 850
-        },
-        {
-          "loss": 0.00675654411315918,
-          "grad_norm": 0.007950381375849247,
-          "learning_rate": 4.512315270935961e-06,
-          "epoch": 3.1914893617021276,
-          "step": 900
-        },
-        {
-          "loss": 0.0027702710032463072,
-          "grad_norm": 0.010414198972284794,
-          "learning_rate": 3.5270935960591133e-06,
-          "epoch": 3.368794326241135,
-          "step": 950
-        },
-        {
-          "loss": 0.009413918256759643,
-          "grad_norm": 0.00834116991609335,
-          "learning_rate": 2.541871921182266e-06,
-          "epoch": 3.546099290780142,
-          "step": 1000
-        },
-        {
-          "loss": 0.001627151072025299,
-          "grad_norm": 7.6962409019470215,
-          "learning_rate": 1.556650246305419e-06,
-          "epoch": 3.723404255319149,
-          "step": 1050
-        },
-        {
-          "loss": 0.0025164616107940675,
-          "grad_norm": 0.011369386687874794,
-          "learning_rate": 5.714285714285715e-07,
-          "epoch": 3.900709219858156,
-          "step": 1100
-        },
-        {
-          "train_runtime": 120.9718,
-          "train_samples_per_second": 297.59,
-          "train_steps_per_second": 9.324,
+          "train_runtime": 4.6948,
+          "train_samples_per_second": 379.997,
+          "train_steps_per_second": 11.928,
           "total_flos": 0.0,
-          "train_loss": 0.07931013410276871,
+          "train_loss": 0.8809622483594077,
           "epoch": 4.0,
-          "step": 1128
+          "step": 56
         }
       ],
       "fixed_threshold_summary": {
-        "threshold": 0.8075000000000001,
-        "n": 9000,
+        "threshold": 0.735,
+        "n": 138,
         "confusion": {
-          "tp": 4472,
-          "fp": 6,
-          "tn": 4494,
-          "fn": 28,
-          "total": 9000
+          "tp": 40,
+          "fp": 12,
+          "tn": 73,
+          "fn": 13,
+          "total": 138
         },
-        "tpr": 99.37777777777778,
-        "fpr": 0.13333333333333333,
-        "precision": 99.86601161232693,
-        "f1": 99.62129650256182,
-        "accuracy": 99.62222222222222,
+        "tpr": 75.47169811320755,
+        "fpr": 14.117647058823529,
+        "precision": 76.92307692307693,
+        "f1": 76.19047619047619,
+        "accuracy": 81.88405797101449,
         "subsets": {
           "malicious": {
-            "n": 4500,
-            "tp": 4472,
-            "fn": 28,
-            "tpr": 99.37777777777778
+            "n": 53,
+            "tp": 40,
+            "fn": 13,
+            "tpr": 75.47169811320755
           },
           "benign": {
-            "n": 4500,
-            "fp": 6,
-            "tn": 4494,
-            "fpr": 0.13333333333333333
+            "n": 85,
+            "fp": 12,
+            "tn": 73,
+            "fpr": 14.117647058823529
           },
-          "adversarial_paraphrases": {
-            "n": 3600,
-            "tp": 3573,
-            "fn": 27,
-            "tpr": 99.25
-          },
-          "explicit_attacks": {
-            "n": 900,
-            "tp": 899,
-            "fn": 1,
-            "tpr": 99.8888888888889
-          },
-          "by_policy": {
-            "P-01": {
-              "n": 450,
-              "tp": 450,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Obvious Malicious Intent"
-            },
-            "P-02": {
-              "n": 450,
-              "tp": 442,
+          "by_stratum": {
+            "easy": {
+              "n": 20,
+              "tp": 12,
               "fn": 8,
-              "tpr": 98.22222222222223,
-              "policy_name": "Scope Creep"
+              "tpr": 60.0
             },
-            "P-03": {
-              "n": 450,
-              "tp": 441,
-              "fn": 9,
-              "tpr": 98.0,
-              "policy_name": "Underspecified Scope"
-            },
-            "P-04": {
-              "n": 450,
-              "tp": 449,
-              "fn": 1,
-              "tpr": 99.77777777777777,
-              "policy_name": "Data Exfiltration"
-            },
-            "P-05": {
-              "n": 450,
-              "tp": 446,
+            "matched": {
+              "n": 19,
+              "tp": 15,
               "fn": 4,
-              "tpr": 99.11111111111111,
-              "policy_name": "Unauthorized Sharing"
+              "tpr": 78.94736842105263
             },
-            "P-06": {
-              "n": 450,
-              "tp": 450,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Constraint Removal"
-            },
-            "P-07": {
-              "n": 450,
-              "tp": 450,
-              "fn": 0,
-              "tpr": 100.0,
-              "policy_name": "Temporal Expansion"
-            },
-            "P-08": {
-              "n": 450,
-              "tp": 449,
+            "near_miss": {
+              "n": 14,
+              "tp": 13,
               "fn": 1,
-              "tpr": 99.77777777777777,
-              "policy_name": "Resource Expansion"
-            },
-            "P-09": {
-              "n": 450,
-              "tp": 447,
-              "fn": 3,
-              "tpr": 99.33333333333333,
-              "policy_name": "Privilege Escalation"
-            },
-            "P-10": {
-              "n": 450,
-              "tp": 448,
-              "fn": 2,
-              "tpr": 99.55555555555556,
-              "policy_name": "Compound Violation"
+              "tpr": 92.85714285714286
             }
+          },
+          "by_source": {
+            "generated": {
+              "n": 26,
+              "tp": 21,
+              "fn": 5,
+              "tpr": 80.76923076923077
+            },
+            "original_190": {
+              "n": 8,
+              "tp": 4,
+              "fn": 4,
+              "tpr": 50.0
+            },
+            "v3-matched": {
+              "n": 19,
+              "tp": 15,
+              "fn": 4,
+              "tpr": 78.94736842105263
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 60.0,
+            "matched": 78.94736842105263,
+            "near_miss": 92.85714285714286
+          }
+        }
+      }
+    },
+    {
+      "fold": 4,
+      "train_rows": 450,
+      "train_pairs": 450,
+      "test_rows": 134,
+      "test_examples": 134,
+      "threshold": 0.71,
+      "threshold_f1": 87.91208791208791,
+      "train_time_sec": 10.2,
+      "summary": {
+        "threshold": 0.71,
+        "n": 134,
+        "confusion": {
+          "tp": 40,
+          "fp": 4,
+          "tn": 83,
+          "fn": 7,
+          "total": 134
+        },
+        "tpr": 85.1063829787234,
+        "fpr": 4.597701149425287,
+        "precision": 90.9090909090909,
+        "f1": 87.91208791208791,
+        "accuracy": 91.7910447761194,
+        "subsets": {
+          "malicious": {
+            "n": 47,
+            "tp": 40,
+            "fn": 7,
+            "tpr": 85.1063829787234
+          },
+          "benign": {
+            "n": 87,
+            "fp": 4,
+            "tn": 83,
+            "fpr": 4.597701149425287
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 16,
+              "tp": 13,
+              "fn": 3,
+              "tpr": 81.25
+            },
+            "matched": {
+              "n": 19,
+              "tp": 17,
+              "fn": 2,
+              "tpr": 89.47368421052632
+            },
+            "near_miss": {
+              "n": 12,
+              "tp": 10,
+              "fn": 2,
+              "tpr": 83.33333333333334
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 24,
+              "tp": 20,
+              "fn": 4,
+              "tpr": 83.33333333333334
+            },
+            "original_190": {
+              "n": 4,
+              "tp": 3,
+              "fn": 1,
+              "tpr": 75.0
+            },
+            "v3-matched": {
+              "n": 19,
+              "tp": 17,
+              "fn": 2,
+              "tpr": 89.47368421052632
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 81.25,
+            "matched": 89.47368421052632,
+            "near_miss": 83.33333333333334
+          }
+        }
+      },
+      "training_curve": [
+        {
+          "epoch": 0,
+          "threshold": 0.025,
+          "accuracy": 60.447761194029844,
+          "tpr": 72.3404255319149,
+          "fpr": 45.97701149425287,
+          "precision": 45.94594594594595,
+          "f1": 56.19834710743802,
+          "easy_tpr": 75.0,
+          "matched_tpr": 78.94736842105263,
+          "near_miss_tpr": 58.333333333333336
+        },
+        {
+          "epoch": 1,
+          "threshold": 0.645,
+          "accuracy": 80.59701492537313,
+          "tpr": 68.08510638297872,
+          "fpr": 12.643678160919542,
+          "precision": 74.4186046511628,
+          "f1": 71.11111111111111,
+          "easy_tpr": 68.75,
+          "matched_tpr": 68.42105263157895,
+          "near_miss_tpr": 66.66666666666666
+        },
+        {
+          "epoch": 2,
+          "threshold": 0.76,
+          "accuracy": 84.32835820895522,
+          "tpr": 82.97872340425532,
+          "fpr": 14.942528735632186,
+          "precision": 75.0,
+          "f1": 78.78787878787878,
+          "easy_tpr": 75.0,
+          "matched_tpr": 89.47368421052632,
+          "near_miss_tpr": 83.33333333333334
+        },
+        {
+          "epoch": 3,
+          "threshold": 0.62,
+          "accuracy": 91.04477611940298,
+          "tpr": 87.2340425531915,
+          "fpr": 6.896551724137931,
+          "precision": 87.2340425531915,
+          "f1": 87.2340425531915,
+          "easy_tpr": 87.5,
+          "matched_tpr": 89.47368421052632,
+          "near_miss_tpr": 83.33333333333334
+        },
+        {
+          "epoch": 4,
+          "threshold": 0.71,
+          "accuracy": 91.7910447761194,
+          "tpr": 85.1063829787234,
+          "fpr": 4.597701149425287,
+          "precision": 90.9090909090909,
+          "f1": 87.91208791208791,
+          "easy_tpr": 81.25,
+          "matched_tpr": 89.47368421052632,
+          "near_miss_tpr": 83.33333333333334
+        }
+      ],
+      "train_log_history": [
+        {
+          "loss": 1.0217562103271485,
+          "grad_norm": 7.441030502319336,
+          "learning_rate": 4.074074074074074e-06,
+          "epoch": 3.3333333333333335,
+          "step": 50
+        },
+        {
+          "train_runtime": 4.8094,
+          "train_samples_per_second": 374.27,
+          "train_steps_per_second": 12.476,
+          "total_flos": 0.0,
+          "train_loss": 0.9433137098948161,
+          "epoch": 4.0,
+          "step": 60
+        }
+      ],
+      "fixed_threshold_summary": {
+        "threshold": 0.735,
+        "n": 134,
+        "confusion": {
+          "tp": 39,
+          "fp": 4,
+          "tn": 83,
+          "fn": 8,
+          "total": 134
+        },
+        "tpr": 82.97872340425532,
+        "fpr": 4.597701149425287,
+        "precision": 90.69767441860465,
+        "f1": 86.66666666666667,
+        "accuracy": 91.04477611940298,
+        "subsets": {
+          "malicious": {
+            "n": 47,
+            "tp": 39,
+            "fn": 8,
+            "tpr": 82.97872340425532
+          },
+          "benign": {
+            "n": 87,
+            "fp": 4,
+            "tn": 83,
+            "fpr": 4.597701149425287
+          },
+          "by_stratum": {
+            "easy": {
+              "n": 16,
+              "tp": 13,
+              "fn": 3,
+              "tpr": 81.25
+            },
+            "matched": {
+              "n": 19,
+              "tp": 17,
+              "fn": 2,
+              "tpr": 89.47368421052632
+            },
+            "near_miss": {
+              "n": 12,
+              "tp": 9,
+              "fn": 3,
+              "tpr": 75.0
+            }
+          },
+          "by_source": {
+            "generated": {
+              "n": 24,
+              "tp": 19,
+              "fn": 5,
+              "tpr": 79.16666666666666
+            },
+            "original_190": {
+              "n": 4,
+              "tp": 3,
+              "fn": 1,
+              "tpr": 75.0
+            },
+            "v3-matched": {
+              "n": 19,
+              "tp": 17,
+              "fn": 2,
+              "tpr": 89.47368421052632
+            }
+          },
+          "recall_by_stratum": {
+            "easy": 81.25,
+            "matched": 89.47368421052632,
+            "near_miss": 75.0
           }
         }
       }
@@ -1000,684 +1280,742 @@
   "aggregate": {
     "metrics": {
       "accuracy": {
-        "mean": 99.53888888888889,
-        "std": 0.1055555555555614
+        "mean": 88.33910921811352,
+        "std": 2.9482067713953537
       },
       "tpr": {
-        "mean": 99.53333333333333,
-        "std": 0.06666666666666288
+        "mean": 82.40786883461486,
+        "std": 4.244496524664498
       },
       "fpr": {
-        "mean": 0.45555555555555555,
-        "std": 0.2777777777777778
+        "mean": 8.127873563218392,
+        "std": 3.378529757383382
       },
       "precision": {
-        "mean": 99.54534542900413,
-        "std": 0.27624243897090395
+        "mean": 86.37144554791614,
+        "std": 4.533327011043778
       },
       "f1": {
-        "mean": 99.53904371313467,
-        "std": 0.10476750681188918
+        "mean": 84.2631732560944,
+        "std": 3.61513608273402
       },
       "threshold": {
-        "mean": 0.8075000000000001,
-        "std": 0.1175
+        "mean": 0.735,
+        "std": 0.07463243262818116
       }
     },
     "subsets": {
       "malicious": {
         "tpr": {
-          "mean": 99.53333333333333,
-          "std": 0.06666666666666288
+          "mean": 82.40786883461486,
+          "std": 4.244496524664498
         }
       },
       "benign": {
         "fpr": {
-          "mean": 0.45555555555555555,
-          "std": 0.2777777777777778
+          "mean": 8.127873563218392,
+          "std": 3.378529757383382
         }
       },
-      "adversarial_paraphrases": {
-        "tpr": {
-          "mean": 99.43055555555556,
-          "std": 0.06944444444444287
-        }
-      },
-      "explicit_attacks": {
-        "tpr": {
-          "mean": 99.94444444444446,
-          "std": 0.05555555555555003
-        }
-      },
-      "by_policy": {
-        "P-01": {
-          "policy_name": "Obvious Malicious Intent",
+      "by_stratum": {
+        "easy": {
           "tpr": {
-            "mean": 100.0,
-            "std": 0.0
+            "mean": 78.99125874125875,
+            "std": 6.498690795299626
           }
         },
-        "P-02": {
-          "policy_name": "Scope Creep",
+        "matched": {
           "tpr": {
-            "mean": 98.22222222222223,
-            "std": 0.0
+            "mean": 88.12865497076024,
+            "std": 11.144302533168611
           }
         },
-        "P-03": {
-          "policy_name": "Underspecified Scope",
+        "near_miss": {
           "tpr": {
-            "mean": 99.0,
-            "std": 0.5555555555555571
-          }
-        },
-        "P-04": {
-          "policy_name": "Data Exfiltration",
-          "tpr": {
-            "mean": 99.88888888888889,
-            "std": 0.11111111111111427
-          }
-        },
-        "P-05": {
-          "policy_name": "Unauthorized Sharing",
-          "tpr": {
-            "mean": 99.11111111111111,
-            "std": 0.0
-          }
-        },
-        "P-06": {
-          "policy_name": "Constraint Removal",
-          "tpr": {
-            "mean": 100.0,
-            "std": 0.0
-          }
-        },
-        "P-07": {
-          "policy_name": "Temporal Expansion",
-          "tpr": {
-            "mean": 100.0,
-            "std": 0.0
-          }
-        },
-        "P-08": {
-          "policy_name": "Resource Expansion",
-          "tpr": {
-            "mean": 99.88888888888889,
-            "std": 0.11111111111111427
-          }
-        },
-        "P-09": {
-          "policy_name": "Privilege Escalation",
-          "tpr": {
-            "mean": 99.66666666666666,
-            "std": 0.11111111111110716
-          }
-        },
-        "P-10": {
-          "policy_name": "Compound Violation",
-          "tpr": {
-            "mean": 99.55555555555554,
-            "std": 0.22222222222222143
+            "mean": 78.57142857142858,
+            "std": 9.423278937877365
           }
         }
       }
     },
     "pooled_confusion": {
-      "tp": 8958,
-      "fp": 41,
-      "tn": 8959,
-      "fn": 42,
-      "total": 18000
-    }
+      "tp": 181,
+      "fp": 30,
+      "tn": 334,
+      "fn": 39,
+      "total": 584
+    },
+    "pooled_tpr": 82.27272727272728,
+    "pooled_fpr": 8.241758241758241
   },
   "aggregate_fixed_threshold": {
     "metrics": {
       "accuracy": {
-        "mean": 99.5,
-        "std": 0.12222222222222001
+        "mean": 86.95043230442933,
+        "std": 3.1625895179542596
       },
       "tpr": {
-        "mean": 99.48888888888888,
-        "std": 0.11111111111110716
+        "mean": 80.4354121463814,
+        "std": 4.927080946344542
       },
       "fpr": {
-        "mean": 0.4888888888888888,
-        "std": 0.3555555555555555
+        "mean": 9.08865787694388,
+        "std": 3.1427590827456586
       },
       "precision": {
-        "mean": 99.51265182386257,
-        "std": 0.3533597884643527
+        "mean": 84.57629997902262,
+        "std": 4.464306672202515
       },
       "f1": {
-        "mean": 99.50022696524987,
-        "std": 0.12106953731195347
+        "mean": 82.36813513284102,
+        "std": 3.848856122673069
       },
       "threshold": {
-        "mean": 0.8075000000000001,
+        "mean": 0.735,
         "std": 0.0
       }
     },
     "subsets": {
       "malicious": {
         "tpr": {
-          "mean": 99.48888888888888,
-          "std": 0.11111111111110716
+          "mean": 80.4354121463814,
+          "std": 4.927080946344542
         }
       },
       "benign": {
         "fpr": {
-          "mean": 0.4888888888888888,
-          "std": 0.3555555555555555
+          "mean": 9.08865787694388,
+          "std": 3.1427590827456586
         }
       },
-      "adversarial_paraphrases": {
-        "tpr": {
-          "mean": 99.375,
-          "std": 0.125
-        }
-      },
-      "explicit_attacks": {
-        "tpr": {
-          "mean": 99.94444444444446,
-          "std": 0.05555555555555003
-        }
-      },
-      "by_policy": {
-        "P-01": {
-          "policy_name": "Obvious Malicious Intent",
+      "by_stratum": {
+        "easy": {
           "tpr": {
-            "mean": 100.0,
-            "std": 0.0
+            "mean": 74.26398601398601,
+            "std": 8.533933640193492
           }
         },
-        "P-02": {
-          "policy_name": "Scope Creep",
+        "matched": {
           "tpr": {
-            "mean": 98.22222222222223,
-            "std": 0.0
+            "mean": 88.12865497076024,
+            "std": 11.144302533168611
           }
         },
-        "P-03": {
-          "policy_name": "Underspecified Scope",
+        "near_miss": {
           "tpr": {
-            "mean": 98.77777777777777,
-            "std": 0.7777777777777785
-          }
-        },
-        "P-04": {
-          "policy_name": "Data Exfiltration",
-          "tpr": {
-            "mean": 99.88888888888889,
-            "std": 0.11111111111111427
-          }
-        },
-        "P-05": {
-          "policy_name": "Unauthorized Sharing",
-          "tpr": {
-            "mean": 99.11111111111111,
-            "std": 0.0
-          }
-        },
-        "P-06": {
-          "policy_name": "Constraint Removal",
-          "tpr": {
-            "mean": 100.0,
-            "std": 0.0
-          }
-        },
-        "P-07": {
-          "policy_name": "Temporal Expansion",
-          "tpr": {
-            "mean": 100.0,
-            "std": 0.0
-          }
-        },
-        "P-08": {
-          "policy_name": "Resource Expansion",
-          "tpr": {
-            "mean": 99.88888888888889,
-            "std": 0.11111111111111427
-          }
-        },
-        "P-09": {
-          "policy_name": "Privilege Escalation",
-          "tpr": {
-            "mean": 99.55555555555554,
-            "std": 0.22222222222222143
-          }
-        },
-        "P-10": {
-          "policy_name": "Compound Violation",
-          "tpr": {
-            "mean": 99.44444444444444,
-            "std": 0.11111111111111427
+            "mean": 78.9047619047619,
+            "std": 10.602699352527674
           }
         }
       }
     },
     "pooled_confusion": {
-      "tp": 8954,
-      "fp": 44,
-      "tn": 8956,
-      "fn": 46,
-      "total": 18000
-    }
+      "tp": 176,
+      "fp": 33,
+      "tn": 331,
+      "fn": 44,
+      "total": 584
+    },
+    "pooled_tpr": 80.0,
+    "pooled_fpr": 9.065934065934066
   },
   "aggregate_curve": [
     {
       "epoch": 0,
       "threshold": {
-        "mean": 0.01,
-        "std": 0.005
+        "mean": 0.014000000000000002,
+        "std": 0.008602325267042627
       },
       "accuracy": {
-        "mean": 59.21666666666667,
-        "std": 6.727777777777785
+        "mean": 48.233549825290915,
+        "std": 8.857074875803315
       },
       "tpr": {
-        "mean": 87.01111111111112,
-        "std": 10.033333333333339
+        "mean": 89.14323048562407,
+        "std": 9.921062393041955
       },
       "fpr": {
-        "mean": 68.57777777777778,
-        "std": 23.488888888888887
+        "mean": 76.80569641649764,
+        "std": 19.514793821139843
       },
       "precision": {
-        "mean": 57.18908885852585,
-        "std": 5.872990151122792
+        "mean": 42.05041201369231,
+        "std": 3.9622798096674194
       },
       "f1": {
-        "mean": 68.23075230293796,
-        "std": 1.0977776680417222
+        "mean": 56.66790167129086,
+        "std": 2.664626099427349
       },
-      "adversarial_paraphrases_tpr": {
-        "mean": 87.15277777777777,
-        "std": 9.541666666666664
+      "easy_tpr": {
+        "mean": 94.0909090909091,
+        "std": 9.70643477457392
       },
-      "explicit_attacks_tpr": {
-        "mean": 86.44444444444444,
-        "std": 12.0
+      "near_miss_tpr": {
+        "mean": 79.5079365079365,
+        "std": 14.468182134624765
+      },
+      "matched_tpr": {
+        "mean": 90.04048582995952,
+        "std": 9.483022491956179
       }
     },
     {
       "epoch": 1,
       "threshold": {
-        "mean": 0.6950000000000001,
-        "std": 0.23
+        "mean": 0.515,
+        "std": 0.08648699324175861
       },
       "accuracy": {
-        "mean": 99.21111111111111,
-        "std": 0.011111111111112846
+        "mean": 74.75607566220245,
+        "std": 4.508886105504448
       },
       "tpr": {
-        "mean": 99.0111111111111,
-        "std": 0.055555555555557135
+        "mean": 80.43597406793694,
+        "std": 7.7893265656189445
       },
       "fpr": {
-        "mean": 0.5888888888888889,
-        "std": 0.033333333333333326
+        "mean": 28.934372887085868,
+        "std": 10.090084610587098
       },
       "precision": {
-        "mean": 99.40877549268959,
-        "std": 0.03293955867263065
+        "mean": 64.13554846777438,
+        "std": 6.352725387739013
       },
       "f1": {
-        "mean": 99.20952505660026,
-        "std": 0.011485404116413633
+        "mean": 70.77174212531907,
+        "std": 2.5231119186417863
       },
-      "adversarial_paraphrases_tpr": {
-        "mean": 98.875,
-        "std": 0.0416666666666643
+      "easy_tpr": {
+        "mean": 81.93881118881119,
+        "std": 7.627036332147172
       },
-      "explicit_attacks_tpr": {
-        "mean": 99.55555555555556,
-        "std": 0.44444444444444287
+      "near_miss_tpr": {
+        "mean": 80.66666666666666,
+        "std": 15.83245611605056
+      },
+      "matched_tpr": {
+        "mean": 77.93265214317846,
+        "std": 8.152342395977513
       }
     },
     {
       "epoch": 2,
       "threshold": {
-        "mean": 0.385,
-        "std": 0.32
+        "mean": 0.64,
+        "std": 0.09099450532861861
       },
       "accuracy": {
-        "mean": 99.45555555555555,
-        "std": 0.07777777777777573
+        "mean": 84.52535824250592,
+        "std": 3.7793805211411375
       },
       "tpr": {
-        "mean": 99.42222222222222,
-        "std": 0.0
+        "mean": 84.55100433146276,
+        "std": 3.7208740788395547
       },
       "fpr": {
-        "mean": 0.5111111111111112,
-        "std": 0.15555555555555559
+        "mean": 15.564486139283298,
+        "std": 6.979431711554547
       },
       "precision": {
-        "mean": 99.48878898044599,
-        "std": 0.15486358080123352
+        "mean": 77.58927724717198,
+        "std": 7.004080780146784
       },
       "f1": {
-        "mean": 99.45543421808821,
-        "std": 0.07738001995405597
+        "mean": 80.6352222616259,
+        "std": 3.5173383062452177
       },
-      "adversarial_paraphrases_tpr": {
-        "mean": 99.27777777777777,
-        "std": 0.0
+      "easy_tpr": {
+        "mean": 80.74125874125875,
+        "std": 5.691096244003127
       },
-      "explicit_attacks_tpr": {
-        "mean": 100.0,
-        "std": 0.0
+      "near_miss_tpr": {
+        "mean": 80.57142857142858,
+        "std": 10.512491220226007
+      },
+      "matched_tpr": {
+        "mean": 90.29239766081871,
+        "std": 8.749288518954405
       }
     },
     {
       "epoch": 3,
       "threshold": {
-        "mean": 0.47750000000000004,
-        "std": 0.47250000000000003
+        "mean": 0.667,
+        "std": 0.06727555276621662
       },
       "accuracy": {
-        "mean": 99.51666666666667,
-        "std": 0.10555555555555429
+        "mean": 87.39961902605323,
+        "std": 3.6979766300245736
       },
       "tpr": {
-        "mean": 99.61111111111111,
-        "std": 0.055555555555557135
+        "mean": 84.997886976581,
+        "std": 6.185813350535755
       },
       "fpr": {
-        "mean": 0.5777777777777777,
-        "std": 0.2666666666666666
+        "mean": 11.175878972278566,
+        "std": 6.635656615480921
       },
       "precision": {
-        "mean": 99.42416158877816,
-        "std": 0.26431193147106313
+        "mean": 83.2510043148341,
+        "std": 7.33962601358561
       },
       "f1": {
-        "mean": 99.51729120779498,
-        "std": 0.10467899456213559
+        "mean": 83.69523417082867,
+        "std": 3.873701912438286
       },
-      "adversarial_paraphrases_tpr": {
-        "mean": 99.51388888888889,
-        "std": 0.06944444444444287
+      "easy_tpr": {
+        "mean": 83.24125874125875,
+        "std": 5.355584258716577
       },
-      "explicit_attacks_tpr": {
-        "mean": 100.0,
-        "std": 0.0
+      "near_miss_tpr": {
+        "mean": 82.57142857142858,
+        "std": 12.815098804520183
+      },
+      "matched_tpr": {
+        "mean": 88.07017543859648,
+        "std": 12.325731979123018
       }
     },
     {
       "epoch": 4,
       "threshold": {
-        "mean": 0.8075000000000001,
-        "std": 0.1175
+        "mean": 0.735,
+        "std": 0.07463243262818116
       },
       "accuracy": {
-        "mean": 99.53888888888889,
-        "std": 0.1055555555555614
+        "mean": 88.33910921811352,
+        "std": 2.9482067713953537
       },
       "tpr": {
-        "mean": 99.53333333333333,
-        "std": 0.06666666666666288
+        "mean": 82.40786883461486,
+        "std": 4.244496524664498
       },
       "fpr": {
-        "mean": 0.45555555555555555,
-        "std": 0.2777777777777778
+        "mean": 8.127873563218392,
+        "std": 3.378529757383382
       },
       "precision": {
-        "mean": 99.54534542900413,
-        "std": 0.27624243897090395
+        "mean": 86.37144554791614,
+        "std": 4.533327011043778
       },
       "f1": {
-        "mean": 99.53904371313467,
-        "std": 0.10476750681188918
+        "mean": 84.2631732560944,
+        "std": 3.61513608273402
       },
-      "adversarial_paraphrases_tpr": {
-        "mean": 99.43055555555556,
-        "std": 0.06944444444444287
+      "easy_tpr": {
+        "mean": 78.99125874125875,
+        "std": 6.498690795299626
       },
-      "explicit_attacks_tpr": {
-        "mean": 99.94444444444446,
-        "std": 0.05555555555555003
+      "near_miss_tpr": {
+        "mean": 78.57142857142858,
+        "std": 9.423278937877365
+      },
+      "matched_tpr": {
+        "mean": 88.12865497076024,
+        "std": 11.144302533168611
       }
     }
   ],
-  "final_threshold": 0.8075000000000001,
+  "final_threshold": 0.735,
   "baseline": {
     "description": "off-the-shelf (pre-trained, un-fine-tuned) NLI baseline",
     "folds": [
       {
         "fold": 0,
-        "threshold": 0.005,
-        "threshold_f1": 67.13297463489624,
+        "threshold": 0.02,
+        "threshold_f1": 61.53846153846154,
         "summary": {
-          "threshold": 0.005,
-          "n": 9000,
+          "threshold": 0.02,
+          "n": 108,
           "confusion": {
-            "tp": 4367,
-            "fp": 4143,
-            "tn": 357,
-            "fn": 133,
-            "total": 9000
+            "tp": 40,
+            "fp": 46,
+            "tn": 18,
+            "fn": 4,
+            "total": 108
           },
-          "tpr": 97.04444444444445,
-          "fpr": 92.06666666666666,
-          "precision": 51.31609870740306,
-          "f1": 67.13297463489624,
-          "accuracy": 52.48888888888889,
+          "tpr": 90.9090909090909,
+          "fpr": 71.875,
+          "precision": 46.51162790697674,
+          "f1": 61.53846153846154,
+          "accuracy": 53.70370370370371,
           "subsets": {
             "malicious": {
-              "n": 4500,
-              "tp": 4367,
-              "fn": 133,
-              "tpr": 97.04444444444445
+              "n": 44,
+              "tp": 40,
+              "fn": 4,
+              "tpr": 90.9090909090909
             },
             "benign": {
-              "n": 4500,
-              "fp": 4143,
-              "tn": 357,
-              "fpr": 92.06666666666666
+              "n": 64,
+              "fp": 46,
+              "tn": 18,
+              "fpr": 71.875
             },
-            "adversarial_paraphrases": {
-              "n": 3600,
-              "tp": 3481,
-              "fn": 119,
-              "tpr": 96.69444444444444
-            },
-            "explicit_attacks": {
-              "n": 900,
-              "tp": 886,
-              "fn": 14,
-              "tpr": 98.44444444444444
-            },
-            "by_policy": {
-              "P-01": {
-                "n": 450,
-                "tp": 450,
-                "fn": 0,
-                "tpr": 100.0,
-                "policy_name": "Obvious Malicious Intent"
+            "by_stratum": {
+              "easy": {
+                "n": 22,
+                "tp": 21,
+                "fn": 1,
+                "tpr": 95.45454545454545
               },
-              "P-02": {
-                "n": 450,
-                "tp": 406,
-                "fn": 44,
-                "tpr": 90.22222222222223,
-                "policy_name": "Scope Creep"
+              "matched": {
+                "n": 13,
+                "tp": 12,
+                "fn": 1,
+                "tpr": 92.3076923076923
               },
-              "P-03": {
-                "n": 450,
-                "tp": 448,
+              "near_miss": {
+                "n": 9,
+                "tp": 7,
                 "fn": 2,
-                "tpr": 99.55555555555556,
-                "policy_name": "Underspecified Scope"
-              },
-              "P-04": {
-                "n": 450,
-                "tp": 436,
-                "fn": 14,
-                "tpr": 96.88888888888889,
-                "policy_name": "Data Exfiltration"
-              },
-              "P-05": {
-                "n": 450,
-                "tp": 435,
-                "fn": 15,
-                "tpr": 96.66666666666667,
-                "policy_name": "Unauthorized Sharing"
-              },
-              "P-06": {
-                "n": 450,
-                "tp": 449,
-                "fn": 1,
-                "tpr": 99.77777777777777,
-                "policy_name": "Constraint Removal"
-              },
-              "P-07": {
-                "n": 450,
-                "tp": 445,
-                "fn": 5,
-                "tpr": 98.88888888888889,
-                "policy_name": "Temporal Expansion"
-              },
-              "P-08": {
-                "n": 450,
-                "tp": 449,
-                "fn": 1,
-                "tpr": 99.77777777777777,
-                "policy_name": "Resource Expansion"
-              },
-              "P-09": {
-                "n": 450,
-                "tp": 450,
-                "fn": 0,
-                "tpr": 100.0,
-                "policy_name": "Privilege Escalation"
-              },
-              "P-10": {
-                "n": 450,
-                "tp": 399,
-                "fn": 51,
-                "tpr": 88.66666666666667,
-                "policy_name": "Compound Violation"
+                "tpr": 77.77777777777779
               }
+            },
+            "by_source": {
+              "generated": {
+                "n": 17,
+                "tp": 14,
+                "fn": 3,
+                "tpr": 82.35294117647058
+              },
+              "original_190": {
+                "n": 14,
+                "tp": 14,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 13,
+                "tp": 12,
+                "fn": 1,
+                "tpr": 92.3076923076923
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 95.45454545454545,
+              "matched": 92.3076923076923,
+              "near_miss": 77.77777777777779
             }
           }
         }
       },
       {
         "fold": 1,
-        "threshold": 0.015,
-        "threshold_f1": 69.32852997097969,
+        "threshold": 0.0,
+        "threshold_f1": 53.84615384615385,
         "summary": {
-          "threshold": 0.015,
-          "n": 9000,
+          "threshold": 0.0,
+          "n": 95,
           "confusion": {
-            "tp": 3464,
-            "fp": 2029,
-            "tn": 2471,
-            "fn": 1036,
-            "total": 9000
+            "tp": 35,
+            "fp": 60,
+            "tn": 0,
+            "fn": 0,
+            "total": 95
           },
-          "tpr": 76.97777777777777,
-          "fpr": 45.08888888888889,
-          "precision": 63.06207900964864,
-          "f1": 69.32852997097969,
-          "accuracy": 65.94444444444446,
+          "tpr": 100.0,
+          "fpr": 100.0,
+          "precision": 36.84210526315789,
+          "f1": 53.84615384615385,
+          "accuracy": 36.84210526315789,
           "subsets": {
             "malicious": {
-              "n": 4500,
-              "tp": 3464,
-              "fn": 1036,
-              "tpr": 76.97777777777777
+              "n": 35,
+              "tp": 35,
+              "fn": 0,
+              "tpr": 100.0
             },
             "benign": {
-              "n": 4500,
-              "fp": 2029,
-              "tn": 2471,
-              "fpr": 45.08888888888889
+              "n": 60,
+              "fp": 60,
+              "tn": 0,
+              "fpr": 100.0
             },
-            "adversarial_paraphrases": {
-              "n": 3600,
-              "tp": 2794,
-              "fn": 806,
-              "tpr": 77.61111111111111
-            },
-            "explicit_attacks": {
-              "n": 900,
-              "tp": 670,
-              "fn": 230,
-              "tpr": 74.44444444444444
-            },
-            "by_policy": {
-              "P-01": {
-                "n": 450,
-                "tp": 447,
-                "fn": 3,
-                "tpr": 99.33333333333333,
-                "policy_name": "Obvious Malicious Intent"
+            "by_stratum": {
+              "easy": {
+                "n": 11,
+                "tp": 11,
+                "fn": 0,
+                "tpr": 100.0
               },
-              "P-02": {
-                "n": 450,
-                "tp": 265,
-                "fn": 185,
-                "tpr": 58.88888888888889,
-                "policy_name": "Scope Creep"
+              "matched": {
+                "n": 14,
+                "tp": 14,
+                "fn": 0,
+                "tpr": 100.0
               },
-              "P-03": {
-                "n": 450,
-                "tp": 400,
-                "fn": 50,
-                "tpr": 88.88888888888889,
-                "policy_name": "Underspecified Scope"
-              },
-              "P-04": {
-                "n": 450,
-                "tp": 223,
-                "fn": 227,
-                "tpr": 49.55555555555556,
-                "policy_name": "Data Exfiltration"
-              },
-              "P-05": {
-                "n": 450,
-                "tp": 234,
-                "fn": 216,
-                "tpr": 52.0,
-                "policy_name": "Unauthorized Sharing"
-              },
-              "P-06": {
-                "n": 450,
-                "tp": 422,
-                "fn": 28,
-                "tpr": 93.77777777777779,
-                "policy_name": "Constraint Removal"
-              },
-              "P-07": {
-                "n": 450,
-                "tp": 397,
-                "fn": 53,
-                "tpr": 88.22222222222223,
-                "policy_name": "Temporal Expansion"
-              },
-              "P-08": {
-                "n": 450,
-                "tp": 403,
-                "fn": 47,
-                "tpr": 89.55555555555556,
-                "policy_name": "Resource Expansion"
-              },
-              "P-09": {
-                "n": 450,
-                "tp": 427,
-                "fn": 23,
-                "tpr": 94.88888888888889,
-                "policy_name": "Privilege Escalation"
-              },
-              "P-10": {
-                "n": 450,
-                "tp": 246,
-                "fn": 204,
-                "tpr": 54.666666666666664,
-                "policy_name": "Compound Violation"
+              "near_miss": {
+                "n": 10,
+                "tp": 10,
+                "fn": 0,
+                "tpr": 100.0
               }
+            },
+            "by_source": {
+              "generated": {
+                "n": 18,
+                "tp": 18,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "original_190": {
+                "n": 3,
+                "tp": 3,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 14,
+                "tp": 14,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 100.0,
+              "matched": 100.0,
+              "near_miss": 100.0
+            }
+          }
+        }
+      },
+      {
+        "fold": 2,
+        "threshold": 0.01,
+        "threshold_f1": 54.794520547945204,
+        "summary": {
+          "threshold": 0.01,
+          "n": 109,
+          "confusion": {
+            "tp": 40,
+            "fp": 65,
+            "tn": 3,
+            "fn": 1,
+            "total": 109
+          },
+          "tpr": 97.5609756097561,
+          "fpr": 95.58823529411765,
+          "precision": 38.095238095238095,
+          "f1": 54.794520547945204,
+          "accuracy": 39.44954128440367,
+          "subsets": {
+            "malicious": {
+              "n": 41,
+              "tp": 40,
+              "fn": 1,
+              "tpr": 97.5609756097561
+            },
+            "benign": {
+              "n": 68,
+              "fp": 65,
+              "tn": 3,
+              "fpr": 95.58823529411765
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 13,
+                "tp": 13,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "matched": {
+                "n": 18,
+                "tp": 18,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "near_miss": {
+                "n": 10,
+                "tp": 9,
+                "fn": 1,
+                "tpr": 90.0
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 18,
+                "tp": 17,
+                "fn": 1,
+                "tpr": 94.44444444444444
+              },
+              "original_190": {
+                "n": 5,
+                "tp": 5,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 18,
+                "tp": 18,
+                "fn": 0,
+                "tpr": 100.0
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 100.0,
+              "matched": 100.0,
+              "near_miss": 90.0
+            }
+          }
+        }
+      },
+      {
+        "fold": 3,
+        "threshold": 0.015,
+        "threshold_f1": 56.9620253164557,
+        "summary": {
+          "threshold": 0.015,
+          "n": 138,
+          "confusion": {
+            "tp": 45,
+            "fp": 60,
+            "tn": 25,
+            "fn": 8,
+            "total": 138
+          },
+          "tpr": 84.90566037735849,
+          "fpr": 70.58823529411765,
+          "precision": 42.857142857142854,
+          "f1": 56.9620253164557,
+          "accuracy": 50.72463768115942,
+          "subsets": {
+            "malicious": {
+              "n": 53,
+              "tp": 45,
+              "fn": 8,
+              "tpr": 84.90566037735849
+            },
+            "benign": {
+              "n": 85,
+              "fp": 60,
+              "tn": 25,
+              "fpr": 70.58823529411765
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 20,
+                "tp": 20,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "matched": {
+                "n": 19,
+                "tp": 15,
+                "fn": 4,
+                "tpr": 78.94736842105263
+              },
+              "near_miss": {
+                "n": 14,
+                "tp": 10,
+                "fn": 4,
+                "tpr": 71.42857142857143
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 26,
+                "tp": 22,
+                "fn": 4,
+                "tpr": 84.61538461538461
+              },
+              "original_190": {
+                "n": 8,
+                "tp": 8,
+                "fn": 0,
+                "tpr": 100.0
+              },
+              "v3-matched": {
+                "n": 19,
+                "tp": 15,
+                "fn": 4,
+                "tpr": 78.94736842105263
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 100.0,
+              "matched": 78.94736842105263,
+              "near_miss": 71.42857142857143
+            }
+          }
+        }
+      },
+      {
+        "fold": 4,
+        "threshold": 0.025,
+        "threshold_f1": 56.19834710743802,
+        "summary": {
+          "threshold": 0.025,
+          "n": 134,
+          "confusion": {
+            "tp": 34,
+            "fp": 40,
+            "tn": 47,
+            "fn": 13,
+            "total": 134
+          },
+          "tpr": 72.3404255319149,
+          "fpr": 45.97701149425287,
+          "precision": 45.94594594594595,
+          "f1": 56.19834710743802,
+          "accuracy": 60.447761194029844,
+          "subsets": {
+            "malicious": {
+              "n": 47,
+              "tp": 34,
+              "fn": 13,
+              "tpr": 72.3404255319149
+            },
+            "benign": {
+              "n": 87,
+              "fp": 40,
+              "tn": 47,
+              "fpr": 45.97701149425287
+            },
+            "by_stratum": {
+              "easy": {
+                "n": 16,
+                "tp": 12,
+                "fn": 4,
+                "tpr": 75.0
+              },
+              "matched": {
+                "n": 19,
+                "tp": 15,
+                "fn": 4,
+                "tpr": 78.94736842105263
+              },
+              "near_miss": {
+                "n": 12,
+                "tp": 7,
+                "fn": 5,
+                "tpr": 58.333333333333336
+              }
+            },
+            "by_source": {
+              "generated": {
+                "n": 24,
+                "tp": 16,
+                "fn": 8,
+                "tpr": 66.66666666666666
+              },
+              "original_190": {
+                "n": 4,
+                "tp": 3,
+                "fn": 1,
+                "tpr": 75.0
+              },
+              "v3-matched": {
+                "n": 19,
+                "tp": 15,
+                "fn": 4,
+                "tpr": 78.94736842105263
+              }
+            },
+            "recall_by_stratum": {
+              "easy": 75.0,
+              "matched": 78.94736842105263,
+              "near_miss": 58.333333333333336
             }
           }
         }
@@ -1686,469 +2024,99 @@
     "aggregate": {
       "metrics": {
         "accuracy": {
-          "mean": 59.21666666666667,
-          "std": 6.727777777777785
+          "mean": 48.233549825290915,
+          "std": 8.857074875803315
         },
         "tpr": {
-          "mean": 87.01111111111112,
-          "std": 10.033333333333339
+          "mean": 89.14323048562407,
+          "std": 9.921062393041955
         },
         "fpr": {
-          "mean": 68.57777777777778,
-          "std": 23.488888888888887
+          "mean": 76.80569641649764,
+          "std": 19.514793821139843
         },
         "precision": {
-          "mean": 57.18908885852585,
-          "std": 5.872990151122792
+          "mean": 42.05041201369231,
+          "std": 3.9622798096674194
         },
         "f1": {
-          "mean": 68.23075230293796,
-          "std": 1.0977776680417222
+          "mean": 56.66790167129086,
+          "std": 2.664626099427349
         },
         "threshold": {
-          "mean": 0.01,
-          "std": 0.005
+          "mean": 0.014000000000000002,
+          "std": 0.008602325267042627
         }
       },
       "subsets": {
         "malicious": {
           "tpr": {
-            "mean": 87.01111111111112,
-            "std": 10.033333333333339
+            "mean": 89.14323048562407,
+            "std": 9.921062393041955
           }
         },
         "benign": {
           "fpr": {
-            "mean": 68.57777777777778,
-            "std": 23.488888888888887
+            "mean": 76.80569641649764,
+            "std": 19.514793821139843
           }
         },
-        "adversarial_paraphrases": {
-          "tpr": {
-            "mean": 87.15277777777777,
-            "std": 9.541666666666664
-          }
-        },
-        "explicit_attacks": {
-          "tpr": {
-            "mean": 86.44444444444444,
-            "std": 12.0
-          }
-        },
-        "by_policy": {
-          "P-01": {
-            "policy_name": "Obvious Malicious Intent",
+        "by_stratum": {
+          "easy": {
             "tpr": {
-              "mean": 99.66666666666666,
-              "std": 0.3333333333333357
+              "mean": 94.0909090909091,
+              "std": 9.70643477457392
             }
           },
-          "P-02": {
-            "policy_name": "Scope Creep",
+          "matched": {
             "tpr": {
-              "mean": 74.55555555555556,
-              "std": 15.666666666666668
+              "mean": 90.04048582995952,
+              "std": 9.483022491956179
             }
           },
-          "P-03": {
-            "policy_name": "Underspecified Scope",
+          "near_miss": {
             "tpr": {
-              "mean": 94.22222222222223,
-              "std": 5.333333333333336
-            }
-          },
-          "P-04": {
-            "policy_name": "Data Exfiltration",
-            "tpr": {
-              "mean": 73.22222222222223,
-              "std": 23.666666666666664
-            }
-          },
-          "P-05": {
-            "policy_name": "Unauthorized Sharing",
-            "tpr": {
-              "mean": 74.33333333333334,
-              "std": 22.333333333333336
-            }
-          },
-          "P-06": {
-            "policy_name": "Constraint Removal",
-            "tpr": {
-              "mean": 96.77777777777777,
-              "std": 2.999999999999993
-            }
-          },
-          "P-07": {
-            "policy_name": "Temporal Expansion",
-            "tpr": {
-              "mean": 93.55555555555556,
-              "std": 5.333333333333329
-            }
-          },
-          "P-08": {
-            "policy_name": "Resource Expansion",
-            "tpr": {
-              "mean": 94.66666666666666,
-              "std": 5.111111111111107
-            }
-          },
-          "P-09": {
-            "policy_name": "Privilege Escalation",
-            "tpr": {
-              "mean": 97.44444444444444,
-              "std": 2.555555555555557
-            }
-          },
-          "P-10": {
-            "policy_name": "Compound Violation",
-            "tpr": {
-              "mean": 71.66666666666667,
-              "std": 17.000000000000004
+              "mean": 79.5079365079365,
+              "std": 14.468182134624765
             }
           }
         }
       },
       "pooled_confusion": {
-        "tp": 7831,
-        "fp": 6172,
-        "tn": 2828,
-        "fn": 1169,
-        "total": 18000
-      }
+        "tp": 194,
+        "fp": 271,
+        "tn": 93,
+        "fn": 26,
+        "total": 584
+      },
+      "pooled_tpr": 88.18181818181819,
+      "pooled_fpr": 74.45054945054946
     },
-    "final_threshold": 0.01
+    "final_threshold": 0.014000000000000002
   },
   "final_model": {
     "dir": "models\\sentinelagent-nli-finetuned",
-    "trained_on_scenarios": 9000,
-    "train_pairs": 18000,
-    "train_time_sec": 202.6,
+    "trained_on_rows": 584,
+    "train_pairs": 584,
+    "train_time_sec": 12.2,
     "train_log_history": [
       {
-        "loss": 1.5841493225097656,
-        "grad_norm": 14.980737686157227,
-        "learning_rate": 4.336283185840709e-06,
-        "epoch": 0.08880994671403197,
+        "loss": 1.0498855590820313,
+        "grad_norm": 5.390819072723389,
+        "learning_rate": 7.941176470588236e-06,
+        "epoch": 2.6315789473684212,
         "step": 50
       },
       {
-        "loss": 0.19236928939819337,
-        "grad_norm": 9.688995361328125,
-        "learning_rate": 8.761061946902656e-06,
-        "epoch": 0.17761989342806395,
-        "step": 100
-      },
-      {
-        "loss": 0.09152551651000977,
-        "grad_norm": 0.08721030503511429,
-        "learning_rate": 1.3185840707964604e-05,
-        "epoch": 0.2664298401420959,
-        "step": 150
-      },
-      {
-        "loss": 0.059252266883850095,
-        "grad_norm": 3.953845739364624,
-        "learning_rate": 1.761061946902655e-05,
-        "epoch": 0.3552397868561279,
-        "step": 200
-      },
-      {
-        "loss": 0.10257654190063477,
-        "grad_norm": 0.7610971331596375,
-        "learning_rate": 1.977295162882527e-05,
-        "epoch": 0.44404973357015987,
-        "step": 250
-      },
-      {
-        "loss": 0.044893832206726075,
-        "grad_norm": 0.030982568860054016,
-        "learning_rate": 1.927936821322804e-05,
-        "epoch": 0.5328596802841918,
-        "step": 300
-      },
-      {
-        "loss": 0.047168946266174315,
-        "grad_norm": 3.7227747440338135,
-        "learning_rate": 1.8785784797630803e-05,
-        "epoch": 0.6216696269982238,
-        "step": 350
-      },
-      {
-        "loss": 0.05263570308685303,
-        "grad_norm": 0.03295103460550308,
-        "learning_rate": 1.8292201382033564e-05,
-        "epoch": 0.7104795737122558,
-        "step": 400
-      },
-      {
-        "loss": 0.029177005290985106,
-        "grad_norm": 0.057345956563949585,
-        "learning_rate": 1.7798617966436328e-05,
-        "epoch": 0.7992895204262878,
-        "step": 450
-      },
-      {
-        "loss": 0.039178216457366945,
-        "grad_norm": 1.2089581489562988,
-        "learning_rate": 1.7305034550839093e-05,
-        "epoch": 0.8880994671403197,
-        "step": 500
-      },
-      {
-        "loss": 0.018019574880599975,
-        "grad_norm": 0.015512952581048012,
-        "learning_rate": 1.6811451135241857e-05,
-        "epoch": 0.9769094138543517,
-        "step": 550
-      },
-      {
-        "loss": 0.03535045146942139,
-        "grad_norm": 12.89158821105957,
-        "learning_rate": 1.631786771964462e-05,
-        "epoch": 1.0657193605683837,
-        "step": 600
-      },
-      {
-        "loss": 0.019100029468536377,
-        "grad_norm": 0.5188304781913757,
-        "learning_rate": 1.5824284304047386e-05,
-        "epoch": 1.1545293072824157,
-        "step": 650
-      },
-      {
-        "loss": 0.018371472358703612,
-        "grad_norm": 11.068548202514648,
-        "learning_rate": 1.533070088845015e-05,
-        "epoch": 1.2433392539964476,
-        "step": 700
-      },
-      {
-        "loss": 0.0200351881980896,
-        "grad_norm": 0.025102166458964348,
-        "learning_rate": 1.4837117472852913e-05,
-        "epoch": 1.3321492007104796,
-        "step": 750
-      },
-      {
-        "loss": 0.01624632000923157,
-        "grad_norm": 0.018821654841303825,
-        "learning_rate": 1.4343534057255677e-05,
-        "epoch": 1.4209591474245116,
-        "step": 800
-      },
-      {
-        "loss": 0.018004406690597535,
-        "grad_norm": 8.793072700500488,
-        "learning_rate": 1.3849950641658441e-05,
-        "epoch": 1.5097690941385435,
-        "step": 850
-      },
-      {
-        "loss": 0.014554388523101806,
-        "grad_norm": 15.145524978637695,
-        "learning_rate": 1.3356367226061206e-05,
-        "epoch": 1.5985790408525755,
-        "step": 900
-      },
-      {
-        "loss": 0.028421387672424317,
-        "grad_norm": 0.07727513462305069,
-        "learning_rate": 1.286278381046397e-05,
-        "epoch": 1.6873889875666075,
-        "step": 950
-      },
-      {
-        "loss": 0.015330873727798462,
-        "grad_norm": 0.011428384110331535,
-        "learning_rate": 1.2369200394866735e-05,
-        "epoch": 1.7761989342806395,
-        "step": 1000
-      },
-      {
-        "loss": 0.008648998737335205,
-        "grad_norm": 0.008032907731831074,
-        "learning_rate": 1.1875616979269497e-05,
-        "epoch": 1.8650088809946714,
-        "step": 1050
-      },
-      {
-        "loss": 0.026602246761322022,
-        "grad_norm": 0.020571475848555565,
-        "learning_rate": 1.1382033563672262e-05,
-        "epoch": 1.9538188277087034,
-        "step": 1100
-      },
-      {
-        "loss": 0.0057407963275909425,
-        "grad_norm": 0.015864504501223564,
-        "learning_rate": 1.0888450148075024e-05,
-        "epoch": 2.0426287744227354,
-        "step": 1150
-      },
-      {
-        "loss": 0.00506013810634613,
-        "grad_norm": 0.016239209100604057,
-        "learning_rate": 1.0394866732477789e-05,
-        "epoch": 2.1314387211367674,
-        "step": 1200
-      },
-      {
-        "loss": 0.0022787593305110933,
-        "grad_norm": 0.006469771731644869,
-        "learning_rate": 9.901283316880553e-06,
-        "epoch": 2.2202486678507993,
-        "step": 1250
-      },
-      {
-        "loss": 0.0056015485525131225,
-        "grad_norm": 0.005369695369154215,
-        "learning_rate": 9.407699901283317e-06,
-        "epoch": 2.3090586145648313,
-        "step": 1300
-      },
-      {
-        "loss": 0.019153982400894165,
-        "grad_norm": 0.007588283624500036,
-        "learning_rate": 8.914116485686082e-06,
-        "epoch": 2.3978685612788633,
-        "step": 1350
-      },
-      {
-        "loss": 0.013339906930923462,
-        "grad_norm": 0.4855991005897522,
-        "learning_rate": 8.420533070088846e-06,
-        "epoch": 2.4866785079928952,
-        "step": 1400
-      },
-      {
-        "loss": 0.00877975583076477,
-        "grad_norm": 0.009212363511323929,
-        "learning_rate": 7.92694965449161e-06,
-        "epoch": 2.575488454706927,
-        "step": 1450
-      },
-      {
-        "loss": 0.011669429540634156,
-        "grad_norm": 0.007619119249284267,
-        "learning_rate": 7.433366238894374e-06,
-        "epoch": 2.664298401420959,
-        "step": 1500
-      },
-      {
-        "loss": 0.01644432544708252,
-        "grad_norm": 0.23733563721179962,
-        "learning_rate": 6.9397828232971375e-06,
-        "epoch": 2.753108348134991,
-        "step": 1550
-      },
-      {
-        "loss": 0.014167124032974243,
-        "grad_norm": 0.014410865493118763,
-        "learning_rate": 6.446199407699901e-06,
-        "epoch": 2.841918294849023,
-        "step": 1600
-      },
-      {
-        "loss": 0.003083801865577698,
-        "grad_norm": 0.11052310466766357,
-        "learning_rate": 5.952615992102666e-06,
-        "epoch": 2.930728241563055,
-        "step": 1650
-      },
-      {
-        "loss": 0.005154604911804199,
-        "grad_norm": 0.005846113432198763,
-        "learning_rate": 5.45903257650543e-06,
-        "epoch": 3.019538188277087,
-        "step": 1700
-      },
-      {
-        "loss": 0.00033229369670152665,
-        "grad_norm": 0.004361829254776239,
-        "learning_rate": 4.965449160908194e-06,
-        "epoch": 3.108348134991119,
-        "step": 1750
-      },
-      {
-        "loss": 0.0006020699068903923,
-        "grad_norm": 0.003999236039817333,
-        "learning_rate": 4.4718657453109586e-06,
-        "epoch": 3.197158081705151,
-        "step": 1800
-      },
-      {
-        "loss": 0.004725978970527649,
-        "grad_norm": 0.004140154924243689,
-        "learning_rate": 3.978282329713722e-06,
-        "epoch": 3.285968028419183,
-        "step": 1850
-      },
-      {
-        "loss": 0.004156129658222199,
-        "grad_norm": 0.004396435804665089,
-        "learning_rate": 3.484698914116486e-06,
-        "epoch": 3.374777975133215,
-        "step": 1900
-      },
-      {
-        "loss": 0.011148803234100342,
-        "grad_norm": 0.012039989233016968,
-        "learning_rate": 2.9911154985192496e-06,
-        "epoch": 3.463587921847247,
-        "step": 1950
-      },
-      {
-        "loss": 0.002166844755411148,
-        "grad_norm": 0.006496625952422619,
-        "learning_rate": 2.497532082922014e-06,
-        "epoch": 3.552397868561279,
-        "step": 2000
-      },
-      {
-        "loss": 0.00191968634724617,
-        "grad_norm": 0.003986914176493883,
-        "learning_rate": 2.003948667324778e-06,
-        "epoch": 3.641207815275311,
-        "step": 2050
-      },
-      {
-        "loss": 0.009825395941734314,
-        "grad_norm": 0.0046295300126075745,
-        "learning_rate": 1.5103652517275422e-06,
-        "epoch": 3.730017761989343,
-        "step": 2100
-      },
-      {
-        "loss": 0.0005803386121988296,
-        "grad_norm": 0.1854773312807083,
-        "learning_rate": 1.0167818361303062e-06,
-        "epoch": 3.818827708703375,
-        "step": 2150
-      },
-      {
-        "loss": 0.016649233102798464,
-        "grad_norm": 0.008888734504580498,
-        "learning_rate": 5.231984205330701e-07,
-        "epoch": 3.907637655417407,
-        "step": 2200
-      },
-      {
-        "loss": 0.004837597608566284,
-        "grad_norm": 0.004541388247162104,
-        "learning_rate": 2.961500493583416e-08,
-        "epoch": 3.996447602131439,
-        "step": 2250
-      },
-      {
-        "train_runtime": 194.6609,
-        "train_samples_per_second": 369.874,
-        "train_steps_per_second": 11.569,
+        "train_runtime": 5.6252,
+        "train_samples_per_second": 415.27,
+        "train_steps_per_second": 13.511,
         "total_flos": 0.0,
-        "train_loss": 0.05881530388148702,
+        "train_loss": 0.8500355042909321,
         "epoch": 4.0,
-        "step": 2252
+        "step": 76
       }
     ]
   },
-  "total_runtime_sec": 474.5
+  "total_runtime_sec": 68.6
 }

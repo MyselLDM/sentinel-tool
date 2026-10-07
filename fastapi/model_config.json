@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-30T06:21:59+0800",
+  "generated_at": "2026-10-06T22:15:13+0800",
   "notes": [
     "Produced by training/compare_models.py from the fine-tuned artifacts.",
     "model_dir is relative to MODELS_DIR (default: fastapi/.models).",
@@ -17,14 +17,14 @@
     ],
     "activation": "softmax",
     "decision": "p_contradiction > threshold",
-    "threshold": 0.924,
+    "threshold": 0.735,
     "threshold_source": "cross_validation_mean",
     "metrics": {
-      "accuracy": 99.1,
-      "tpr": 99.5889,
-      "fpr": 1.3889,
-      "precision": 98.638,
-      "f1": 99.1075
+      "accuracy": 88.3391,
+      "tpr": 82.4079,
+      "fpr": 8.1279,
+      "precision": 86.3714,
+      "f1": 84.2632
     }
   },
   "contrastive": {
@@ -33,14 +33,14 @@
     "version": "contrastive-miniLM-e4-b32-lr1e-05-mn64-mrg0.5-raw",
     "decision": "cosine < threshold",
     "include_decomposed": false,
-    "threshold": 0.024,
+    "threshold": 0.24100000000000002,
     "threshold_source": "cross_validation_mean",
     "metrics": {
-      "accuracy": 97.9333,
-      "tpr": 99.3556,
-      "fpr": 3.4889,
-      "precision": 96.6349,
-      "f1": 97.9688
+      "accuracy": 88.1681,
+      "tpr": 88.8421,
+      "fpr": 12.2293,
+      "precision": 82.8006,
+      "f1": 85.2356
     }
   },
   "thesis_comparison": {
@@ -50,78 +50,95 @@
     "tests": {
       "tpr": {
         "n_pairs": 5,
-        "mean_a": 99.35555555555555,
-        "mean_b": 74.8,
-        "mean_diff": 24.555555555555557,
-        "std_diff": 8.317299389573668,
-        "t_statistic": 6.601649030011572,
-        "p_value": 0.0013640656167787243,
+        "mean_a": 88.84208630957414,
+        "mean_b": 89.14323048562407,
+        "mean_diff": -0.30114417604993093,
+        "std_diff": 16.57093093635941,
+        "t_statistic": -0.0406361508150579,
+        "p_value": 0.5152333164564113,
         "alternative": "greater",
-        "d_z": 2.9523471989402847,
-        "significant_at_0_05": true
+        "d_z": -0.01817303911328059,
+        "significant_at_0_05": false
       },
       "precision": {
         "n_pairs": 5,
-        "mean_a": 96.63491724778007,
-        "mean_b": 63.585357314329414,
-        "mean_diff": 33.04955993345064,
-        "std_diff": 5.79365426024796,
-        "t_statistic": 12.755518247733027,
-        "p_value": 0.00010882788396632975,
+        "mean_a": 82.80058434857196,
+        "mean_b": 42.05041201369231,
+        "mean_diff": 40.75017233487965,
+        "std_diff": 9.825844326328976,
+        "t_statistic": 9.273519140890516,
+        "p_value": 0.00037601422965014903,
         "alternative": "greater",
-        "d_z": 5.704441178034011,
+        "d_z": 4.147243837935328,
         "significant_at_0_05": true
       },
       "f1": {
         "n_pairs": 5,
-        "mean_a": 97.96877238523435,
-        "mean_b": 68.30096639229103,
-        "mean_diff": 29.667805992943308,
-        "std_diff": 1.1229915258451528,
-        "t_statistic": 59.07367011836585,
-        "p_value": 2.4587604949026065e-07,
+        "mean_a": 85.23562184750617,
+        "mean_b": 56.66790167129086,
+        "mean_diff": 28.567720176215307,
+        "std_diff": 5.24230946176868,
+        "t_statistic": 12.185347839930403,
+        "p_value": 0.00013017202691640694,
         "alternative": "greater",
-        "d_z": 26.41854841301282,
+        "d_z": 5.449453219912922,
         "significant_at_0_05": true
       },
       "fpr": {
         "n_pairs": 5,
-        "mean_a": 3.4888888888888885,
-        "mean_b": 44.144444444444446,
-        "mean_diff": -40.65555555555555,
-        "std_diff": 15.549969235013831,
-        "t_statistic": -5.846222877440991,
-        "p_value": 0.0021346369535064605,
+        "mean_a": 12.229293441514537,
+        "mean_b": 76.80569641649764,
+        "mean_diff": -64.5764029749831,
+        "std_diff": 25.136881246761174,
+        "t_statistic": -5.744436844689596,
+        "p_value": 0.0022757085579890456,
         "alternative": "less",
-        "d_z": -2.6145103531144955,
+        "d_z": -2.568990255436068,
         "significant_at_0_05": true
       },
-      "adversarial_paraphrases_tpr": {
+      "easy_tpr": {
         "n_pairs": 5,
-        "mean_a": 99.2638888888889,
-        "mean_b": 75.30555555555556,
-        "mean_diff": 23.95833333333334,
-        "std_diff": 8.411812177226635,
-        "t_statistic": 6.368718277610814,
-        "p_value": 0.001558480442772509,
+        "mean_a": 84.39335664335664,
+        "mean_b": 94.0909090909091,
+        "mean_diff": -9.697552447552448,
+        "std_diff": 19.059936949352085,
+        "t_statistic": -1.137694555114143,
+        "p_value": 0.8406146938685217,
         "alternative": "greater",
-        "d_z": 2.848177399656631,
-        "significant_at_0_05": true
+        "d_z": -0.508792472573321,
+        "significant_at_0_05": false
       },
-      "explicit_attacks_tpr": {
+      "matched_tpr": {
         "n_pairs": 5,
-        "mean_a": 99.72222222222223,
-        "mean_b": 72.77777777777777,
-        "mean_diff": 26.944444444444446,
-        "std_diff": 8.077078526971507,
-        "t_statistic": 7.459331884982289,
-        "p_value": 0.0008629769700868338,
+        "mean_a": 96.03174603174604,
+        "mean_b": 90.04048582995952,
+        "mean_diff": 5.991260201786517,
+        "std_diff": 15.819829539120283,
+        "t_statistic": 0.8468400401505678,
+        "p_value": 0.22238828911942446,
         "alternative": "greater",
-        "d_z": 3.3359146323104083,
-        "significant_at_0_05": true
+        "d_z": 0.37871837916906415,
+        "significant_at_0_05": false
+      },
+      "near_miss_tpr": {
+        "n_pairs": 5,
+        "mean_a": 86.44444444444446,
+        "mean_b": 79.5079365079365,
+        "mean_diff": 6.936507936507935,
+        "std_diff": 21.35537174207882,
+        "t_statistic": 0.7263045317041473,
+        "p_value": 0.2539368741078238,
+        "alternative": "greater",
+        "d_z": 0.3248132610513249,
+        "significant_at_0_05": false
       }
-    }
+    },
+    "focal_subsets": [
+      "easy",
+      "matched",
+      "near_miss"
+    ]
   },
   "protocol": "anchor-grouped cross-validation (unseen goals) - PRIMARY",
-  "protocol_key": "group"
+  "protocol_key": "current"
 }
