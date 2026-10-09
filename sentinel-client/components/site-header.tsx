@@ -9,7 +9,7 @@ import { SentinelLogoFull } from "@/components/sentinel-logo";
 const NAV = [
   { href: "/#product", label: "Product" },
   { href: "/#how", label: "How it works" },
-  { href: "/#playground", label: "Try it" },
+  // { href: "/#playground", label: "Try it" },
   { href: "/#docs", label: "API" },
 ] as const;
 

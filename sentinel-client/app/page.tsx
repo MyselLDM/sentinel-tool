@@ -142,7 +142,7 @@ export default function Home() {
           </Section>
 
           {/* ── Chatbot ──────────────────────────────────────────── */}
-          <Chatbot />
+          {/* <Chatbot /> */}
 
           {/* ── API / docs ───────────────────────────────────────── */}
           <Section id="docs" className="grid md:grid-cols-[1fr_1.2fr]">
