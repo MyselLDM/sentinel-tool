@@ -32,6 +32,7 @@ lerna-debug.log*
 
 # Vercel
 .vercel
+.reasonix
 
 # ============================================================
 # Python (FastAPI inference service)
