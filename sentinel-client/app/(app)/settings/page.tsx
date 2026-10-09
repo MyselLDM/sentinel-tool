@@ -255,12 +255,6 @@ export default async function SettingsPage() {
                 <dd className="font-mono text-xs text-heading text-right">{contrastive.base}</dd>
               </div>
               <div className="flex justify-between py-3">
-                <dt className="text-muted">Task Decomposition</dt>
-                <dd className="font-mono text-xs text-heading text-right">
-                  {contrastive.include_decomposed ? "Enabled" : "Disabled"}
-                </dd>
-              </div>
-              <div className="flex justify-between py-3">
                 <dt className="text-muted">Distance Metric</dt>
                 <dd className="font-mono text-xs text-heading text-right">Cosine Similarity</dd>
               </div>
