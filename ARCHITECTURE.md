@@ -279,6 +279,7 @@ Full request/response shapes: [`express-server/API.md`](./express-server/API.md)
 | GET | `/health` | Loaded models + versions + device (503 until ready) |
 | GET | `/models` | Read-only model info (versions, thresholds, metrics) |
 | POST | `/evaluate` | Run both models → per-model scores + combined decision |
+| POST | `/debug/encode` | Debug: per-model tokens, embeddings + pre-softmax logits (`token_vectors`, `embedding_dims`) |
 | GET | `/docs` | Swagger UI |
 
 ### 6.3 Next.js (`:3000`)

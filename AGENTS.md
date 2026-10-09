@@ -37,7 +37,7 @@ npm start                       # same, no first-run install handling
 
 # fastapi
 ./run.sh                        # :8000; creates .venv + installs deps on first run
-.venv/bin/python -m pytest -q   # 14 unit tests (preprocess + decision logic)
+.venv/bin/python -m pytest -q   # 30 unit tests (preprocess + decision logic + /debug/encode inspection)
 ```
 
 There are currently **no automated tests** for `express-server` or `sentinel-client`.

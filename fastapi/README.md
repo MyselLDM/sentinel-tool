@@ -61,6 +61,7 @@ curl http://localhost:8000/health
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `POST` | `/evaluate` | Evaluate a `goal` + `subtask` pair. |
+| `POST` | `/debug/encode` | Debug: the models' encodings (tokens, vectors, pre-softmax logits). |
 | `GET` | `/health` | Liveness / readiness. **503** until trained models are loaded. |
 | `GET` | `/models` | Read-only model info (versions, thresholds, metrics). |
 | `GET` | `/docs` | Swagger UI. |
@@ -357,7 +358,7 @@ fastapi/
 
 ## 9. Tests
 
-22 unit tests, no models required (`pytest` + `httpx` are pinned in
+30 unit tests, no models required (`pytest` + `httpx` are pinned in
 `requirements.txt`):
 
 ```bash
@@ -369,4 +370,60 @@ fastapi/
 | --- | --- |
 | `tests/test_preprocess.py` | `format_nli` / `format_document` parity with training (golden strings). |
 | `tests/test_service.py` | Softmax, the NLI/contrastive decisions, OR-combination, `build_result`. |
+| `tests/test_inspect.py` | The `/debug/encode` encoding inspection (`inspect_nli` / `inspect_contrastive`). |
 | `tests/test_models.py` | `models._resolve` — trained-dir resolution and the `ALLOW_BASE_FALLBACK` policy (pure path logic, no torch). |
+
+---
+
+## 10. `POST /debug/encode` (debug)
+
+Debug-only companion to `/evaluate`: same inputs, but instead of the combined
+verdict it returns **what each model sees and scores**, so you can tell *why* a
+verdict came out the way it did. It runs the identical preprocessing and models,
+so its `score`/`rejected` match `/evaluate` exactly.
+
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `goal`, `subtask`, `nli_threshold`, `contrastive_threshold` | — | — | Identical to `/evaluate`. |
+| `token_vectors` | bool | no | Also return per-token hidden-state vectors (large). Default `false`. |
+| `embedding_dims` | int | no | Truncate every returned vector to N dims. `0` = full (default). |
+
+The response carries two blocks:
+
+- **`nli`** — the framed `premise`/`hypothesis`, their subword `tokens` +
+  `input_ids`/`attention_mask`, the label order (`labels`), the **raw
+  pre-softmax `logits`**, the `probabilities` softmax, and the usual
+  `score`/`threshold`/`rejected`/`margin`. With `token_vectors=true`, a
+  `768`-wide vector per token.
+- **`contrastive`** — the two framed strings, both sides' `tokens` +
+  `input_ids`/`attention_mask`, the normalized `goal_embedding` /
+  `subtask_embedding` (`384`-d) with their norms, and `cosine_similarity` /
+  `threshold` / `rejected` / `margin`. With `token_vectors=true`, a vector per
+  token per side.
+
+```bash
+# summary: tokens + embeddings + raw logits
+curl -s -X POST http://localhost:8000/debug/encode \
+  -H 'Content-Type: application/json' \
+  -d '{"goal":"Process disability benefits","subtask":"Delete the database"}' | jq .
+
+# add per-token vectors, truncated to 8 dims for readability
+curl -s -X POST http://localhost:8000/debug/encode \
+  -H 'Content-Type: application/json' \
+  -d '{"goal":"Process disability benefits","subtask":"Delete the database",
+       "token_vectors":true,"embedding_dims":8}' | jq .
+```
+
+Or use the wrapper in the sibling service:
+
+```bash
+cd ../express-server
+./query2.sh "Process disability benefits for this veteran" "Delete the database"
+DETAIL=summary ./query2.sh "..." "..."      # skip per-token vectors
+DIMS=8 ./query2.sh "..." "..."              # truncate vectors to 8 dims
+```
+
+> `/debug/encode` is unauthenticated (like the rest of this service) and can
+> return large payloads with `token_vectors=true`. Keep the service bound to
+> localhost and behind the gateway; don't expose it to production traffic.
+

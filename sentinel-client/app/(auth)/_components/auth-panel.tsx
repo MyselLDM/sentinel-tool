@@ -222,12 +222,12 @@ export function AuthPanel({
 
         {tab === "signin" ? <SignInForm next={next} /> : <SignUpForm next={next} />}
 
-        {demoHint && (
+        {/* {demoHint && (
           <div className="mt-6 rounded-lg border border-primary-blue/20 bg-primary-light px-4 py-2.5 text-xs text-body">
             Dev seed — <span className="font-mono text-primary-blue">{demoHint.email}</span> /{" "}
             <span className="font-mono text-primary-blue">{demoHint.password}</span>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

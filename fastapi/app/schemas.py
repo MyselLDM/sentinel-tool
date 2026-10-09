@@ -171,3 +171,102 @@ class ModelsResponse(BaseModel):
     on_base_models: bool | None = None
     nli: dict[str, Any]
     contrastive: dict[str, Any]
+
+
+# ── Debug: model encoding inspection (``POST /debug/encode``) ────────────────
+
+
+class DebugEncodeRequest(EvaluateRequest):
+    """Body for ``POST /debug/encode`` — evaluate inputs plus verbosity knobs."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "goal": "Process disability benefits for veteran",
+                "subtask": "Delete the database",
+                "token_vectors": False,
+                "embedding_dims": 0,
+            }
+        }
+    )
+
+    token_vectors: bool = Field(
+        default=False,
+        description="Also return per-token hidden-state vectors (large payload).",
+    )
+    embedding_dims: int = Field(
+        default=0,
+        ge=0,
+        description="Truncate every returned vector to this many dims (0 = full).",
+    )
+
+
+class NliEncodingBlock(BaseModel):
+    """NLI cross-encoder encoding: framing, tokens and pre-softmax logits."""
+
+    premise: str = Field(..., description="Framed premise fed to the cross-encoder.")
+    hypothesis: str = Field(..., description="Framed hypothesis fed to the cross-encoder.")
+    tokens: list[str] = Field(..., description="Subword tokens of the joined pair.")
+    input_ids: list[int]
+    attention_mask: list[int]
+    labels: list[str] = Field(
+        ..., description="Label order for ``logits``/``probabilities``."
+    )
+    logits: list[float] = Field(
+        ..., description="Raw model outputs, BEFORE softmax / any activation."
+    )
+    probabilities: dict[str, float] = Field(
+        ..., description="Softmax of ``logits`` keyed by label."
+    )
+    score: float = Field(..., description="p(contradiction); higher = more malicious.")
+    threshold: float
+    rejected: bool
+    margin: float
+    token_vectors: list[list[float]] | None = Field(
+        default=None,
+        description="Final-layer vector per token (only when token_vectors=true).",
+    )
+    token_vector_dim: int | None = Field(
+        default=None, description="Width of each per-token vector."
+    )
+    latency_ms: float
+
+
+class ContrastiveEncodingBlock(BaseModel):
+    """Contrastive bi-encoder encoding: framed texts, tokens and embeddings."""
+
+    goal_text: str = Field(..., description="Goal-side framed string that was embedded.")
+    subtask_text: str = Field(..., description="Subtask-side framed string that was embedded.")
+    goal_tokens: list[str]
+    goal_input_ids: list[int]
+    goal_attention_mask: list[int]
+    goal_embedding: list[float] = Field(..., description="Normalized goal-side embedding.")
+    goal_embedding_norm: float
+    goal_token_vectors: list[list[float]] | None = None
+    subtask_tokens: list[str]
+    subtask_input_ids: list[int]
+    subtask_attention_mask: list[int]
+    subtask_embedding: list[float] = Field(..., description="Normalized subtask-side embedding.")
+    subtask_embedding_norm: float
+    subtask_token_vectors: list[list[float]] | None = None
+    token_vector_dim: int | None = None
+    embedding_dim: int = Field(..., description="Full embedding width (before truncation).")
+    cosine_similarity: float = Field(
+        ..., description="cos(goal_embedding, subtask_embedding); lower = more malicious."
+    )
+    threshold: float
+    rejected: bool
+    margin: float
+    latency_ms: float
+
+
+class DebugEncodeResponse(BaseModel):
+    """Response for ``POST /debug/encode``."""
+
+    goal: str
+    subtask: str
+    token_vectors: bool = Field(..., description="Whether per-token vectors are included.")
+    embedding_dims: int = Field(..., description="Truncation applied to vectors (0 = full).")
+    model_version: str
+    nli: NliEncodingBlock
+    contrastive: ContrastiveEncodingBlock

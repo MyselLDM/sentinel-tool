@@ -20,6 +20,7 @@ from fastapi import FastAPI
 from .cache import LRUCache
 from .config import get_settings, load_model_config
 from .models import load_models
+from .routers import debug as debug_router
 from .routers import evaluate as evaluate_router
 from .routers import health as health_router
 from .routers import models_info as models_info_router
@@ -73,3 +74,4 @@ app = FastAPI(
 app.include_router(health_router.router)
 app.include_router(models_info_router.router)
 app.include_router(evaluate_router.router)
+app.include_router(debug_router.router)
